@@ -1,0 +1,135 @@
+.verify-content {
+  --background: #F8F8F5;
+}
+
+.verify-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+  padding-top: calc(env(safe-area-inset-top) + 20px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+}
+
+.verify-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px 24px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.icon-container {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+  
+  ion-icon {
+    font-size: 40px;
+    color: #667eea;
+  }
+  
+  &.success {
+    background: #e8f5e9;
+    ion-icon {
+      color: #4caf50;
+    }
+  }
+  
+  &.error {
+    background: #ffebee;
+    ion-icon {
+      color: #f44336;
+    }
+  }
+  
+  .spinning {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.content-section {
+  h1 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #2C2C2C;
+    margin: 0 0 12px;
+  }
+  
+  p {
+    font-size: 16px;
+    color: #666;
+    line-height: 1.5;
+    margin: 0 0 24px;
+  }
+  
+  .hint {
+    font-size: 14px;
+    color: #999;
+    margin-top: 8px;
+  }
+}
+
+.action-btn {
+  --border-radius: 12px;
+  --padding-top: 14px;
+  --padding-bottom: 14px;
+  margin-top: 16px;
+  font-weight: 600;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+ion-spinner {
+  margin: 20px auto;
+}
+
+@media (max-width: 380px) {
+  .verify-container {
+    padding: 16px;
+  }
+
+  .verify-card {
+    padding: 24px 16px;
+    max-width: min(100%, 400px);
+  }
+
+  .icon-container {
+    width: 64px;
+    height: 64px;
+
+    ion-icon {
+      font-size: 32px;
+    }
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  p {
+    font-size: 14px;
+  }
+
+  .hint {
+    font-size: 12px;
+  }
+}

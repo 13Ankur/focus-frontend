@@ -1,0 +1,115 @@
+<ion-content class="success-modal-content">
+  <div class="success-modal" [class.legendary]="isLegendary">
+    <!-- Kibble Rain -->
+    <div class="kibble-rain" *ngIf="showKibbleRain">
+      <span *ngFor="let piece of kibbleRain" class="rain-piece" [style.left.%]="piece.left"
+        [style.animation-delay.s]="piece.delay" [style.font-size.px]="piece.size">{{ piece.emoji }}</span>
+    </div>
+
+    <div class="modal-body">
+      <!-- Back Button -->
+      <div class="back-btn-container">
+        <button class="back-btn" (click)="close()">
+          <ion-icon name="chevron-back"></ion-icon>
+          <span>Back</span>
+        </button>
+      </div>
+
+      <!-- Welcome banner for first session -->
+      <div class="welcome-banner" *ngIf="isFirstSession && showHeadline">
+        <span>Welcome to StayPaws! 🐾</span>
+      </div>
+
+      <!-- Dog celebration -->
+      <div class="dog-celebration" *ngIf="showDog" [class.breed-unlock]="newBreedUnlocked">
+        <div class="dog-particles">
+          <span class="particle p1">✨</span>
+          <span class="particle p2">⭐</span>
+          <span class="particle p3">✨</span>
+          <span class="particle p4">💛</span>
+        </div>
+        <img [src]="breedImage" [alt]="breedName" class="celebration-dog">
+      </div>
+
+      <!-- Headline -->
+      <div class="headline-section" *ngIf="showHeadline">
+        <h1 class="headline">{{ headline }} <span class="headline-emoji">{{ headlineEmoji }}</span></h1>
+        <p class="headline-sub">{{ focusMinutes }} minutes of focus = {{ mealsJustProvided }} meal{{ mealsJustProvided >
+          1
+          ? 's' : '' }} donated!</p>
+      </div>
+
+      <!-- Stats Counters -->
+      <div class="stats-row" *ngIf="showStats">
+        <div class="stat-item kibble-stat">
+          <span class="stat-value">+{{ displayKibble }}</span>
+          <span class="stat-icon">🦴</span>
+          <span class="stat-label">Kibble</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat-item meal-stat">
+          <span class="stat-value">+{{ displayMeals }}</span>
+          <span class="stat-icon">🍽</span>
+          <span class="stat-label">Meal{{ displayMeals > 1 ? 's' : '' }}</span>
+        </div>
+        <div class="stat-divider" *ngIf="streakIncreased"></div>
+        <div class="stat-item streak-stat" *ngIf="streakIncreased">
+          <span class="stat-value">{{ currentStreak }}</span>
+          <span class="stat-icon">🔥</span>
+          <span class="stat-label">Day Streak!</span>
+        </div>
+      </div>
+
+      <!-- New Achievements -->
+      <div class="achievements-section" *ngIf="showAchievements && newAchievements.length > 0">
+        <div class="achievement-badge">
+          <span class="ach-header-icon">🏆</span>
+          <span class="ach-header-text">New Achievement{{ newAchievements.length > 1 ? 's' : '' }}!</span>
+        </div>
+        <div class="achievement-list" [class.scrollable]="newAchievements.length > 3">
+          <div class="achievement-item" *ngFor="let ach of newAchievements">
+            <span class="ach-icon">{{ ach.icon }}</span>
+            <div class="ach-info">
+              <span class="ach-name">{{ ach.name }}</span>
+              <span class="ach-reward">+{{ ach.kibble }} 🦴</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Breed Unlock -->
+      <div class="breed-unlock-card" *ngIf="showProgress && newBreedUnlocked">
+        <span class="unlock-icon">🎊</span>
+        <span class="unlock-text">New Breed Unlocked: <strong>{{ newBreedUnlocked }}</strong>!</span>
+      </div>
+
+      <!-- Progress to next breed -->
+      <div class="progress-section" *ngIf="showProgress && !newBreedUnlocked && nextBreedName">
+        <div class="progress-header">
+          <span class="progress-label">Next breed: {{ nextBreedName }}</span>
+          <span class="progress-nums">{{ totalKibble }} / {{ nextBreedCost }}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="breedProgressPercent"></div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons" *ngIf="showActions">
+        <button class="btn-ad" *ngIf="!isAdFree && adReady" (click)="watchAdForBonus()">
+          <span class="btn-emoji">🎥</span>
+          Watch Ad for +5 Bonus
+        </button>
+        <button class="btn-share" (click)="shareResult()">
+          <span class="btn-emoji">📤</span>
+          Share
+        </button>
+        <button class="btn-primary" (click)="feedMore()">
+          <span class="btn-emoji">🐕</span>
+          Feed More!
+        </button>
+        <button class="btn-dismiss" (click)="close()">Done</button>
+      </div>
+    </div>
+  </div>
+</ion-content>

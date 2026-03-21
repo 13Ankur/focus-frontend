@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="goldenFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="goldenDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Ears -->
+  <ellipse cx="22" cy="35" rx="14" ry="22" fill="url(#goldenDark)" transform="rotate(-15, 22, 35)"/>
+  <ellipse cx="78" cy="35" rx="14" ry="22" fill="url(#goldenDark)" transform="rotate(15, 78, 35)"/>
+  
+  <!-- Body -->
+  <ellipse cx="50" cy="82" rx="32" ry="18" fill="url(#goldenFur)"/>
+  
+  <!-- Head -->
+  <ellipse cx="50" cy="48" rx="32" ry="35" fill="url(#goldenFur)"/>
+  
+  <!-- Face -->
+  <ellipse cx="50" cy="58" rx="20" ry="18" fill="#FFF5E0"/>
+  <ellipse cx="50" cy="68" rx="14" ry="10" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="50" cy="62" rx="8" ry="5" fill="#333"/>
+  
+  <!-- Eyes -->
+  <circle cx="38" cy="45" r="8" fill="white"/>
+  <circle cx="62" cy="45" r="8" fill="white"/>
+  <circle cx="39" cy="46" r="5" fill="#3D2B1F"/>
+  <circle cx="63" cy="46" r="5" fill="#3D2B1F"/>
+  <circle cx="37" cy="43" r="2" fill="white"/>
+  <circle cx="61" cy="43" r="2" fill="white"/>
+  
+  <!-- Mouth -->
+  <path d="M42 75 Q50 82 58 75" stroke="#8B6B4D" stroke-width="2" fill="none"/>
+  <ellipse cx="50" cy="78" rx="6" ry="7" fill="#FF8FA0"/>
+</svg>

@@ -1,0 +1,108 @@
+<ion-content class="guardian-content" [fullscreen]="true" [scrollY]="true">
+  <div class="guardian-container">
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="chevron-back"></ion-icon>
+      </button>
+      <span class="header-title">Guardian Angel</span>
+      <button class="share-btn" (click)="share()" aria-label="Share">
+        <ion-icon name="share-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Badge Section -->
+    <div class="badge-section">
+      <div class="founder-badge">
+        <div class="paw-container">
+          <img src="assets/images/paw-icon.svg" alt="Paw" class="paw-icon" width="60" height="60">
+        </div>
+        <div class="founding-label">FOUNDING<br>MEMBER</div>
+      </div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="main-title">The Ultimate Impact</h1>
+    <p class="tier-label">TIER RANK: GOLD STATUS</p>
+
+    <!-- Video Preview -->
+    <div class="video-card">
+      <img 
+        src="assets/images/shelter-dog.svg" 
+        alt="Impact Video"
+        class="video-thumbnail"
+        width="320"
+        height="160"
+      >
+      <div class="play-button">
+        <ion-icon name="play"></ion-icon>
+      </div>
+      <div class="video-info">
+        <span class="video-title">Monthly Impact Video</span>
+        <span class="video-subtitle">October Update: 1,200 meals delivered</span>
+      </div>
+    </div>
+
+    <!-- Monthly Donation -->
+    <div class="donation-card">
+      <div class="donation-label">MONTHLY DONATION</div>
+      <div class="donation-content">
+        <span class="donation-amount">100 Extra Meals</span>
+        <span class="donation-icon">🍴</span>
+      </div>
+    </div>
+
+    <!-- Description -->
+    <p class="description">
+      As a Guardian Angel, your dedication provides a massive boost to shelters worldwide. 
+      This is our most prestigious level of commitment, reserved for those who believe 
+      every focus session should change a life.
+    </p>
+
+    <!-- Guardian Perks -->
+    <div class="perks-section">
+      <div class="perks-header">
+        <ion-icon name="shield-checkmark"></ion-icon>
+        <span>Guardian Perks</span>
+      </div>
+
+      <div class="perk-item">
+        <div class="perk-icon gold">
+          <ion-icon name="ribbon"></ion-icon>
+        </div>
+        <div class="perk-info">
+          <span class="perk-title">Exclusive Gold Dog Skin</span>
+          <span class="perk-subtitle">Only available for Guardian Angels</span>
+        </div>
+      </div>
+
+      <div class="perk-item">
+        <div class="perk-icon heart">
+          <ion-icon name="heart"></ion-icon>
+        </div>
+        <div class="perk-info">
+          <span class="perk-title">Direct Shelter Sponsorship</span>
+          <span class="perk-subtitle">Get personal updates from your sponsored dog</span>
+        </div>
+      </div>
+
+      <div class="perk-item">
+        <div class="perk-icon star">
+          <ion-icon name="star"></ion-icon>
+        </div>
+        <div class="perk-info">
+          <span class="perk-title">Founding Member Profile Badge</span>
+          <span class="perk-subtitle">Stand out in the community leaderboard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Join Button -->
+    <ion-button expand="block" class="join-btn" (click)="joinGuardian()">
+      <ion-icon name="flash" slot="start"></ion-icon>
+      JOIN GUARDIAN ANGEL
+    </ion-button>
+
+    <p class="price-info">$19.99/MONTH • CANCEL ANYTIME • 100% TO SHELTERS</p>
+  </div>
+</ion-content>

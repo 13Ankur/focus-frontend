@@ -1,0 +1,185 @@
+<ion-content class="blocking-content" [fullscreen]="true" [scrollY]="true">
+  <div class="blocking-container">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">App Blocking</h1>
+      <span class="pro-badge" *ngIf="!isPro">PRO</span>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+      <p>Loading...</p>
+    </div>
+
+    <div *ngIf="!loading">
+
+      <!-- Hero / Description -->
+      <div class="hero-card">
+        <span class="hero-icon">🔒</span>
+        <h2 class="hero-title">Block Distracting Apps</h2>
+        <p class="hero-subtitle">
+          Stay focused by blocking apps that pull you away during focus sessions.
+          Selected apps will be blocked when your timer is running.
+        </p>
+      </div>
+
+      <!-- Main Toggle -->
+      <div class="settings-card">
+        <div class="setting-item toggle">
+          <div class="setting-icon-wrap">🛡️</div>
+          <div class="setting-info">
+            <span class="setting-label">Block Apps During Focus</span>
+            <span class="setting-value" *ngIf="blockingEnabled">{{ blockListCount }} apps will be blocked</span>
+            <span class="setting-value off" *ngIf="!blockingEnabled">Disabled</span>
+          </div>
+          <div
+            class="toggle-switch"
+            role="switch"
+            [attr.aria-checked]="blockingEnabled"
+            aria-label="Block apps during focus"
+            [class.active]="blockingEnabled"
+            [class.locked]="!isPro"
+            (click)="toggleBlocking()"
+          >
+            <div class="toggle-handle"></div>
+            <ion-icon name="lock-closed" class="toggle-lock" *ngIf="!isPro"></ion-icon>
+          </div>
+        </div>
+
+        <!-- Strict Mode Toggle -->
+        <div class="setting-item toggle" *ngIf="blockingEnabled && isPro">
+          <div class="setting-icon-wrap">⚡</div>
+          <div class="setting-info">
+            <span class="setting-label">Strict Mode</span>
+            <span class="setting-subtitle">Can't dismiss overlay until session ends</span>
+          </div>
+          <div
+            class="toggle-switch"
+            role="switch"
+            [attr.aria-checked]="strictMode"
+            aria-label="Strict mode - cannot dismiss overlay until session ends"
+            [class.active]="strictMode"
+            (click)="toggleStrictMode()"
+          >
+            <div class="toggle-handle"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permission Status -->
+      <div class="permission-card" *ngIf="blockingEnabled && isPro">
+        <div class="permission-status" *ngIf="permissionGranted">
+          <ion-icon name="shield-checkmark" class="perm-icon granted"></ion-icon>
+          <span class="perm-text">Permissions granted</span>
+        </div>
+        <div class="permission-status warning" *ngIf="!permissionGranted">
+          <span class="perm-icon-emoji">⚠️</span>
+          <div class="perm-info">
+            <span class="perm-text">Permission needed</span>
+            <span class="perm-subtitle">Required to detect foreground apps</span>
+          </div>
+          <button class="perm-grant-btn" (click)="requestPermissions()" aria-label="Grant permission">Grant</button>
+        </div>
+      </div>
+
+      <!-- App Selection (with permissions) -->
+      <div class="app-selection" *ngIf="blockingEnabled && permissionGranted">
+        <h3 class="section-title">Select Apps to Block</h3>
+
+        <!-- Category Filters -->
+        <div class="category-filters">
+          <button
+            *ngFor="let cat of categories"
+            class="category-chip"
+            [class.active]="selectedCategory === cat.id"
+            (click)="filterByCategory(cat.id)"
+            [attr.aria-label]="'Filter by ' + cat.name"
+          >
+            <span class="chip-icon">{{ cat.icon }}</span>
+            <span class="chip-name">{{ cat.name }}</span>
+            <span class="chip-count" *ngIf="getBlockedCountForCategory(cat.id) > 0">
+              {{ getBlockedCountForCategory(cat.id) }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions" *ngIf="selectedCategory">
+          <button class="quick-btn block-all" (click)="blockAllInCategory(selectedCategory!)" aria-label="Block all apps">
+            Block All {{ selectedCategory | titlecase }}
+          </button>
+          <button class="quick-btn unblock-all" (click)="unblockAllInCategory(selectedCategory!)" aria-label="Unblock all apps">
+            Unblock All
+          </button>
+        </div>
+
+        <!-- Loading Apps -->
+        <div class="loading-apps" *ngIf="loadingApps">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Discovering installed apps...</p>
+        </div>
+
+        <!-- App List -->
+        <div class="app-list" *ngIf="!loadingApps">
+          <div
+            *ngFor="let app of appsInCategory"
+            class="app-item"
+            role="button"
+            [attr.aria-label]="(isBlocked(app.id) ? 'Unblock ' : 'Block ') + app.name"
+            [class.blocked]="isBlocked(app.id)"
+            (click)="toggleApp(app)"
+          >
+            <div class="app-icon-wrap">
+              <span class="app-icon-fallback" *ngIf="!app.icon">📱</span>
+              <img *ngIf="app.icon" [src]="app.icon" class="app-icon-img" alt="" width="40" height="40">
+            </div>
+            <div class="app-info">
+              <span class="app-name">{{ app.name }}</span>
+              <span class="app-category">{{ app.category | titlecase }}</span>
+            </div>
+            <div class="app-toggle">
+              <div class="toggle-switch small" [class.active]="isBlocked(app.id)">
+                <div class="toggle-handle"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="appsInCategory.length === 0 && !loadingApps">
+            <p>No apps found in this category.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <div class="info-section" *ngIf="isPro">
+        <h3 class="section-title">How It Works</h3>
+        <div class="info-card">
+          <div class="info-item">
+            <span class="info-num">1</span>
+            <span class="info-text">Select apps you want to block during focus sessions</span>
+          </div>
+          <div class="info-item">
+            <span class="info-num">2</span>
+            <span class="info-text">Start a focus session — blocking activates automatically</span>
+          </div>
+          <div class="info-item">
+            <span class="info-num">3</span>
+            <span class="info-text">If you open a blocked app, a friendly overlay brings you back</span>
+          </div>
+          <div class="info-item">
+            <span class="info-num">4</span>
+            <span class="info-text">Blocking ends automatically when your session is complete</span>
+          </div>
+        </div>
+        <p class="info-footnote">
+          📞 Phone, Emergency SOS, Camera, and Maps are never blocked.
+        </p>
+      </div>
+    </div>
+  </div>
+</ion-content>

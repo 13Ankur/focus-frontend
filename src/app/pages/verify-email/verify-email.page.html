@@ -1,0 +1,40 @@
+<ion-content class="verify-content" [fullscreen]="true">
+  <div class="verify-container">
+    <div class="verify-card">
+      <div class="icon-container" [class.success]="isVerified" [class.error]="errorMessage && !isLoading">
+        <ion-icon 
+          [name]="isVerified ? 'checkmark-circle' : (errorMessage ? 'alert-circle' : 'mail-outline')"
+          [class.spinning]="isLoading"
+        ></ion-icon>
+      </div>
+
+      <div class="content-section" *ngIf="isLoading">
+        <h1>Verifying Your Email</h1>
+        <p>Please wait while we verify your email address...</p>
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+
+      <div class="content-section" *ngIf="isVerified && !isLoading">
+        <h1>Email Verified!</h1>
+        <p>Your email has been successfully verified. You can now log in to your account.</p>
+        <ion-button expand="block" class="action-btn" (click)="goToLogin()">
+          Go to Login
+        </ion-button>
+      </div>
+
+      <div class="content-section" *ngIf="errorMessage && !isLoading && !isVerified">
+        <h1>Verification Failed</h1>
+        <p>{{ errorMessage }}</p>
+        <p class="hint">The verification link may have expired or is invalid.</p>
+        <div class="action-buttons">
+          <ion-button expand="block" fill="outline" class="action-btn" (click)="goToSignup()">
+            Sign Up Again
+          </ion-button>
+          <ion-button expand="block" class="action-btn" (click)="goToLogin()">
+            Go to Login
+          </ion-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>

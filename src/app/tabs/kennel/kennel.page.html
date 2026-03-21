@@ -1,0 +1,351 @@
+<ion-content class="kennel-content" [fullscreen]="true" [scrollY]="true">
+  <div class="kennel-container">
+
+    <!-- Header -->
+    <div class="header">
+      <h1 class="page-title">My Buddy</h1>
+      <p class="page-subtitle">Feed, play with, and unlock new dog breeds! Earn kibble by completing focus sessions.</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!activeBreed">
+      <div class="empty-icon">🐾</div>
+      <h2 class="empty-title">Welcome to Your Kennel!</h2>
+      <p class="empty-message">Select your first buddy below to start caring for them.</p>
+      <button class="select-buddy-btn" (click)="scrollToBreeds()" aria-label="Select a different buddy">
+        <span class="btn-icon">🐕</span>
+        <span class="btn-text">Choose Your First Buddy</span>
+        <ion-icon name="arrow-forward"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Active Buddy Card -->
+    <div class="buddy-card" *ngIf="activeBreed" [class.sleeping]="isSleeping"
+      [class.happy]="currentDogState === 'happy'" [class.interacting]="isInteracting">
+      <div class="buddy-scene" [class.night]="isSleeping">
+        <div class="scene-decoration">
+          <div class="grass"></div>
+          <div class="sun" *ngIf="!isSleeping"></div>
+          <div class="moon" *ngIf="isSleeping">🌙</div>
+          <div class="stars" *ngIf="isSleeping">
+            <span class="star s1">⭐</span>
+            <span class="star s2">✨</span>
+            <span class="star s3">⭐</span>
+          </div>
+          <div class="happy-particles" *ngIf="currentDogState === 'happy'">
+            <span class="particle p1">🎉</span>
+            <span class="particle p2">✨</span>
+            <span class="particle p3">💖</span>
+          </div>
+          <div class="floating-feedback-container">
+            <div *ngFor="let fb of floatingFeedback" class="floating-emoji" [style.left.%]="fb.x"
+              [style.bottom.%]="fb.y">
+              {{ fb.emoji }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipped background overlay -->
+        <div class="bg-accessory-label" *ngIf="equippedAccessories['background']">
+          {{ getEquippedIcon('background') }}
+        </div>
+
+        <!-- Dog + wearable accessories wrapper -->
+        <div class="dog-wrapper">
+          <!-- Equipped hat -->
+          <div class="equipped-hat" *ngIf="equippedAccessories['hat']">
+            {{ getEquippedIcon('hat') }}
+          </div>
+
+          <img [src]="activeBreedImage" [alt]="activeBreed.name" class="buddy-image" width="120" height="120"
+            [class.sleeping]="isSleeping" [class.happy]="currentDogState === 'happy'"
+            [class.reaction-jump]="dogReaction === 'jump'" [class.reaction-wiggle]="dogReaction === 'wiggle'"
+            [class.reaction-chomp]="dogReaction === 'chomp'" (error)="onImageError($event)"
+            (click)="onBuddyTapped()" role="button" tabindex="0" aria-label="Tap to hear your buddy bark"
+            style="cursor: pointer; -webkit-tap-highlight-color: transparent;">
+
+          <!-- Equipped collar -->
+          <div class="equipped-collar" *ngIf="equippedAccessories['collar']">
+            {{ getEquippedIcon('collar') }}
+          </div>
+
+          <!-- Equipped special effect -->
+          <div class="equipped-special" *ngIf="equippedAccessories['special']"
+            [class.golden-aura]="equippedAccessories['special'] === 'golden_aura'"
+            [class.sparkle-effect]="equippedAccessories['special'] === 'sparkle_effect'">
+            {{ getEquippedIcon('special') }}
+          </div>
+        </div>
+
+        <!-- Speech bubble -->
+        <div class="speech-bubble" *ngIf="speechBubbleText">
+          <span class="speech-text">{{ speechBubbleText }}</span>
+          <div class="speech-tail"></div>
+        </div>
+
+        <!-- Status bubble -->
+        <div class="status-bubble" [class.sleeping]="isSleeping" [class.happy]="currentDogState === 'happy'">
+          <span>{{ dogStatusEmoji }}</span>
+        </div>
+      </div>
+
+      <div class="buddy-info">
+        <span class="active-badge" [class.sleeping-badge]="isSleeping">
+          {{ isSleeping ? 'Sleeping...' : 'Active Companion' }}
+        </span>
+        <h2 class="buddy-name">{{ activeBreed.name }}</h2>
+        <span class="buddy-status" [class.sleeping-status]="isSleeping">{{ dogStatusText }}</span>
+        <span class="accessory-count" *ngIf="equippedAccessoryCount > 0">
+          {{ equippedAccessoryCount }} accessori{{ equippedAccessoryCount === 1 ? 'y' : 'es' }} equipped
+        </span>
+      </div>
+    </div>
+
+    <!-- Stats Section -->
+    <section class="stats-section" aria-label="Buddy statistics">
+      <div class="stat-row" role="group" [attr.aria-label]="'Happiness: ' + happiness + ' percent'">
+        <div class="stat-icon" aria-hidden="true">😊</div>
+        <div class="stat-info">
+          <span class="stat-label" id="happiness-label">Happiness</span>
+          <div class="stat-bar" [class.pulse]="showHappinessChange" role="progressbar" [attr.aria-valuenow]="happiness"
+            aria-valuemin="0" aria-valuemax="100" aria-labelledby="happiness-label">
+            <div class="stat-fill happiness" [style.width.%]="happiness"></div>
+          </div>
+        </div>
+        <div class="stat-value-container">
+          <span class="stat-value" aria-hidden="true">{{ happiness }}%</span>
+          <span class="stat-change" *ngIf="showHappinessChange" [class.positive]="happinessChange > 0"
+            [class.negative]="happinessChange < 0" aria-live="polite">
+            {{ happinessChange > 0 ? '+' : '' }}{{ happinessChange }}
+          </span>
+        </div>
+      </div>
+
+      <div class="stat-row" role="group" [attr.aria-label]="'Fullness: ' + fullness + ' percent'">
+        <div class="stat-icon" aria-hidden="true">🍖</div>
+        <div class="stat-info">
+          <span class="stat-label" id="fullness-label">Fullness</span>
+          <div class="stat-bar" [class.pulse]="showFullnessChange" role="progressbar" [attr.aria-valuenow]="fullness"
+            aria-valuemin="0" aria-valuemax="100" aria-labelledby="fullness-label">
+            <div class="stat-fill fullness" [style.width.%]="fullness"></div>
+          </div>
+        </div>
+        <div class="stat-value-container">
+          <span class="stat-value" aria-hidden="true">{{ fullness }}%</span>
+          <span class="stat-change" *ngIf="showFullnessChange" [class.positive]="fullnessChange > 0"
+            [class.negative]="fullnessChange < 0" aria-live="polite">
+            {{ fullnessChange > 0 ? '+' : '' }}{{ fullnessChange }}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ad-Powered Free Treat -->
+    <div class="ad-treat-card" *ngIf="adTreatAvailable || adTreatLoading">
+      <div class="ad-treat-icon">🎬</div>
+      <div class="ad-treat-info">
+        <span class="ad-treat-title">Free Treat!</span>
+        <span class="ad-treat-subtitle">Watch a short video to give {{ activeBreed?.name || 'Buddy' }} a treat</span>
+      </div>
+      <button class="ad-treat-btn" [disabled]="adTreatLoading || !adTreatAvailable" (click)="watchAdForTreat()" aria-label="Watch ad for treat">
+        <span *ngIf="!adTreatLoading">Watch & Treat 🦴</span>
+        <span *ngIf="adTreatLoading">Ad loading...</span>
+      </button>
+    </div>
+
+    <!-- Interaction Buttons -->
+    <section class="interaction-section" aria-label="Interact with your buddy">
+      <h3 class="section-title">Interact</h3>
+      <div class="interaction-grid" role="group" aria-label="Interaction buttons">
+        <!-- Pet Button -->
+        <button class="interaction-btn pet" [class.active]="activeInteraction === 'pet'" [class.cooldown]="petCooldown"
+          [disabled]="petCooldown" (click)="petBuddy()" aria-label="Pet your buddy">
+          <div class="cooldown-overlay" *ngIf="petCooldown"></div>
+          <span class="btn-icon" [class.bounce]="activeInteraction === 'pet'">👋</span>
+          <span class="btn-label">Pet</span>
+          <span class="btn-subtitle">+5 Happiness</span>
+        </button>
+
+        <!-- Play Button -->
+        <button class="interaction-btn play" [class.active]="activeInteraction === 'play'"
+          [class.cooldown]="playCooldown" [disabled]="playCooldown" (click)="playWithBuddy()" aria-label="Play with buddy">
+          <div class="cooldown-overlay" *ngIf="playCooldown"></div>
+          <span class="btn-icon" [class.bounce]="activeInteraction === 'play'">🎾</span>
+          <span class="btn-label">Play</span>
+          <span class="btn-subtitle">+10 Happiness</span>
+        </button>
+
+        <!-- Treat Button -->
+        <button class="interaction-btn treat" [class.active]="activeInteraction === 'treat'"
+          [class.cooldown]="treatCooldown" [class.insufficient]="kibbleBalance < 10"
+          [disabled]="!canGiveTreat || treatCooldown" (click)="giveTreat()" aria-label="Give treat to buddy">
+          <div class="cooldown-overlay" *ngIf="treatCooldown"></div>
+          <span class="btn-icon" [class.bounce]="activeInteraction === 'treat'">🦴</span>
+          <span class="btn-label">Treat</span>
+          <span class="btn-cost" [class.insufficient]="kibbleBalance < 10">10 🦴</span>
+        </button>
+
+        <!-- Dress Up Button -->
+        <button class="interaction-btn dress-up" (click)="openAccessorySheet()" aria-label="Dress up buddy">
+          <span class="btn-icon">👗</span>
+          <span class="btn-label">Dress Up</span>
+          <span class="btn-subtitle" *ngIf="equippedAccessoryCount > 0">{{ equippedAccessoryCount }} on</span>
+          <span class="btn-subtitle" *ngIf="equippedAccessoryCount === 0">Customize</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Breed Collection -->
+    <div class="collection-section">
+      <div class="collection-header">
+        <h3 class="section-title">🏆 Breed Collection</h3>
+        <span class="collection-count">{{ unlockedCount }}/{{ totalBreeds }}</span>
+      </div>
+
+      <p class="collection-subtitle">Complete focus sessions to unlock new breeds!</p>
+
+      <div class="breed-grid">
+        <div *ngFor="let breed of allBreeds" class="breed-card" [class.unlocked]="isBreedUnlocked(breed)"
+          [class.active]="isBreedActive(breed)" [class.locked]="!isBreedUnlocked(breed)" (click)="selectBreed(breed)"
+          role="button" [attr.aria-label]="'Select breed ' + breed.name">
+          <!-- Breed Image -->
+          <div class="breed-image-container">
+            <img [src]="breed.image" [alt]="breed.name" class="breed-image" width="54" height="54"
+              [class.grayscale]="!isBreedUnlocked(breed) || (isGuardianBreed(breed) && !isGuardian)"
+              (error)="onImageError($event)">
+
+            <!-- Lock Overlay -->
+            <div class="lock-overlay" *ngIf="!isBreedUnlocked(breed) && !isGuardianBreed(breed)">
+              <ion-icon name="lock-closed"></ion-icon>
+            </div>
+
+
+
+            <!-- Active Checkmark -->
+            <div class="active-indicator" *ngIf="isBreedActive(breed)">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+          </div>
+
+          <!-- Breed Info -->
+          <div class="breed-info">
+            <span class="breed-name">{{ breed.name }}</span>
+
+
+
+            <!-- Unlock Progress for regular locked breeds -->
+            <div class="unlock-progress" *ngIf="!isBreedUnlocked(breed)">
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="getUnlockProgress(breed)"></div>
+              </div>
+              <span class="progress-text">{{ getSessionsToUnlock(breed) }} session{{ getSessionsToUnlock(breed) === 1 ? '' : 's' }} to unlock</span>
+            </div>
+
+            <!-- Unlocked Badge -->
+            <span class="unlocked-badge"
+              *ngIf="isBreedUnlocked(breed) && !isBreedActive(breed) && !(isGuardianBreed(breed) && !isGuardian)">
+              Tap to select
+            </span>
+
+            <!-- Active Badge -->
+            <span class="active-badge-small" *ngIf="isBreedActive(breed)">
+              ✓ Active
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kibble Balance -->
+    <div class="kibble-card">
+      <div class="kibble-info">
+        <span class="kibble-label">Your Kibble</span>
+        <span class="kibble-value">{{ kibbleBalance }} 🦴</span>
+      </div>
+      <button class="earn-btn" (click)="goToFocus()" aria-label="Earn more kibble">
+        Earn More
+        <ion-icon name="arrow-forward"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Impact Message -->
+    <div class="impact-card">
+      <div class="impact-icon">💝</div>
+      <p class="impact-text">
+        Every focus session helps you care for your digital dogs!
+      </p>
+    </div>
+  </div>
+
+  <!-- Accessory Bottom Sheet -->
+  <div class="accessory-sheet-backdrop" *ngIf="showAccessorySheet" (click)="closeAccessorySheet()" role="button"
+    aria-label="Close accessory sheet"></div>
+  <div class="accessory-sheet" [class.open]="showAccessorySheet">
+    <div class="sheet-handle" (click)="closeAccessorySheet()" role="button" aria-label="Close accessory sheet">
+      <div class="handle-bar"></div>
+    </div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Dress Up {{ activeBreed?.name || 'Buddy' }}</h3>
+      <button class="sheet-close" (click)="closeAccessorySheet()" aria-label="Close accessory panel">
+        <ion-icon name="close-circle"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Slot Tabs -->
+    <div class="slot-tabs">
+      <button *ngFor="let slot of accessorySlots" class="slot-tab" [class.active]="selectedAccessorySlot === slot"
+        (click)="selectSlot(slot)" [attr.aria-label]="'Accessory slot: ' + slotLabel(slot)">
+        {{ slotLabel(slot) }}
+      </button>
+    </div>
+
+    <!-- Accessory Grid -->
+    <div class="accessory-grid">
+      <div *ngFor="let item of filteredAccessories" class="accessory-card" [class.owned]="item.owned"
+        [class.equipped]="item.equipped"
+        (click)="item.owned ? toggleEquip(item) : buyAccessory(item)"
+        role="button"
+        [attr.aria-label]="item.owned ? (item.equipped ? 'Remove ' + item.name : 'Equip ' + item.name) : 'Buy ' + item.name">
+
+        <div class="accessory-icon-wrap">
+          <span class="accessory-icon">{{ item.icon }}</span>
+          <span class="equipped-badge" *ngIf="item.equipped">Active</span>
+          <span class="owned-check" *ngIf="item.owned && !item.equipped">✓</span>
+        </div>
+
+        <span class="accessory-name">{{ item.name }}</span>
+
+        <span class="accessory-price" *ngIf="!item.owned && item.cost > 0">
+          {{ item.cost }} 🦴
+        </span>
+        <span class="accessory-price free-price" *ngIf="!item.owned && item.cost === 0">
+          Free
+        </span>
+
+        <button class="accessory-action" *ngIf="!item.owned"
+          [disabled]="accessoryLoading === item.id || (item.cost > kibbleBalance)"
+          (click)="$event.stopPropagation(); buyAccessory(item)"
+          [attr.aria-label]="'Buy ' + item.name">
+          <span *ngIf="accessoryLoading !== item.id">
+            {{ item.cost > kibbleBalance ? 'Need ' + (item.cost - kibbleBalance) + ' more' : 'Buy' }}
+          </span>
+          <span *ngIf="accessoryLoading === item.id">...</span>
+        </button>
+        <button class="accessory-action equip-action" *ngIf="item.owned" [disabled]="accessoryLoading === item.id"
+          (click)="$event.stopPropagation(); toggleEquip(item)"
+          [attr.aria-label]="(item.equipped ? 'Remove ' : 'Equip ') + item.name">
+          {{ item.equipped ? 'Remove' : 'Equip' }}
+        </button>
+      </div>
+
+      <div class="empty-accessories" *ngIf="filteredAccessories.length === 0">
+        <span>No accessories in this category yet!</span>
+      </div>
+    </div>
+
+    <!-- Kibble balance in sheet -->
+    <div class="sheet-kibble">
+      <span>🦴 {{ kibbleBalance }} kibble available</span>
+    </div>
+  </div>
+</ion-content>

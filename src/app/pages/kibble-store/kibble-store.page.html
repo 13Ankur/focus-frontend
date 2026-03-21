@@ -1,0 +1,105 @@
+<ion-content class="store-content" [fullscreen]="true" [scrollY]="true">
+  <div class="store-container" @fadeIn>
+
+    <!-- Header -->
+    <div class="store-header">
+      <button class="close-btn" (click)="dismiss()" aria-label="Close store">
+        <ion-icon name="close"></ion-icon>
+      </button>
+      <span class="header-title">🐾 Kibble Store</span>
+      <div class="header-spacer"></div>
+    </div>
+
+    <!-- Current Balance -->
+    <div class="balance-card">
+      <span class="balance-icon">🦴</span>
+      <div class="balance-info">
+        <span class="balance-label">Your Kibble</span>
+        <span class="balance-value">{{ kibbleBalance | number }}</span>
+      </div>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div class="celebration-overlay" *ngIf="showCelebration" @kibbleRain>
+      <div class="celebration-content">
+        <div class="rain-bones">
+          <span class="rain-bone b1">🦴</span>
+          <span class="rain-bone b2">🍖</span>
+          <span class="rain-bone b3">🦴</span>
+          <span class="rain-bone b4">🥩</span>
+          <span class="rain-bone b5">🦴</span>
+          <span class="rain-bone b6">🍖</span>
+        </div>
+        <span class="celebration-amount">+{{ celebrationKibble | number }}</span>
+        <span class="celebration-text">Kibble Added!</span>
+      </div>
+    </div>
+
+    <!-- Packs Grid -->
+    <div class="packs-grid">
+      <div
+        class="pack-card"
+        *ngFor="let pack of packs"
+        [class.purchasing]="purchasingPackId === pack.id"
+      >
+        <!-- Badge -->
+        <div class="pack-badge {{ pack.badgeClass }}" *ngIf="pack.badge">
+          {{ pack.badge }}
+        </div>
+
+        <!-- Icon -->
+        <div class="pack-icon">{{ pack.icon }}</div>
+
+        <!-- Name -->
+        <span class="pack-name">{{ pack.name }}</span>
+
+        <!-- Kibble Amount -->
+        <span class="pack-kibble">{{ pack.kibble | number }}</span>
+        <span class="pack-kibble-label">kibble</span>
+
+        <!-- Bonus -->
+        <span class="pack-bonus" *ngIf="pack.bonus > 0">+{{ pack.bonus }} Bonus!</span>
+        <span class="pack-bonus placeholder" *ngIf="pack.bonus === 0">&nbsp;</span>
+
+        <!-- Buy Button -->
+        <button
+          class="buy-btn"
+          [disabled]="purchasingPackId !== null"
+          (click)="purchasePack(pack)"
+          [attr.aria-label]="'Buy ' + pack.name + ' for ' + pack.price"
+        >
+          <ion-spinner *ngIf="purchasingPackId === pack.id" name="crescent"></ion-spinner>
+          <span *ngIf="purchasingPackId !== pack.id">{{ pack.price }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- What Kibble Buys -->
+    <div class="info-section">
+      <h3 class="info-title">What Kibble Buys</h3>
+      <div class="info-items">
+        <div class="info-item">
+          <span class="info-icon">🦴</span>
+          <span class="info-text">10 kibble = 1 treat for your buddy</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🐕</span>
+          <span class="info-text">100–3,000 kibble = unlock new breeds</span>
+        </div>
+        <div class="info-item">
+          <span class="info-icon">🍽</span>
+          <span class="info-text">25 kibble = 1 shelter dog meal</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="store-footer">
+      <p class="footer-hint">Earn free kibble by completing focus sessions!</p>
+      <button class="focus-btn" (click)="dismiss()">
+        Start Focusing 🐾
+      </button>
+    </div>
+
+  </div>
+</ion-content>

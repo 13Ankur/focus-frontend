@@ -1,0 +1,75 @@
+<ion-content class="breed-content" [fullscreen]="true" [scrollY]="true">
+  <div class="breed-container">
+    
+    <!-- Header -->
+    <div class="header">
+      <h1 class="page-title">Choose Your Companion</h1>
+      <p class="page-subtitle">Pick a virtual buddy to join you on your focus journey</p>
+    </div>
+
+    <!-- Breed Grid - All 9 breeds -->
+    <div class="breed-grid">
+      <div 
+        *ngFor="let breed of allBreeds"
+        class="breed-card"
+        role="button"
+        [attr.aria-label]="(isBreedUnlocked(breed) ? 'Select ' : 'Locked: ') + breed.name"
+        [class.selected]="selectedBreed === breed.id && isBreedUnlocked(breed)"
+        [class.locked]="!isBreedUnlocked(breed)"
+        (click)="selectBreed(breed)"
+      >
+        <!-- Selected Badge (only for unlocked & selected) -->
+        <div class="current-badge" *ngIf="selectedBreed === breed.id && isBreedUnlocked(breed)">
+          <ion-icon name="checkmark-circle"></ion-icon>
+        </div>
+        
+        <!-- Lock Badge (for locked breeds) -->
+        <div class="lock-badge" *ngIf="!isBreedUnlocked(breed)">
+          <ion-icon name="lock-closed"></ion-icon>
+        </div>
+        
+        <!-- Dog Image -->
+        <div class="breed-image-wrapper">
+          <img 
+            [src]="breed.image" 
+            [alt]="breed.name"
+            class="breed-image"
+            [class.grayscale]="!isBreedUnlocked(breed)"
+            width="65"
+            height="65"
+          >
+        </div>
+        
+        <!-- Breed Name -->
+        <span class="breed-name">{{ breed.name }}</span>
+        
+        <!-- Breed Description (for unlocked) -->
+        <span class="breed-description" *ngIf="isBreedUnlocked(breed)">{{ breed.description }}</span>
+        
+        <!-- Unlock Progress (for locked) -->
+        <div class="unlock-info" *ngIf="!isBreedUnlocked(breed)">
+          <div class="progress-bar">
+            <div class="progress-fill" [style.width.%]="getUnlockProgress(breed)"></div>
+          </div>
+          <span class="unlock-text">{{ getKibbleToUnlock(breed) }} 🦴</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="action-section">
+      <button 
+        class="continue-btn"
+        [disabled]="!selectedBreed || isLoading"
+        (click)="confirmSelection()"
+      >
+        <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
+        <span *ngIf="!isLoading">
+          Continue with {{ getSelectedBreedName() }}
+        </span>
+      </button>
+      
+      <p class="change-hint">You can change your buddy anytime in the Kennel</p>
+    </div>
+  </div>
+</ion-content>

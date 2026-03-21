@@ -1,0 +1,11 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="100" cy="100" r="95" fill="#FFFFFF"/>
+  <ellipse cx="100" cy="120" rx="60" ry="40" fill="#D4A574"/>
+  <ellipse cx="100" cy="100" rx="45" ry="35" fill="#E8C4A0"/>
+  <path d="M70 95 Q75 90 85 95" stroke="#2C2C2C" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M115 95 Q120 90 130 95" stroke="#2C2C2C" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <ellipse cx="100" cy="110" rx="10" ry="7" fill="#2C2C2C"/>
+  <ellipse cx="50" cy="70" rx="18" ry="28" fill="#C4956A" transform="rotate(-20 50 70)"/>
+  <ellipse cx="150" cy="70" rx="18" ry="28" fill="#C4956A" transform="rotate(20 150 70)"/>
+  <text x="100" y="170" text-anchor="middle" font-size="10" fill="#888">💤 Sleeping...</text>
+</svg>

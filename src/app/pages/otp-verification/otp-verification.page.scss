@@ -1,0 +1,408 @@
+.otp-content {
+  --background: linear-gradient(165deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+.otp-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100%;
+  padding: var(--app-padding-x, 24px);
+  /* Safe-area is handled globally by Ionic and/or per-page; don't double-apply env() here */
+  padding-top: clamp(50px, 10vw, 70px);
+  padding-bottom: clamp(20px, 5vw, 32px);
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+ion-input-otp {
+  display: block;
+  min-height: 48px;
+}
+
+// Back Button
+.back-btn {
+  position: absolute;
+  top: calc(clamp(12px, 3vw, 20px) + env(safe-area-inset-top, 0px));
+  left: clamp(12px, 3vw, 20px);
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: clamp(10px, 2.5vw, 14px);
+  width: clamp(40px, 10vw, 48px);
+  height: clamp(40px, 10vw, 48px);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  ion-icon {
+    font-size: clamp(20px, 5vw, 26px);
+    color: #fff;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(-2px);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Header
+.otp-header {
+  text-align: center;
+  margin-bottom: clamp(24px, 6vw, 44px);
+
+  .icon-wrapper {
+    width: clamp(60px, 16vw, 88px);
+    height: clamp(60px, 16vw, 88px);
+    border-radius: clamp(18px, 4.5vw, 26px);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto clamp(16px, 4vw, 28px);
+    box-shadow: 0 10px 40px rgba(102, 126, 234, 0.4);
+
+    ion-icon {
+      font-size: clamp(28px, 8vw, 44px);
+      color: #fff;
+    }
+  }
+
+  h1 {
+    font-size: clamp(22px, 6vw, 30px);
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 clamp(8px, 2vw, 14px);
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 3.5vw, 17px);
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .email {
+    font-size: clamp(14px, 3.5vw, 17px);
+    color: #667eea;
+    font-weight: 600;
+    margin: clamp(6px, 1.5vw, 10px) 0 0;
+    word-break: break-all;
+  }
+}
+
+// OTP Inputs
+.otp-inputs-container {
+  width: 100%;
+  max-width: 360px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+
+  // Ensure proper touch targets on iOS
+  -webkit-tap-highlight-color: transparent;
+}
+
+ion-input-otp {
+  --background: rgba(255, 255, 255, 0.9);
+  --background-focus: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.3);
+  --border-color-focus: #667eea;
+  --border-radius: 14px;
+  --border-width: 2px;
+  --color: #1a1a2e;
+  --highlight-color-focus: rgba(102, 126, 234, 0.3);
+  --min-width: 48px;
+  --height: 58px;
+
+  font-size: 26px;
+  font-weight: 700;
+
+  -webkit-text-fill-color: #1a1a2e;
+  caret-color: #667eea;
+}
+
+/* Ensure OTP boxes are visible and styled consistently across platforms */
+::ng-deep ion-input-otp input {
+  color: #1a1a2e !important;
+  -webkit-text-fill-color: #1a1a2e !important;
+  opacity: 1 !important;
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+}
+
+ion-input-otp.error {
+  animation: shake 0.4s ease;
+  --border-color: #ff6b6b;
+  --border-color-focus: #ff6b6b;
+}
+
+ion-input-otp.success {
+  --border-color: #4caf50;
+  --border-color-focus: #4caf50;
+  --background: rgba(76, 175, 80, 0.15);
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+// Timer
+.timer-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  margin-bottom: 24px;
+
+  ion-icon {
+    font-size: 20px;
+    color: #667eea;
+  }
+
+  span {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 500;
+  }
+
+  &.expired {
+    background: rgba(255, 107, 107, 0.1);
+
+    ion-icon {
+      color: #ff6b6b;
+    }
+
+    span {
+      color: #ff6b6b;
+    }
+  }
+}
+
+// Messages
+.message-container {
+  min-height: 50px;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.error-message,
+.success-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  animation: fadeIn 0.3s ease;
+
+  ion-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+.error-message {
+  background: rgba(255, 107, 107, 0.15);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+
+  ion-icon {
+    color: #ff6b6b;
+  }
+
+  span {
+    color: #ff8a8a;
+  }
+}
+
+.success-message {
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+
+  ion-icon {
+    color: #4caf50;
+  }
+
+  span {
+    color: #81c784;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Verify Button
+.verify-btn {
+  width: 100%;
+  max-width: 360px;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.5);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  &.loading {
+    pointer-events: none;
+  }
+
+  .spinner {
+    ion-spinner {
+      --color: #fff;
+      width: 24px;
+      height: 24px;
+    }
+  }
+}
+
+// Resend Section
+.resend-section {
+  margin-top: 32px;
+  text-align: center;
+
+  .resend-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 12px;
+  }
+
+  .resend-btn {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    &:hover:not(.disabled) {
+      text-decoration: underline;
+    }
+
+    &.disabled {
+      color: rgba(255, 255, 255, 0.4);
+      cursor: not-allowed;
+    }
+
+    ion-spinner {
+      --color: #667eea;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .resend-count {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 8px 0 0;
+  }
+}
+
+// Help Text
+.help-text {
+  margin-top: 24px;
+
+  p {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.4);
+    margin: 0;
+    text-align: center;
+  }
+}
+
+// Responsive adjustments - Enhanced
+@media (min-width: 375px) {
+  ion-input-otp {
+    --min-width: clamp(44px, 12vw, 54px);
+    --height: clamp(54px, 14vw, 64px);
+    font-size: clamp(24px, 6vw, 30px);
+  }
+}
+
+// Very small screens (iPhone SE, etc)
+@media (max-width: 374px) {
+  ion-input-otp {
+    --min-width: 42px;
+    --height: 50px;
+    font-size: 22px;
+  }
+
+  .otp-inputs-container {
+    max-width: 300px;
+  }
+}
+
+// Tablets
+@media (min-width: 600px) {
+  .otp-container {
+    justify-content: center;
+    padding-top: 100px;
+  }
+}

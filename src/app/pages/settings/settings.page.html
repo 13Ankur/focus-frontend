@@ -1,0 +1,227 @@
+<ion-content class="settings-content" [fullscreen]="true" [scrollY]="true">
+  <div class="settings-container">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Settings</h1>
+    </div>
+
+    <!-- Profile Section -->
+    <div class="profile-section">
+      <img src="assets/images/user-avatar.svg" alt="Profile" class="profile-avatar" width="64" height="64">
+      <div class="profile-info">
+        <h2 class="profile-name">{{ userName }}</h2>
+        <p class="profile-email">{{ userEmail }}</p>
+      </div>
+      <button class="edit-btn" (click)="editProfile()" aria-label="Edit profile">
+        <ion-icon name="pencil-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Buddy Section -->
+    <div class="section">
+      <h3 class="section-title">Your Buddy</h3>
+      <div class="settings-card">
+        <div class="setting-item" (click)="changeBuddy()" role="button" aria-label="Change buddy">
+          <div class="setting-icon buddy">
+            <img [src]="getBuddyIcon()" alt="Buddy" width="40" height="40">
+          </div>
+          <div class="setting-info">
+            <span class="setting-label">Current Buddy</span>
+            <span class="setting-value">{{ buddyName }}</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preferences Section -->
+    <div class="section">
+      <h3 class="section-title">Preferences</h3>
+      <div class="settings-card">
+        <div class="setting-item toggle">
+          <div class="setting-icon">🔔</div>
+          <div class="setting-info">
+            <span class="setting-label">Notifications</span>
+            <span class="setting-subtitle">Session reminders & updates</span>
+          </div>
+          <div class="toggle-switch" [class.active]="notificationsEnabled" (click)="toggleNotifications()" role="switch"
+            [attr.aria-checked]="notificationsEnabled" aria-label="Toggle notifications">
+            <div class="toggle-handle"></div>
+          </div>
+        </div>
+
+        <!-- Notification sub-settings -->
+        <ng-container *ngIf="notificationsEnabled">
+          <div class="setting-item toggle sub-setting">
+            <div class="setting-icon sub">🔥</div>
+            <div class="setting-info">
+              <span class="setting-label">Streak Reminders</span>
+              <span class="setting-subtitle">Daily 8 PM if no session today</span>
+            </div>
+            <div class="toggle-switch" [class.active]="streakReminders" (click)="toggleStreakReminders()" role="switch"
+              [attr.aria-checked]="streakReminders" aria-label="Toggle streak reminders">
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+
+          <div class="setting-item toggle sub-setting">
+            <div class="setting-icon sub">🌅</div>
+            <div class="setting-info">
+              <span class="setting-label">Daily Focus Reminder</span>
+              <span class="setting-subtitle">{{ formattedReminderTime }}</span>
+            </div>
+            <div class="toggle-switch" [class.active]="dailyReminder" (click)="toggleDailyReminder()" role="switch"
+              [attr.aria-checked]="dailyReminder" aria-label="Toggle daily focus reminder">
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+
+          <div class="setting-item sub-setting" *ngIf="dailyReminder" (click)="changeReminderTime()" role="button"
+            aria-label="Change reminder time">
+            <div class="setting-icon sub">🕐</div>
+            <div class="setting-info">
+              <span class="setting-label">Reminder Time</span>
+              <span class="setting-value">{{ formattedReminderTime }}</span>
+            </div>
+            <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+          </div>
+
+          <div class="setting-item toggle sub-setting">
+            <div class="setting-icon sub">🍖</div>
+            <div class="setting-info">
+              <span class="setting-label">Buddy Hunger Alerts</span>
+              <span class="setting-subtitle">When buddy is hungry</span>
+            </div>
+            <div class="toggle-switch" [class.active]="buddyHungerAlerts" (click)="toggleBuddyHungerAlerts()"
+              role="switch" [attr.aria-checked]="buddyHungerAlerts" aria-label="Toggle buddy hunger alerts">
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+
+          <div class="setting-item toggle sub-setting">
+            <div class="setting-icon sub">📊</div>
+            <div class="setting-info">
+              <span class="setting-label">Weekly Summary</span>
+              <span class="setting-subtitle">Every Sunday at 6 PM</span>
+            </div>
+            <div class="toggle-switch" [class.active]="weeklySummary" (click)="toggleWeeklySummary()" role="switch"
+              [attr.aria-checked]="weeklySummary" aria-label="Toggle weekly summary">
+              <div class="toggle-handle"></div>
+            </div>
+          </div>
+        </ng-container>
+
+        <div class="setting-item toggle">
+          <div class="setting-icon">🔊</div>
+          <div class="setting-info">
+            <span class="setting-label">Sound Effects</span>
+            <span class="setting-subtitle">In-app sounds</span>
+          </div>
+          <div class="toggle-switch" [class.active]="soundEnabled" (click)="toggleSound()" role="switch"
+            [attr.aria-checked]="soundEnabled" aria-label="Toggle sound effects">
+            <div class="toggle-handle"></div>
+          </div>
+        </div>
+
+        <div class="setting-item" (click)="changeDefaultDuration()" role="button"
+          aria-label="Change default focus duration">
+          <div class="setting-icon">⏱️</div>
+          <div class="setting-info">
+            <span class="setting-label">Default Focus Duration</span>
+            <span class="setting-value">{{ defaultDuration }} minutes</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
+        <div class="setting-item" (click)="openAppBlocking()" role="button" aria-label="Open app blocking settings">
+          <div class="setting-icon">🔒</div>
+          <div class="setting-info">
+            <span class="setting-label">App Blocking</span>
+            <span class="setting-value" *ngIf="blockingEnabled">{{ blockListCount }} apps blocked</span>
+            <span class="setting-value" *ngIf="!blockingEnabled" style="color: #999">Disabled</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- General Section -->
+    <div class="section">
+      <h3 class="section-title">General</h3>
+      <div class="settings-card">
+        <div class="setting-item" (click)="openHelp()" role="button" aria-label="Help & Support">
+          <div class="setting-icon">❓</div>
+          <div class="setting-info">
+            <span class="setting-label">Help & Support</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
+        <div class="setting-item" (click)="openPrivacy()" role="button" aria-label="Open Privacy Policy">
+          <div class="setting-icon">🔒</div>
+          <div class="setting-info">
+            <span class="setting-label">Privacy Policy</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
+        <div class="setting-item" (click)="openTerms()" role="button" aria-label="Open Terms of Service">
+          <div class="setting-icon">📄</div>
+          <div class="setting-info">
+            <span class="setting-label">Terms of Service</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
+        <div class="setting-item" (click)="openAbout()" role="button" aria-label="About Paws Focus">
+          <div class="setting-icon">ℹ️</div>
+          <div class="setting-info">
+            <span class="setting-label">About Paws Focus</span>
+            <span class="setting-value">Version 1.0.2</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data & Privacy Section -->
+    <div class="section">
+      <h3 class="section-title">Data & Privacy</h3>
+      <div class="settings-card">
+        <div class="setting-item" (click)="exportData()" role="button" aria-label="Export my data">
+          <div class="setting-icon">📥</div>
+          <div class="setting-info">
+            <span class="setting-label">Export My Data</span>
+            <span class="setting-subtitle">Download a copy of your data</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
+        <div class="setting-item danger" (click)="deleteAccount()" role="button" aria-label="Delete account">
+          <div class="setting-icon">⚠️</div>
+          <div class="setting-info">
+            <span class="setting-label danger">Delete Account</span>
+            <span class="setting-subtitle">Permanently delete all data</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logout Button -->
+    <button class="logout-btn" (click)="logout()">
+      <ion-icon name="log-out-outline"></ion-icon>
+      <span>Log Out</span>
+    </button>
+
+    <!-- App Version Footer -->
+    <div class="app-footer">
+      <p class="footer-text">Paws Focus v1.0.2</p>
+      <p class="footer-text muted">Made with 💚 for dog lovers</p>
+    </div>
+  </div>
+</ion-content>

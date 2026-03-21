@@ -1,0 +1,50 @@
+<div class="failed-modal">
+  <div class="modal-body">
+
+    <!-- Dog (understanding, NOT sad) -->
+    <div class="dog-section">
+      <div class="gentle-glow"></div>
+      <img [src]="breedImage" [alt]="breedName" class="dog-image" width="160" height="160">
+      <div class="understanding-emoji">🐾</div>
+    </div>
+
+    <!-- Encouragement -->
+    <h1 class="title">{{ breedName }} understands</h1>
+    <p class="subtitle">{{ subtitle }}</p>
+
+    <!-- Partial Credit -->
+    <div class="credit-card" *ngIf="earnedSomething">
+      <span class="credit-icon">🦴</span>
+      <div class="credit-info">
+        <span class="credit-value">+{{ partialKibble }} kibble</span>
+        <span class="credit-label">earned for your effort</span>
+      </div>
+    </div>
+
+    <div class="credit-card no-credit" *ngIf="!earnedSomething">
+      <span class="credit-icon">💛</span>
+      <span class="credit-text">{{ encouragementMessage }}</span>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips-section">
+      <div class="tip-card" *ngFor="let tip of tips">
+        <span class="tip-icon">{{ tip.icon }}</span>
+        <span class="tip-text">{{ tip.text }}</span>
+        <span class="tip-pro" *ngIf="tip.proLink && !isPro">PRO</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn-retry-short" (click)="tryAgainShort()">
+        Try Again (15 min)
+      </button>
+      <button class="btn-retry-same" *ngIf="originalDuration !== 15" (click)="tryAgainSame()">
+        Try Again ({{ originalDuration }} min)
+      </button>
+      <button class="btn-done" (click)="close()">Done</button>
+    </div>
+
+  </div>
+</div>

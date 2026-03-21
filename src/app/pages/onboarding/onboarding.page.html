@@ -1,0 +1,314 @@
+<ion-content class="onboarding-content" [fullscreen]="true" [scrollY]="true">
+  <div class="onboarding-container">
+
+    <!-- Progress Dots -->
+    <div class="progress-bar">
+      <button class="nav-btn back-btn" *ngIf="canGoBack" (click)="prevStep()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+
+      <div class="dots">
+        <span
+          *ngFor="let dot of stepDots"
+          class="dot"
+          [class.active]="dot === currentStep"
+          [class.done]="dot < currentStep"
+        ></span>
+      </div>
+
+      <button class="nav-btn skip-btn" *ngIf="canSkip" (click)="skipToAuth()">
+        Skip
+      </button>
+      <span class="nav-btn spacer" *ngIf="!canSkip && !canGoBack"></span>
+    </div>
+
+    <!-- ═══════ STEP 1: Emotional Hook ═══════ -->
+    <div class="step step-1" *ngIf="currentStep === 1" @stepAnimation>
+      <div class="step-content centered">
+        <div class="hero-dog-wrapper">
+          <div class="dog-glow"></div>
+          <img
+            src="assets/images/golden_retriever.png"
+            alt="Golden Retriever puppy"
+            class="hero-dog animate-wag"
+          >
+          <div class="sparkle s1">✨</div>
+          <div class="sparkle s2">✨</div>
+          <div class="sparkle s3">⭐</div>
+        </div>
+
+        <h1 class="step-title">Meet Your Focus Buddy</h1>
+        <p class="step-subtitle">A virtual dog who needs <strong>YOU</strong> to stay focused</p>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" (click)="nextStep()">
+          <span>Next</span>
+          <ion-icon name="arrow-forward"></ion-icon>
+        </button>
+        <button class="login-link" (click)="goToLogin()">I already have an account</button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 2: Mission Hook ═══════ -->
+    <div class="step step-2" *ngIf="currentStep === 2" @stepAnimation>
+      <div class="step-content centered">
+        <div class="mission-visual">
+          <div class="bowl-icon">🍽</div>
+          <img
+            src="assets/images/golden_retriever.png"
+            alt="Dog with food bowl"
+            class="mission-dog"
+          >
+        </div>
+
+        <h1 class="step-title">Every Session Feeds a Real Dog</h1>
+        <p class="step-subtitle">Your focus time = meals for shelter dogs worldwide</p>
+
+        <div class="meals-counter" @fadeIn>
+          <span class="counter-icon">🌍</span>
+          <span class="counter-number">{{ formattedMeals }}</span>
+          <span class="counter-label">meals donated so far</span>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" (click)="nextStep()">
+          <span>Next</span>
+          <ion-icon name="arrow-forward"></ion-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 3: How It Works (Mini Demo) ═══════ -->
+    <div class="step step-3" *ngIf="currentStep === 3" @stepAnimation>
+      <div class="step-content centered">
+        <h1 class="step-title" *ngIf="!demoTimerComplete">Try a Quick Demo!</h1>
+        <h1 class="step-title" *ngIf="demoTimerComplete">You Did It!</h1>
+        <p class="step-subtitle" *ngIf="!demoTimerRunning && !demoTimerComplete">
+          Tap the button below to start a 10-second focus demo
+        </p>
+
+        <div class="demo-area">
+          <!-- Demo timer ring -->
+          <div class="demo-ring-wrapper">
+            <svg class="demo-ring" viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" class="ring-bg" />
+              <circle
+                cx="60" cy="60" r="52"
+                class="ring-progress"
+                [attr.stroke-dashoffset]="326.7 - (326.7 * demoProgress)"
+              />
+            </svg>
+            <div class="demo-ring-inner">
+              <img
+                src="assets/images/golden_retriever.png"
+                alt="Buddy"
+                class="demo-dog"
+                [class.eating]="demoTimerRunning"
+              >
+            </div>
+          </div>
+
+          <!-- Timer display -->
+          <div class="demo-timer-display" *ngIf="demoTimerRunning">
+            <span class="demo-seconds">{{ demoTimerSeconds }}s</span>
+            <span class="demo-label">focusing...</span>
+          </div>
+
+          <!-- Start button -->
+          <button
+            class="demo-start-btn"
+            *ngIf="!demoTimerRunning && !demoTimerComplete"
+            (click)="startDemoTimer()"
+          >
+            Tap to Focus!
+          </button>
+
+          <!-- Completion reward -->
+          <div class="demo-reward" *ngIf="demoTimerComplete" @confetti>
+            <div class="reward-burst">🎉</div>
+            <span class="reward-text">+{{ demoKibble }} kibble earned!</span>
+            <p class="reward-hint">That's it! Focus + Feed + Repeat</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" (click)="nextStep()">
+          <span>Next</span>
+          <ion-icon name="arrow-forward"></ion-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 4: Goal Setting ═══════ -->
+    <div class="step step-4" *ngIf="currentStep === 4" @stepAnimation>
+      <div class="step-content">
+        <h1 class="step-title left">What do you want to focus on?</h1>
+
+        <div class="category-grid">
+          <div
+            *ngFor="let cat of focusCategories"
+            class="category-card"
+            [class.selected]="cat.selected"
+            (click)="toggleCategory(cat)"
+          >
+            <span class="cat-icon">{{ cat.icon }}</span>
+            <span class="cat-label">{{ cat.label }}</span>
+            <div class="cat-check" *ngIf="cat.selected">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+          </div>
+        </div>
+
+        <h2 class="goal-heading">How many minutes per day?</h2>
+
+        <div class="goal-pills">
+          <button
+            *ngFor="let mins of dailyGoalOptions"
+            class="goal-pill"
+            [class.active]="selectedDailyGoal === mins"
+            (click)="selectDailyGoal(mins)"
+          >
+            {{ mins }} min
+          </button>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button
+          class="primary-btn"
+          [disabled]="selectedCategoryCount === 0"
+          (click)="continueFromGoals()"
+        >
+          <span>Continue</span>
+          <ion-icon name="arrow-forward"></ion-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 5: Breed Selection ═══════ -->
+    <div class="step step-5" *ngIf="currentStep === 5" @stepAnimation>
+      <div class="step-content">
+        <h1 class="step-title left">Choose Your Companion</h1>
+        <p class="step-subtitle left">Pick a virtual buddy to join you on your focus journey</p>
+
+        <div class="breed-grid">
+          <div
+            *ngFor="let breed of allBreeds"
+            class="breed-card"
+            [class.selected]="selectedBreed === breed.id && isBreedFree(breed)"
+            [class.locked]="!isBreedFree(breed)"
+            (click)="selectBreed(breed)"
+          >
+            <div class="breed-selected-badge" *ngIf="selectedBreed === breed.id && isBreedFree(breed)">
+              <ion-icon name="checkmark-circle"></ion-icon>
+            </div>
+            <div class="breed-lock-badge" *ngIf="!isBreedFree(breed)">
+              <ion-icon name="lock-closed"></ion-icon>
+              <span class="pro-tag">PRO</span>
+            </div>
+            <div class="breed-img-wrap">
+              <img
+                [src]="breed.image"
+                [alt]="breed.name"
+                class="breed-img"
+                [class.grayscale]="!isBreedFree(breed)"
+              >
+            </div>
+            <span class="breed-name">{{ breed.name }}</span>
+            <span class="breed-desc">{{ breed.description }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" (click)="continueWithBreed()">
+          <span>Continue with {{ selectedBreedName }}</span>
+          <ion-icon name="arrow-forward"></ion-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 6: Notification Permission ═══════ -->
+    <div class="step step-6" *ngIf="currentStep === 6" @stepAnimation>
+      <div class="step-content centered">
+        <div class="notif-visual">
+          <div class="notif-bowl">🥣</div>
+          <img
+            src="assets/images/golden_retriever.png"
+            alt="Hungry dog"
+            class="notif-dog"
+          >
+        </div>
+
+        <h1 class="step-title">Don't Let {{ selectedBreedName }} Go Hungry!</h1>
+        <p class="step-subtitle">Get reminders when it's time to focus</p>
+
+        <div class="notif-preview">
+          <div class="mock-notification">
+            <span class="mock-app-icon">🐾</span>
+            <div class="mock-text">
+              <span class="mock-title">StayPaws</span>
+              <span class="mock-body">{{ selectedBreedName }} is getting hungry! Time for a focus session 🦴</span>
+            </div>
+            <span class="mock-time">now</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn" (click)="requestNotifications()">
+          <ion-icon name="notifications-outline"></ion-icon>
+          <span>Allow Notifications</span>
+        </button>
+        <button class="skip-link" (click)="skipNotifications()">Maybe Later</button>
+      </div>
+    </div>
+
+    <!-- ═══════ STEP 7: Trial Offer ═══════ -->
+    <div class="step step-7" *ngIf="currentStep === 7" @stepAnimation>
+      <div class="step-content centered">
+        <div class="celebration-burst" @fadeIn>
+          <span class="burst-emoji">🎉</span>
+        </div>
+
+        <h1 class="step-title">Welcome Gift: 7 Days of Pro FREE</h1>
+
+        <div class="trial-features">
+          <div class="trial-feature" *ngFor="let f of [
+            'Unlimited focus sessions',
+            'All timer durations',
+            'Focus sounds & ambience',
+            'All breed unlocks',
+            'Ad-free experience'
+          ]">
+            <span class="feature-check">✓</span>
+            <span class="feature-text">{{ f }}</span>
+          </div>
+        </div>
+
+        <p class="trial-fine-print">
+          No credit card required. Trial reverts to Free automatically.
+        </p>
+      </div>
+
+      <div class="bottom-actions">
+        <button class="primary-btn trial-btn" [disabled]="trialLoading" (click)="startTrial()">
+          <ion-spinner name="crescent" *ngIf="trialLoading"></ion-spinner>
+          <span *ngIf="!trialLoading">Start Free Trial</span>
+        </button>
+        <button class="skip-link" (click)="skipTrial()">No thanks, start with Free</button>
+      </div>
+    </div>
+
+    <!-- Legal (all steps) -->
+    <div class="legal-links" *ngIf="currentStep === 1">
+      <a (click)="openTerms()">Terms</a>
+      <span class="divider">·</span>
+      <a (click)="openPrivacy()">Privacy</a>
+    </div>
+
+  </div>
+</ion-content>

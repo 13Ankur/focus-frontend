@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Focus Buddy</string>
+    <string name="title_activity_main">Focus Buddy</string>
+    <string name="package_name">com.focusapp.buddy</string>
+    <string name="custom_url_scheme">com.focusapp.buddy</string>
+    
+    <!-- Google Sign-In Configuration -->
+    <string name="server_client_id">1004463918618-ksrbdruue45a5ca8edusqpdhlfn6c768.apps.googleusercontent.com</string>
+
+    <!-- App Blocker Accessibility Service -->
+    <string name="accessibility_service_description">Paws Focus uses this service to detect when you open a blocked app during focus sessions. It helps you stay focused by showing a gentle reminder to return to your session.</string>
+
+    <!-- Widgets -->
+    <string name="widget_small_description">Show your current focus streak</string>
+    <string name="widget_medium_description">Your buddy, streak, and focus progress</string>
+    <string name="widget_small_label">Focus Buddy Streak</string>
+    <string name="widget_medium_label">Focus Buddy Progress</string>
+</resources>

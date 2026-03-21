@@ -1,0 +1,128 @@
+<ion-content class="room-content" [fullscreen]="true" [scrollY]="true">
+  <div class="room-container" *ngIf="!loading && room">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <div class="header-info">
+        <h1 class="page-title">{{ room.name }}</h1>
+        <button class="code-chip" (click)="copyCode()">
+          {{ room.roomCode }}
+          <ion-icon name="copy-outline"></ion-icon>
+        </button>
+      </div>
+      <button class="overflow-btn" (click)="openOverflowMenu()" aria-label="Open overflow menu">
+        <ion-icon name="ellipsis-vertical"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Members Section -->
+    <div class="members-section">
+      <h3 class="section-title">Members ({{ room.members.length }}/{{ room.maxMembers }})</h3>
+      <div class="members-grid">
+        <div class="member-chip" *ngFor="let m of room.members">
+          <span class="member-breed">{{ getBreedEmoji(m.activeBreed) }}</span>
+          <span class="member-name">{{ m.username }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Tabs -->
+    <div class="section-switcher">
+      <button [class.active]="activeSection === 'activity'" (click)="switchSection('activity')">
+        📋 Activity
+      </button>
+      <button [class.active]="activeSection === 'leaderboard'" (click)="switchSection('leaderboard')">
+        🏆 Leaderboard
+      </button>
+    </div>
+
+    <!-- ═══════════ ACTIVITY FEED ═══════════ -->
+    <div class="section-content" *ngIf="activeSection === 'activity'">
+      <div class="empty-state" *ngIf="activity.length === 0">
+        <div class="empty-icon">📋</div>
+        <p>No activity yet. Start a focus session!</p>
+      </div>
+
+      <div class="activity-feed" *ngIf="activity.length > 0">
+        <div class="activity-item" *ngFor="let a of activity">
+          <span class="activity-breed">{{ getBreedEmoji(a.breed) }}</span>
+          <div class="activity-info">
+            <span class="activity-text">
+              <strong>{{ a.username }}</strong> focused for {{ a.duration }} min
+              <span class="activity-tag" *ngIf="a.tag">{{ getTagLabel(a.tag) }}</span>
+            </span>
+            <span class="activity-time">{{ getTimeAgo(a.completedAt) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ROOM LEADERBOARD ═══════════ -->
+    <div class="section-content" *ngIf="activeSection === 'leaderboard'">
+      <div class="period-toggle">
+        <button [class.active]="lbPeriod === 'weekly'" (click)="switchPeriod('weekly')">Week</button>
+        <button [class.active]="lbPeriod === 'monthly'" (click)="switchPeriod('monthly')">Month</button>
+        <button [class.active]="lbPeriod === 'alltime'" (click)="switchPeriod('alltime')">All Time</button>
+      </div>
+
+      <div class="loading-state" *ngIf="lbLoading">
+        <div class="spinner"></div>
+      </div>
+
+      <div class="empty-state" *ngIf="!lbLoading && leaderboard.length === 0">
+        <div class="empty-icon">🏆</div>
+        <p>No entries yet this period.</p>
+      </div>
+
+      <div class="lb-list" *ngIf="!lbLoading && leaderboard.length > 0">
+        <div class="lb-row" *ngFor="let entry of leaderboard; let i = index" [class.top3]="i < 3">
+          <span class="lb-rank">
+            <ng-container *ngIf="i < 3">{{ getMedalEmoji(i) }}</ng-container>
+            <ng-container *ngIf="i >= 3">#{{ i + 1 }}</ng-container>
+          </span>
+          <span class="lb-breed">{{ getBreedEmoji(entry.activeBreed) }}</span>
+          <div class="lb-info">
+            <span class="lb-name">{{ entry.username }}</span>
+            <span class="lb-sessions">{{ entry.sessionsCompleted }} sessions</span>
+          </div>
+          <span class="lb-minutes">{{ entry.focusMinutes }} min</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sticky Bottom Actions -->
+    <div class="bottom-actions">
+      <button class="focus-together-btn" (click)="focusTogether()">
+        🎯 Focus Together
+      </button>
+      <button class="invite-btn" (click)="shareRoom()">
+        <ion-icon name="share-outline"></ion-icon>
+        Invite
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading-full" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading room...</p>
+  </div>
+
+  <!-- Not Found -->
+  <div class="room-container" *ngIf="!loading && !room">
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Room Not Found</h1>
+    </div>
+    <div class="empty-state">
+      <div class="empty-icon">😕</div>
+      <h3>This room doesn't exist</h3>
+      <p>It may have been deleted or the code is incorrect.</p>
+    </div>
+  </div>
+</ion-content>

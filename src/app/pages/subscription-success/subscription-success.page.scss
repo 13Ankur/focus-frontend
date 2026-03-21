@@ -1,0 +1,271 @@
+.success-content {
+  --background: linear-gradient(180deg, #e8f5e0 0%, #f0f8eb 50%, #f8f8f5 100%);
+}
+
+.success-container {
+  min-height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+// Confetti
+.confetti-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60%;
+  pointer-events: none;
+}
+
+.confetti {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  animation: confetti-fall 4s ease-in-out infinite;
+  
+  &:nth-child(odd) {
+    background: #7ED321;
+    width: 8px;
+    height: 12px;
+  }
+  
+  &:nth-child(even) {
+    background: #FFD700;
+    width: 12px;
+    height: 8px;
+  }
+  
+  &:nth-child(3n) {
+    background: #FF8FA0;
+    border-radius: 50%;
+  }
+  
+  &:nth-child(5n) {
+    background: #4A90D9;
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(500px) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+// Content
+.content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px;
+  padding-top: calc(60px + env(safe-area-inset-top));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  min-height: 100vh;
+}
+
+// Dog Section
+.dog-section {
+  margin-bottom: 24px;
+  
+  .dog-image {
+    width: 160px;
+    height: 180px;
+    object-fit: contain;
+    animation: bounce 1s ease-in-out infinite;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+// Title
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 17px;
+  color: #7ED321;
+  font-weight: 600;
+  margin: 0 0 28px;
+  text-align: center;
+}
+
+// Impact Card
+.impact-card {
+  width: 100%;
+  max-width: 320px;
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.impact-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  
+  .impact-icon {
+    font-size: 24px;
+  }
+  
+  .impact-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+}
+
+.impact-content {
+  .impact-text {
+    font-size: 15px;
+    color: #4a4a4a;
+    margin: 0;
+    line-height: 1.5;
+    
+    strong {
+      color: #2D5A27;
+    }
+  }
+}
+
+// Benefits
+.benefits-section {
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 32px;
+}
+
+.benefits-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 14px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e8e8e8;
+  
+  &:last-child {
+    border-bottom: none;
+  }
+  
+  .benefit-icon {
+    width: 28px;
+    height: 28px;
+    background: #e8f5e0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #7ED321;
+  }
+  
+  .benefit-text {
+    font-size: 15px;
+    color: #4a4a4a;
+  }
+}
+
+// Continue Button
+.continue-btn {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  background: #7ED321;
+  border: none;
+  border-radius: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 8px 25px rgba(126, 211, 33, 0.35);
+  margin-top: auto;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(126, 211, 33, 0.4);
+  }
+  
+  ion-icon {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .content {
+    padding: 30px 16px;
+  }
+
+  .dog-image {
+    width: 120px;
+    height: 120px;
+  }
+
+  .title {
+    font-size: 22px;
+  }
+
+  .subtitle {
+    font-size: 14px;
+  }
+
+  .impact-card {
+    padding: 14px;
+    max-width: 280px;
+  }
+
+  .impact-number {
+    font-size: 26px;
+  }
+
+  .impact-label {
+    font-size: 12px;
+  }
+
+  .benefits-section {
+    max-width: 280px;
+    padding: 14px;
+  }
+
+  .benefit-text {
+    font-size: 13px;
+  }
+
+  .continue-btn {
+    font-size: 15px;
+    padding: 14px 24px;
+    max-width: 280px;
+  }
+}

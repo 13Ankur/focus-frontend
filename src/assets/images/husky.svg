@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="huskyGray" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8A9AAA"/>
+      <stop offset="50%" stop-color="#6B7C8C"/>
+      <stop offset="100%" stop-color="#556270"/>
+    </linearGradient>
+    <linearGradient id="huskyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4A5568"/>
+      <stop offset="100%" stop-color="#2D3748"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Ears (pointed) -->
+  <polygon points="18,15 30,45 8,40" fill="url(#huskyDark)"/>
+  <polygon points="20,20 28,42 12,38" fill="#FFF5F0"/>
+  <polygon points="82,15 70,45 92,40" fill="url(#huskyDark)"/>
+  <polygon points="80,20 72,42 88,38" fill="#FFF5F0"/>
+  
+  <!-- Body -->
+  <ellipse cx="50" cy="82" rx="32" ry="18" fill="url(#huskyGray)"/>
+  
+  <!-- Head -->
+  <ellipse cx="50" cy="50" rx="32" ry="32" fill="url(#huskyGray)"/>
+  
+  <!-- Face mask (white) -->
+  <path d="M50 25 L30 45 L35 75 L50 82 L65 75 L70 45 Z" fill="white"/>
+  
+  <!-- Forehead mark -->
+  <path d="M50 25 L45 40 L50 50 L55 40 Z" fill="url(#huskyDark)"/>
+  
+  <!-- Nose -->
+  <ellipse cx="50" cy="62" rx="10" ry="7" fill="#222"/>
+  
+  <!-- Eyes (blue husky eyes) -->
+  <ellipse cx="38" cy="48" rx="8" ry="9" fill="white"/>
+  <ellipse cx="62" cy="48" rx="8" ry="9" fill="white"/>
+  <circle cx="38" cy="49" r="5" fill="#4A90D9"/>
+  <circle cx="62" cy="49" r="5" fill="#4A90D9"/>
+  <circle cx="36" cy="46" r="2" fill="white"/>
+  <circle cx="60" cy="46" r="2" fill="white"/>
+  
+  <!-- Eye marks -->
+  <path d="M30 42 Q38 38 46 44" stroke="url(#huskyDark)" stroke-width="3" fill="none"/>
+  <path d="M70 42 Q62 38 54 44" stroke="url(#huskyDark)" stroke-width="3" fill="none"/>
+  
+  <!-- Mouth -->
+  <path d="M42 72 Q50 78 58 72" stroke="#666" stroke-width="2" fill="none"/>
+</svg>

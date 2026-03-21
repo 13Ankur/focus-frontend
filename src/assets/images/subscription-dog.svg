@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200">
+  <defs>
+    <linearGradient id="subBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#90b080"/>
+      <stop offset="100%" style="stop-color:#70a060"/>
+    </linearGradient>
+    <linearGradient id="subFur" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0c868"/>
+      <stop offset="100%" style="stop-color:#d4a840"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="400" height="200" fill="url(#subBg)"/>
+  
+  <!-- Grass texture -->
+  <ellipse cx="50" cy="195" rx="60" ry="15" fill="#80b870"/>
+  <ellipse cx="150" cy="198" rx="80" ry="12" fill="#80b870"/>
+  <ellipse cx="280" cy="195" rx="70" ry="15" fill="#80b870"/>
+  <ellipse cx="370" cy="198" rx="50" ry="12" fill="#80b870"/>
+  
+  <!-- Dog body -->
+  <ellipse cx="200" cy="165" rx="80" ry="40" fill="url(#subFur)"/>
+  
+  <!-- Chest -->
+  <ellipse cx="180" cy="150" rx="50" ry="40" fill="#f5e090"/>
+  
+  <!-- Front legs -->
+  <rect x="130" y="160" width="25" height="35" rx="10" fill="#f5e090"/>
+  <rect x="200" y="165" width="25" height="32" rx="10" fill="url(#subFur)"/>
+  
+  <!-- Head -->
+  <ellipse cx="140" cy="100" rx="55" ry="50" fill="url(#subFur)"/>
+  
+  <!-- Ears -->
+  <ellipse cx="90" cy="65" rx="25" ry="38" fill="#c99830" transform="rotate(-20 90 65)"/>
+  <ellipse cx="190" cy="70" rx="25" ry="35" fill="#c99830" transform="rotate(20 190 70)"/>
+  
+  <!-- Face -->
+  <ellipse cx="135" cy="110" rx="35" ry="30" fill="#f5e090"/>
+  
+  <!-- Snout -->
+  <ellipse cx="125" cy="125" rx="25" ry="18" fill="#f8f0d0"/>
+  
+  <!-- Nose -->
+  <ellipse cx="115" cy="118" rx="10" ry="7" fill="#2a2a2a"/>
+  
+  <!-- Happy eyes -->
+  <ellipse cx="115" cy="90" rx="10" ry="12" fill="#2a1a0a"/>
+  <ellipse cx="155" cy="90" rx="10" ry="12" fill="#2a1a0a"/>
+  <ellipse cx="113" cy="87" rx="4" ry="5" fill="#ffffff"/>
+  <ellipse cx="153" cy="87" rx="4" ry="5" fill="#ffffff"/>
+  
+  <!-- Big smile -->
+  <path d="M 100 135 Q 125 160 150 135" stroke="#3a3a3a" stroke-width="3" fill="none"/>
+  <ellipse cx="125" cy="145" rx="20" ry="15" fill="#ff6080"/>
+  
+  <!-- Tongue -->
+  <ellipse cx="125" cy="158" rx="12" ry="18" fill="#ff6080"/>
+  
+  <!-- Tail -->
+  <path d="M 270 145 Q 320 120 310 160" stroke="#c99830" stroke-width="20" fill="none" stroke-linecap="round"/>
+  
+  <!-- Sparkles -->
+  <text x="300" y="60" font-size="24" fill="#ffffff">✨</text>
+  <text x="50" y="50" font-size="20" fill="#ffffff">✨</text>
+  <text x="350" y="100" font-size="18" fill="#ffffff">✨</text>
+</svg>

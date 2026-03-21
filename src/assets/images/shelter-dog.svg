@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="shelterFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A88B72"/>
+      <stop offset="50%" stop-color="#8B7560"/>
+      <stop offset="100%" stop-color="#6E5A4A"/>
+    </linearGradient>
+    <linearGradient id="shelterDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6E5A4A"/>
+      <stop offset="100%" stop-color="#5A4838"/>
+    </linearGradient>
+    <linearGradient id="shelterPatch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#C4A882"/>
+      <stop offset="100%" stop-color="#B09570"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Photo frame effect -->
+  <rect x="10" y="10" width="180" height="180" rx="20" fill="#F5F5F5" stroke="#E0E0E0" stroke-width="2"/>
+  
+  <!-- Ears (floppy, mixed breed look) -->
+  <ellipse cx="55" cy="70" rx="25" ry="35" fill="url(#shelterDark)" transform="rotate(-20, 55, 70)"/>
+  <ellipse cx="145" cy="70" rx="25" ry="35" fill="url(#shelterDark)" transform="rotate(20, 145, 70)"/>
+  
+  <!-- Body -->
+  <ellipse cx="100" cy="165" rx="55" ry="30" fill="url(#shelterFur)"/>
+  
+  <!-- Head -->
+  <ellipse cx="100" cy="100" rx="50" ry="52" fill="url(#shelterFur)"/>
+  
+  <!-- Patches (mixed breed markings) -->
+  <ellipse cx="75" cy="85" rx="18" ry="22" fill="url(#shelterPatch)"/>
+  <ellipse cx="130" cy="110" rx="15" ry="18" fill="url(#shelterPatch)"/>
+  
+  <!-- Face -->
+  <ellipse cx="100" cy="115" rx="32" ry="28" fill="#D4C4B0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="100" cy="128" rx="20" ry="15" fill="#E8DDD0"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="120" rx="12" ry="8" fill="#333"/>
+  <ellipse cx="97" cy="117" rx="4" ry="2" fill="#555"/>
+  
+  <!-- Eyes (hopeful expression) -->
+  <circle cx="78" cy="88" r="14" fill="white"/>
+  <circle cx="122" cy="88" r="14" fill="white"/>
+  <circle cx="80" cy="90" r="9" fill="#5D4037"/>
+  <circle cx="124" cy="90" r="9" fill="#5D4037"/>
+  <circle cx="77" cy="86" r="4" fill="white"/>
+  <circle cx="121" cy="86" r="4" fill="white"/>
+  
+  <!-- Eyebrows (slightly worried/hopeful) -->
+  <path d="M62 78 Q78 72 90 80" stroke="url(#shelterDark)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M138 78 Q122 72 110 80" stroke="url(#shelterDark)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Gentle smile -->
+  <path d="M85 142 Q100 152 115 142" stroke="#6E5A4A" stroke-width="3" fill="none"/>
+  
+  <!-- Collar with tag -->
+  <path d="M60 150 Q100 165 140 150" stroke="#4A90D9" stroke-width="6" fill="none"/>
+  <circle cx="100" cy="158" r="10" fill="#FFD700"/>
+  <circle cx="100" cy="158" r="6" fill="#FFB700"/>
+  
+  <!-- Heart in corner -->
+  <g transform="translate(160, 25)">
+    <path d="M10 5 Q5 0 1 5 Q-2 10 10 18 Q22 10 19 5 Q15 0 10 5" fill="#FF6B6B"/>
+  </g>
+</svg>

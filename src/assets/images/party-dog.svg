@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 220">
+  <defs>
+    <linearGradient id="partyFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="partyDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+    <linearGradient id="confettiGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7ED321"/>
+      <stop offset="100%" stop-color="#5CB215"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Confetti -->
+  <rect x="25" y="30" width="8" height="12" rx="2" fill="#7ED321" transform="rotate(25, 29, 36)">
+    <animateTransform attributeName="transform" type="rotate" values="25 29 36;45 29 36;25 29 36" dur="2s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="170" y="40" width="8" height="12" rx="2" fill="#FF6B6B" transform="rotate(-30, 174, 46)">
+    <animateTransform attributeName="transform" type="rotate" values="-30 174 46;-10 174 46;-30 174 46" dur="1.5s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="45" y="50" width="6" height="10" rx="2" fill="#FFD700" transform="rotate(15, 48, 55)"/>
+  <rect x="155" y="25" width="6" height="10" rx="2" fill="#4A90D9" transform="rotate(-15, 158, 30)"/>
+  <circle cx="35" cy="60" r="5" fill="#FF8FA0"/>
+  <circle cx="165" cy="55" r="4" fill="#7ED321"/>
+  <circle cx="55" cy="35" r="4" fill="#4A90D9"/>
+  <circle cx="145" cy="35" r="5" fill="#FFD700"/>
+  
+  <!-- Stars -->
+  <text x="20" y="45" font-size="18">⭐</text>
+  <text x="165" y="70" font-size="16">✨</text>
+  <text x="40" y="75" font-size="14">✨</text>
+  
+  <!-- Party hat -->
+  <polygon points="100,20 75,75 125,75" fill="url(#confettiGreen)"/>
+  <polygon points="100,20 80,65 120,65" fill="#9EE54F"/>
+  <ellipse cx="100" cy="75" rx="28" ry="8" fill="url(#confettiGreen)"/>
+  <circle cx="100" cy="20" r="8" fill="#FFD700"/>
+  
+  <!-- Streamers from hat -->
+  <path d="M75 75 Q65 85 70 100" stroke="#FF6B6B" stroke-width="3" fill="none"/>
+  <path d="M125 75 Q135 85 130 100" stroke="#4A90D9" stroke-width="3" fill="none"/>
+  
+  <!-- Ears -->
+  <ellipse cx="50" cy="85" rx="22" ry="35" fill="url(#partyDark)" transform="rotate(-20, 50, 85)"/>
+  <ellipse cx="50" cy="88" rx="14" ry="24" fill="url(#partyFur)" transform="rotate(-20, 50, 88)"/>
+  <ellipse cx="150" cy="85" rx="22" ry="35" fill="url(#partyDark)" transform="rotate(20, 150, 85)"/>
+  <ellipse cx="150" cy="88" rx="14" ry="24" fill="url(#partyFur)" transform="rotate(20, 150, 88)"/>
+  
+  <!-- Body -->
+  <ellipse cx="100" cy="190" rx="55" ry="30" fill="url(#partyFur)"/>
+  
+  <!-- Arms (celebrating) -->
+  <ellipse cx="45" cy="160" rx="15" ry="28" fill="url(#partyDark)" transform="rotate(-30, 45, 160)"/>
+  <ellipse cx="155" cy="160" rx="15" ry="28" fill="url(#partyDark)" transform="rotate(30, 155, 160)"/>
+  
+  <!-- Head -->
+  <ellipse cx="100" cy="120" rx="48" ry="50" fill="url(#partyFur)"/>
+  
+  <!-- Face -->
+  <ellipse cx="100" cy="135" rx="32" ry="28" fill="#FFF5E0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="100" cy="148" rx="18" ry="12" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="142" rx="10" ry="7" fill="#333"/>
+  
+  <!-- Eyes (super happy) -->
+  <path d="M72 108 Q85 100 98 108" stroke="#3D2B1F" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M102 108 Q115 100 128 108" stroke="#3D2B1F" stroke-width="5" fill="none" stroke-linecap="round"/>
+  
+  <!-- Big happy mouth -->
+  <path d="M75 160 Q100 180 125 160" stroke="#8B6B4D" stroke-width="3" fill="#FFF5E0"/>
+  <ellipse cx="100" cy="168" rx="18" ry="15" fill="#FF8FA0"/>
+  
+  <!-- Collar -->
+  <path d="M60 175 Q100 188 140 175" stroke="#7ED321" stroke-width="6" fill="none"/>
+  <circle cx="100" cy="182" r="8" fill="#FFD700"/>
+</svg>

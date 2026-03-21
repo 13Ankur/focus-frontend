@@ -1,0 +1,363 @@
+.focus-content {
+  --background: linear-gradient(180deg, #f5f5f0 0%, #e8e8e3 100%);
+}
+
+.focus-container {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+
+// Header
+.focus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .lock-icon {
+    font-size: 18px;
+  }
+  
+  .header-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: 1px;
+  }
+}
+
+// Timer Card
+.timer-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fafafa 0%, #f0f0ec 100%);
+  border-radius: 40px;
+  padding: 40px 30px;
+  margin: 10px 0;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.08),
+    inset 0 2px 0 rgba(255, 255, 255, 0.8);
+}
+
+// Mode Badge
+.mode-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(126, 211, 33, 0.15);
+  border-radius: 30px;
+  padding: 10px 20px;
+  margin-bottom: 30px;
+  
+  .badge-icon {
+    font-size: 16px;
+  }
+  
+  .badge-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #5CB215;
+  }
+}
+
+// Timer Display
+.timer-display {
+  text-align: center;
+  margin-bottom: 30px;
+  
+  .timer-text {
+    display: block;
+    font-size: 72px;
+    font-weight: 800;
+    color: #1a1a1a;
+    letter-spacing: 2px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  
+  .timer-label {
+    display: block;
+    font-size: 16px;
+    color: #888888;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+}
+
+// Circular Progress Container
+.circular-progress-container {
+  position: relative;
+  width: 280px;
+  height: 280px;
+}
+
+.progress-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  
+  .progress-bg {
+    stroke: #e8e8e8;
+  }
+  
+  .progress-stroke {
+    transition: stroke-dashoffset 0.5s ease-out;
+    filter: drop-shadow(0 0 8px rgba(126, 211, 33, 0.4));
+  }
+}
+
+.dog-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  
+  .dog-image {
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+    
+    &.eating {
+      animation: eating-wiggle 0.5s ease-in-out infinite;
+    }
+  }
+  
+  // Eating particles
+  .eating-particles {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 20px;
+    
+    .particle {
+      font-size: 18px;
+      animation: float-particle 1.5s ease-in-out infinite;
+      
+      &:nth-child(2) {
+        animation-delay: 0.3s;
+      }
+      
+      &:nth-child(3) {
+        animation-delay: 0.6s;
+      }
+    }
+  }
+}
+
+// Food Bowl Container
+.food-bowl-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.food-bowl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 149, 0, 0.1);
+  border-radius: 20px;
+  padding: 12px 24px;
+  border: 1px solid rgba(255, 149, 0, 0.2);
+  
+  .bowl-emoji {
+    font-size: 28px;
+    animation: wobble-bowl 1s ease-in-out infinite;
+  }
+  
+  .bowl-progress {
+    width: 100px;
+    height: 8px;
+    background: rgba(255, 149, 0, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    
+    .bowl-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FF9500, #FF6B00);
+      border-radius: 4px;
+      transition: width 0.5s ease-out;
+    }
+  }
+  
+  .bowl-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #FF9500;
+    letter-spacing: 0.5px;
+  }
+}
+
+@keyframes eating-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  75% { transform: rotate(3deg); }
+}
+
+@keyframes float-particle {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-25px);
+  }
+}
+
+@keyframes wobble-bowl {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+// Earning Section
+.earning-section {
+  text-align: center;
+  padding: 20px 0;
+  
+  .earning-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #7ED321;
+    margin: 0 0 12px;
+  }
+  
+  .earning-progress {
+    height: 6px;
+    background: #e0e0dc;
+    border-radius: 3px;
+    overflow: hidden;
+    max-width: 200px;
+    margin: 0 auto;
+    
+    .earning-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7ED321, #5CB215);
+      border-radius: 3px;
+      transition: width 0.5s ease-out;
+    }
+  }
+}
+
+// Action Section
+.action-section {
+  padding-top: 10px;
+}
+
+.end-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover {
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.3);
+  }
+  
+  &:active {
+    transform: scale(0.98);
+  }
+  
+  ion-icon {
+    font-size: 20px;
+    color: #888888;
+  }
+  
+  span {
+    font-size: 15px;
+    font-weight: 600;
+    color: #666666;
+  }
+}
+
+@media (max-width: 380px) {
+  .focus-container {
+    padding: 16px;
+  }
+
+  .timer-card {
+    padding: 24px 16px;
+    border-radius: 28px;
+  }
+
+  .timer-text {
+    font-size: 56px;
+  }
+
+  .circular-progress-container {
+    width: 220px;
+    height: 220px;
+  }
+
+  .dog-circle {
+    width: 160px;
+    height: 160px;
+  }
+
+  .timer-label {
+    font-size: 14px;
+  }
+
+  .bowl-progress {
+    width: 80px;
+  }
+
+  .earning-progress {
+    max-width: 160px;
+  }
+
+  .earning-text {
+    font-size: 13px;
+  }
+
+  .action-btn {
+    padding: 12px 20px;
+
+    span {
+      font-size: 14px;
+    }
+  }
+}
+
+
+
+
+
+
+

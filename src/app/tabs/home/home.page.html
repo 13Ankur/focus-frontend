@@ -1,0 +1,412 @@
+<ion-content class="home-content" [fullscreen]="true">
+  <div class="home-container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="title-section">
+        <h1 class="page-title">Feed Time</h1>
+        <p class="page-subtitle">{{ activeBreedName }} is hungry and waiting! 🍽️</p>
+      </div>
+      <button class="achievements-button" (click)="goToAchievements()" aria-label="View achievements">
+        🏆
+        <span class="ach-badge" *ngIf="newAchievementCount > 0">{{ newAchievementCount }}</span>
+      </button>
+      <button class="settings-button" (click)="goToSettings()" aria-label="Go to settings">
+        <ion-icon name="settings-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Room Banner -->
+    <div class="room-banner" *ngIf="primaryRoom" (click)="openRoom(primaryRoom)" role="button"
+      [attr.aria-label]="'Open room ' + primaryRoom.name">
+      <span class="room-banner-icon">🏠</span>
+      <div class="room-banner-info">
+        <span class="room-banner-name">{{ primaryRoom.name }}</span>
+        <span class="room-banner-members">{{ primaryRoom.members.length }} members</span>
+      </div>
+      <ion-icon name="chevron-forward" class="room-banner-arrow"></ion-icon>
+    </div>
+
+    <!-- Quick Stats Row (tappable → Profile) -->
+    <div class="quick-stats-row" (click)="goToProfile()" *ngIf="completedSessions > 0" role="button"
+      aria-label="Go to profile">
+      <div class="qs-item">
+        <span class="qs-icon">🔥</span>
+        <span class="qs-value">{{ currentStreak }}</span>
+        <span class="qs-label">day streak</span>
+      </div>
+      <div class="qs-divider"></div>
+      <div class="qs-item">
+        <span class="qs-icon">⏱</span>
+        <span class="qs-value">{{ todayMinutes }}</span>
+        <span class="qs-label">min today</span>
+      </div>
+      <div class="qs-divider"></div>
+      <div class="qs-item">
+        <span class="qs-icon">🦴</span>
+        <span class="qs-value">{{ userKibble }}</span>
+        <span class="qs-label">kibble</span>
+      </div>
+    </div>
+
+    <!-- Welcome Card (new users only) -->
+    <div class="welcome-card" *ngIf="completedSessions === 0">
+      <div class="welcome-icon">🍽️</div>
+      <div class="welcome-content">
+        <span class="welcome-title">{{ activeBreedName }} is Hungry!</span>
+        <span class="welcome-subtitle">Feed {{ activeBreedName }} to help shelter dogs get their meals</span>
+      </div>
+    </div>
+
+    <!-- Timer Section -->
+    <div class="timer-section">
+      <div class="timer-container" [class.active]="isTimerRunning">
+        <!-- Background decoration rings -->
+        <div class="timer-decoration">
+          <div class="decoration-ring outer"></div>
+          <div class="decoration-ring middle"></div>
+          <div class="decoration-ring inner"></div>
+        </div>
+
+        <!-- Daily Progress Ring (wraps dog card) -->
+        <svg *ngIf="hasDailyGoal && !isTimerRunning" class="daily-progress-ring" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" [attr.r]="progressRingRadius" fill="none" stroke="#e8efe8" stroke-width="6" />
+          <circle class="progress-fill-ring" cx="100" cy="100" [attr.r]="progressRingRadius" fill="none"
+            stroke="url(#dailyGradient)" stroke-width="6" stroke-linecap="round"
+            [attr.stroke-dasharray]="progressRingCircumference" [attr.stroke-dashoffset]="dailyProgressDashOffset"
+            transform="rotate(-90 100 100)" />
+          <defs>
+            <linearGradient id="dailyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#7ED321" />
+              <stop offset="100%" stop-color="#4CAF50" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        <!-- Dog Card -->
+        <div class="dog-card" [class.eating]="isTimerRunning && !isOnBreak"
+          [class.on-break]="isOnBreak && isTimerRunning" [class.tapped]="dogTapped" (click)="onDogTapped()"
+          role="button" tabindex="0" aria-label="Tap your dog buddy">
+          <img [src]="currentDogImage" [alt]="activeBreedName" class="dog-image" />
+
+          <!-- Bark Speech Bubble -->
+          <div class="bark-bubble" *ngIf="barkBubbleText">
+            <span>{{ barkBubbleText }}</span>
+          </div>
+
+          <!-- Breed Badge -->
+          <div class="breed-badge" *ngIf="activeBreedName">
+            {{ activeBreedName }}
+          </div>
+
+          <!-- Accent Icon -->
+          <div class="card-accent" [class.eating]="isTimerRunning && !isOnBreak" [class.break-mode]="isOnBreak">
+            <span *ngIf="!isTimerRunning">🥣</span>
+            <span *ngIf="isTimerRunning && !isOnBreak">😋</span>
+            <span *ngIf="isOnBreak">☕</span>
+          </div>
+
+          <!-- Floating food particles when eating -->
+          <div class="floating-food" *ngIf="isTimerRunning && !isOnBreak">
+            <span class="food-particle p1">🦴</span>
+            <span class="food-particle p2">🍖</span>
+            <span class="food-particle p3">🥩</span>
+            <span class="food-particle p4">🦴</span>
+          </div>
+        </div>
+
+        <!-- Daily Goal Text (under dog, when idle) -->
+        <div class="daily-goal-text" *ngIf="hasDailyGoal && !isTimerRunning">
+          <span>{{ dailyMinutes }} / {{ dailyGoal }} min today</span>
+        </div>
+
+        <!-- Food Bowl -->
+        <div class="food-bowl empty" *ngIf="!isTimerRunning && !isOnBreak">
+          <span class="bowl-icon">🥣</span>
+          <span class="hungry-text">Empty!</span>
+        </div>
+        <div class="food-bowl filling" *ngIf="isTimerRunning && !isOnBreak">
+          <span class="bowl-icon">🥣</span>
+          <div class="bowl-fill" [style.width.%]="progress * 100"></div>
+        </div>
+
+        <!-- Timer Display -->
+        <div class="timer-display">
+          <span class="timer-text" [class.running]="isTimerRunning && !isOnBreak"
+            [class.break-text]="isOnBreak && isTimerRunning">
+            {{ formattedTime }}
+          </span>
+          <span class="timer-label" *ngIf="!isTimerRunning && !isOnBreak">
+            {{ selectedDuration }} MINUTE FEEDING
+          </span>
+          <span class="timer-label eating" *ngIf="isTimerRunning && !isOnBreak">
+            {{ activeBreedName | uppercase }} IS EATING...
+          </span>
+          <span class="timer-label break-label" *ngIf="isOnBreak && isTimerRunning">
+            {{ breakIsLong ? 'LONG BREAK' : 'BREAK' }} — ROUND {{ currentCycle }}/{{ pomodoroCycles }}
+          </span>
+          <span class="timer-label break-label" *ngIf="isOnBreak && !isTimerRunning">
+            {{ breakIsLong ? 'LONG BREAK' : 'BREAK TIME' }} — TAP TO START
+          </span>
+        </div>
+
+        <!-- Pomodoro cycle dots -->
+        <div class="cycle-dots" *ngIf="pomodoroEnabled && (isTimerRunning || isOnBreak)">
+          <span *ngFor="let c of [].constructor(pomodoroCycles); let i = index" class="cycle-dot"
+            [class.completed]="i < currentCycle - 1" [class.current]="i === currentCycle - 1"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Duration Selection (when idle) -->
+    <div class="duration-section" *ngIf="!isTimerRunning && !isOnBreak" @fadeSlide>
+      <p class="duration-label">Choose your focus duration</p>
+      <div class="duration-buttons">
+        <button *ngFor="let opt of durationOptions" class="duration-btn"
+          [class.selected]="selectedDuration === opt.value && !showCustomPicker" (click)="selectDuration(opt)">
+          <span class="duration-time">{{ opt.value }}</span>
+          <span class="duration-unit">min</span>
+        </button>
+
+        <button class="duration-btn custom-btn" [class.selected]="showCustomPicker" (click)="toggleCustomPicker()">
+          <ion-icon name="timer-outline" class="custom-icon"></ion-icon>
+          <span class="duration-unit">Custom</span>
+        </button>
+      </div>
+
+      <!-- Custom Duration Picker -->
+      <div class="custom-picker" *ngIf="showCustomPicker" @fadeSlide>
+        <div class="picker-row">
+          <input type="range" [min]="5" [max]="120" [step]="5" [(ngModel)]="customDuration" class="custom-slider"
+            aria-label="Custom focus duration">
+          <span class="picker-value">{{ customDuration }} min</span>
+        </div>
+        <button class="picker-apply-btn" (click)="applyCustomDuration()">
+          Set {{ customDuration }} min
+        </button>
+      </div>
+
+      <!-- Sound Picker Row -->
+      <div class="sound-picker-row">
+        <button class="sound-select-btn" (click)="openSoundPicker()" aria-label="Select focus sound">
+          <span class="sound-current-icon">{{ currentSoundIcon }}</span>
+          <span class="sound-current-name">Sound: {{ currentSoundName }}</span>
+          <ion-icon name="chevron-forward" class="sound-chevron"></ion-icon>
+        </button>
+      </div>
+
+      <!-- App Blocking Toggle -->
+      <div class="blocking-toggle-row">
+        <div class="blocking-toggle-left" (click)="toggleBlockingFromHome()" role="switch"
+          [attr.aria-checked]="blockingEnabled" aria-label="Toggle app blocking">
+          <span class="blocking-icon" [class.active]="blockingEnabled">🔒</span>
+          <div class="blocking-text">
+            <span class="blocking-label">Block Apps</span>
+            <span class="blocking-count" *ngIf="blockingEnabled && blockListCount > 0">{{ blockListCount }} apps</span>
+            <span class="blocking-count off" *ngIf="!blockingEnabled">Off</span>
+          </div>
+        </div>
+        <button class="blocking-settings-btn" (click)="openBlockingSettings()" aria-label="App blocking settings">
+          <ion-icon name="chevron-forward"></ion-icon>
+        </button>
+      </div>
+
+      <!-- Pomodoro Toggle -->
+      <div class="pomodoro-section">
+        <div class="pomodoro-toggle-row">
+          <div class="pomodoro-label-group">
+            <span class="pomodoro-label">🍅 Pomodoro Mode</span>
+          </div>
+          <ion-toggle [checked]="pomodoroEnabled" (ionChange)="onPomodoroToggle($any($event).detail.checked)"
+            [disabled]="isTimerRunning" mode="ios" role="switch" [attr.aria-checked]="pomodoroEnabled"
+            aria-label="Toggle Pomodoro mode"></ion-toggle>
+        </div>
+
+        <!-- Pomodoro Settings (expanded when enabled) -->
+        <div class="pomodoro-settings" *ngIf="pomodoroEnabled" @fadeSlide>
+          <div class="pomo-setting">
+            <span class="pomo-setting-label">Break</span>
+            <div class="pomo-stepper">
+              <button (click)="pomodoroBreakMinutes = Math.max(3, pomodoroBreakMinutes - 1); applyPomodoroConfig()"
+                aria-label="Decrease break duration">−</button>
+              <span>{{ pomodoroBreakMinutes }} min</span>
+              <button (click)="pomodoroBreakMinutes = Math.min(15, pomodoroBreakMinutes + 1); applyPomodoroConfig()"
+                aria-label="Increase break duration">+</button>
+            </div>
+          </div>
+          <div class="pomo-setting">
+            <span class="pomo-setting-label">Cycles</span>
+            <div class="pomo-stepper">
+              <button (click)="pomodoroCycles = Math.max(2, pomodoroCycles - 1); applyPomodoroConfig()"
+                aria-label="Decrease cycles">−</button>
+              <span>{{ pomodoroCycles }}</span>
+              <button (click)="pomodoroCycles = Math.min(6, pomodoroCycles + 1); applyPomodoroConfig()"
+                aria-label="Increase cycles">+</button>
+            </div>
+          </div>
+          <div class="pomo-setting">
+            <span class="pomo-setting-label">Long break</span>
+            <div class="pomo-stepper">
+              <button
+                (click)="pomodoroLongBreakMinutes = Math.max(10, pomodoroLongBreakMinutes - 5); applyPomodoroConfig()"
+                aria-label="Decrease long break duration">−</button>
+              <span>{{ pomodoroLongBreakMinutes }} min</span>
+              <button
+                (click)="pomodoroLongBreakMinutes = Math.min(30, pomodoroLongBreakMinutes + 5); applyPomodoroConfig()"
+                aria-label="Increase long break duration">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Session Status (when timer is running) -->
+    <div class="session-status" *ngIf="isTimerRunning && !isOnBreak" @fadeSlide>
+      <div class="status-card feeding">
+        <div class="status-icon animated">😋</div>
+        <div class="status-info">
+          <span class="status-title">{{ activeBreedName }} is Eating!</span>
+          <span class="status-subtitle">Stay focused while {{ activeBreedName }} enjoys the meal</span>
+        </div>
+        <div class="status-reward">
+          <span class="reward-value">+{{ kibbleToEarn }}</span>
+          <span class="reward-unit">kibble</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Break Overlay -->
+    <div class="break-overlay" *ngIf="showBreakOverlay && !isTimerRunning" @overlayFade>
+      <div class="break-card">
+        <span class="break-emoji">{{ breakIsLong ? '🎉' : '☕' }}</span>
+        <h2 class="break-title">{{ breakIsLong ? 'All cycles done!' : 'Break Time!' }}</h2>
+        <p class="break-subtitle" *ngIf="!breakIsLong">
+          Rest for {{ pomodoroBreakMinutes }} min before round {{ currentCycle + 1 }}
+        </p>
+        <p class="break-subtitle" *ngIf="breakIsLong">
+          Take a {{ pomodoroLongBreakMinutes }} min break — you earned it!
+        </p>
+        <div class="break-actions">
+          <button class="break-start-btn" (click)="startBreak()" aria-label="Start break">
+            {{ breakIsLong ? 'Start Long Break' : 'Start Break' }}
+          </button>
+          <button class="break-skip-btn" *ngIf="!breakIsLong" (click)="skipBreak()" aria-label="Skip break">
+            I'm ready — skip break
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="action-section">
+      <button class="action-btn" [class.running]="isTimerRunning && !isOnBreak" [class.on-break]="isOnBreak"
+        [class.grace-period]="isTimerRunning && isInGracePeriod" (click)="onActionButtonClick()"
+        [disabled]="isProcessing" [attr.aria-label]="isTimerRunning ? 'Stop session' : 'Start focus session'">
+        <div class="btn-content">
+          <ion-spinner name="crescent" *ngIf="isProcessing"></ion-spinner>
+          <span *ngIf="!isProcessing" class="btn-text" [class.cancel]="isTimerRunning">
+            <span class="paw-icon" *ngIf="!isTimerRunning && !isOnBreak">🍽️</span>
+            <ion-icon name="close-outline" *ngIf="isTimerRunning && !isOnBreak"></ion-icon>
+            {{ buttonText }}
+          </span>
+        </div>
+      </button>
+
+      <p class="action-hint" *ngIf="!isTimerRunning && !isOnBreak && completedSessions > 0 && !sessionLimitReached">
+        Stay focused and help {{ activeBreedName }} earn {{ kibbleToEarn }} kibble!
+      </p>
+      <p class="action-hint first-session" *ngIf="!isTimerRunning && completedSessions === 0">
+        🎉 Feed {{ activeBreedName }} to provide a meal for a shelter dog!
+      </p>
+      <p class="action-hint warning" *ngIf="isTimerRunning && isInGracePeriod">
+        Free cancel for {{ graceSecondsRemaining }}s — no penalty
+      </p>
+      <p class="action-hint warning" *ngIf="isTimerRunning && !isInGracePeriod && !isOnBreak">
+        Leaving the app will interrupt {{ activeBreedName }}'s meal
+      </p>
+    </div>
+
+    <!-- Floating Sound Button (during focus session) -->
+    <button *ngIf="isTimerRunning" class="floating-sound-btn" [class.muted]="currentSoundName === 'Silence'"
+      (click)="toggleMiniSoundControl()" aria-label="Toggle sound controls">
+      <ion-icon [name]="currentSoundName === 'Silence' ? 'volume-mute' : 'musical-notes'"></ion-icon>
+    </button>
+
+    <!-- Mini Sound Controls (during focus session) -->
+    <div class="mini-sound-control" *ngIf="showMiniSoundControl && isTimerRunning" @fadeSlide>
+      <div class="mini-sound-header">
+        <span class="mini-sound-title">{{ currentSoundIcon }} {{ currentSoundName }}</span>
+        <button class="mini-close" (click)="showMiniSoundControl = false"
+          aria-label="Close sound controls">&times;</button>
+      </div>
+      <div class="mini-volume-row">
+        <ion-icon name="volume-mute" class="vol-icon"></ion-icon>
+        <input type="range" min="0" max="1" step="0.05" [value]="soundVolume" (input)="onSoundVolumeChange($event)"
+          class="volume-slider" aria-label="Adjust volume">
+        <ion-icon name="volume-high" class="vol-icon"></ion-icon>
+      </div>
+      <div class="mini-sound-grid">
+        <button *ngFor="let s of soundLibrary" class="mini-sound-item"
+          [class.active]="s.id === focusSoundService.currentSoundId" (click)="changeSoundDuringSession(s)">
+          <span class="mini-sound-icon">{{ s.icon }}</span>
+          <span class="mini-sound-name">{{ s.name }}</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sound Picker Bottom Sheet -->
+  <div class="sound-picker-backdrop" *ngIf="showSoundPicker" (click)="closeSoundPicker()" @overlayFade role="button"
+    aria-label="Close sound picker"></div>
+  <div class="sound-picker-sheet" *ngIf="showSoundPicker" @fadeSlide>
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h3 class="sheet-title">Focus Sounds</h3>
+      <button class="sheet-close" (click)="closeSoundPicker()" aria-label="Close sound picker">&times;</button>
+    </div>
+
+    <!-- Mix Mode Toggle -->
+    <div class="mix-mode-row">
+      <button class="mix-mode-btn" [class.active]="soundMixMode" (click)="soundMixMode ? applyMix() : enableMixMode()"
+        aria-label="Toggle mix mode">
+        {{ soundMixMode ? 'Apply Mix (' + soundMixSelection.length + '/3)' : 'Mix Sounds' }}
+      </button>
+      <button class="mix-cancel-btn" *ngIf="soundMixMode" (click)="soundMixMode = false"
+        aria-label="Cancel mix mode">Cancel</button>
+    </div>
+
+    <!-- Sound Categories -->
+    <div class="sound-category" *ngFor="let cat of ['silence', 'nature', 'ambient', 'noise', 'music']">
+      <h4 class="category-label" *ngIf="cat !== 'silence'">{{ cat | titlecase }}</h4>
+      <div class="sound-grid">
+        <div *ngFor="let s of soundLibrary" class="sound-card"
+          [class.selected]="!soundMixMode && s.id === focusSoundService.currentSoundId"
+          [class.mix-selected]="soundMixMode && isMixSelected(s.id)" [class.locked]="s.locked"
+          [hidden]="s.category !== cat" (click)="selectSound(s)" role="button"
+          [attr.aria-label]="'Select sound ' + s.name">
+          <span class="sound-card-icon">{{ s.icon }}</span>
+          <span class="sound-card-name">{{ s.name }}</span>
+          <button class="preview-btn" *ngIf="s.id !== 'silence' && !s.locked"
+            (click)="$event.stopPropagation(); previewSound(s.id)" [class.previewing]="soundPreviewingId === s.id"
+            [attr.aria-label]="'Preview ' + s.name + ' sound'">
+            <ion-icon [name]="soundPreviewingId === s.id ? 'pause' : 'play'"></ion-icon>
+          </button>
+          <div class="mix-check" *ngIf="soundMixMode && isMixSelected(s.id)">&#10003;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Volume Slider -->
+    <div class="sheet-volume-section">
+      <span class="sheet-volume-label">Volume</span>
+      <div class="sheet-volume-row">
+        <ion-icon name="volume-mute" class="vol-icon"></ion-icon>
+        <input type="range" min="0" max="1" step="0.05" [value]="soundVolume" (input)="onSoundVolumeChange($event)"
+          class="volume-slider" aria-label="Adjust volume">
+        <ion-icon name="volume-high" class="vol-icon"></ion-icon>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

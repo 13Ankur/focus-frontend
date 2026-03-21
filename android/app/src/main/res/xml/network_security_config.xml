@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Network Security Configuration for Android
+   Enforces HTTPS for all network communications
+-->
+<network-security-config>
+    <!-- Default configuration for all domains -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Production API domain -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">staypaws.zavvi.co.in</domain>
+        <domain includeSubdomains="true">zavvi.co.in</domain>
+    </domain-config>
+</network-security-config>

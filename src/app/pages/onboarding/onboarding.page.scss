@@ -1,0 +1,834 @@
+// ──────────────────────────────────────────
+//  Onboarding — 7-Step Flow
+// ──────────────────────────────────────────
+
+$green: #7ED321;
+$green-dark: #2D5A27;
+$bg: #F8F8F5;
+$text-primary: #1a1a1a;
+$text-secondary: #666666;
+$text-muted: #999999;
+$gold: #FFD700;
+
+.onboarding-content {
+  --background: #{$bg};
+
+  &::part(scroll) {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .onboarding-content {
+    --background: #{$bg} !important;
+  }
+  .onboarding-container {
+    background-color: $bg !important;
+  }
+}
+
+// ── Layout ──
+
+.onboarding-container {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 0 24px;
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  @media (max-height: 667px) {
+    flex: none;
+    min-height: calc(100vh - 120px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.step-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  &.centered {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+// ── Progress Bar & Nav ──
+
+.progress-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 16px;
+  flex-shrink: 0;
+}
+
+.dots {
+  display: flex;
+  gap: 6px;
+}
+
+.dot {
+  width: 24px;
+  height: 5px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  transition: all 0.3s ease;
+
+  &.active {
+    background: $green;
+    width: 32px;
+  }
+
+  &.done {
+    background: rgba($green, 0.4);
+  }
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 10px;
+  min-width: 48px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &.back-btn {
+    color: $text-secondary;
+    ion-icon { font-size: 20px; }
+  }
+
+  &.skip-btn {
+    color: $text-muted;
+  }
+
+  &.spacer {
+    visibility: hidden;
+  }
+}
+
+// ── Titles ──
+
+.step-title {
+  font-size: clamp(26px, 7vw, 34px);
+  font-weight: 800;
+  color: $text-primary;
+  line-height: 1.15;
+  margin: 0 0 10px;
+
+  &.left { text-align: left; }
+}
+
+.step-subtitle {
+  font-size: clamp(14px, 4vw, 17px);
+  color: $text-secondary;
+  line-height: 1.5;
+  margin: 0 0 20px;
+
+  strong { color: $green-dark; }
+
+  &.left { text-align: left; }
+}
+
+// ── Bottom Actions ──
+
+.bottom-actions {
+  flex-shrink: 0;
+  padding: 16px 0 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.primary-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 28px;
+  min-height: 54px;
+  background: $green;
+  border: none;
+  border-radius: 50px;
+  font-size: clamp(16px, 4.5vw, 18px);
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba($green, 0.35);
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba($green, 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  ion-icon {
+    font-size: 20px;
+  }
+
+  ion-spinner {
+    --color: white;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.login-link,
+.skip-link {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: $text-muted;
+  cursor: pointer;
+  padding: 8px 16px;
+  min-height: 40px;
+  transition: color 0.2s;
+
+  &:hover { color: $text-secondary; }
+}
+
+.legal-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+
+  a {
+    font-size: 12px;
+    color: $text-muted;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 4px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+
+    &:hover { color: $text-secondary; text-decoration: underline; }
+  }
+
+  .divider {
+    color: #ccc;
+    font-size: 10px;
+  }
+}
+
+// ──────────────────────────────────────────
+//  STEP 1: Emotional Hook
+// ──────────────────────────────────────────
+
+.hero-dog-wrapper {
+  position: relative;
+  width: clamp(200px, 55vw, 280px);
+  height: clamp(200px, 55vw, 280px);
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+
+.dog-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(circle, rgba($green, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.hero-dog {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+
+  &.animate-wag {
+    animation: headTilt 4s ease-in-out infinite;
+  }
+}
+
+.sparkle {
+  position: absolute;
+  font-size: 18px;
+  z-index: 2;
+  animation: sparkleFloat 2.5s ease-in-out infinite;
+
+  &.s1 { top: 10%; right: 5%; animation-delay: 0s; }
+  &.s2 { bottom: 20%; left: 0%; animation-delay: 0.8s; }
+  &.s3 { top: 5%; left: 15%; animation-delay: 1.5s; font-size: 14px; }
+}
+
+@keyframes headTilt {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(3deg); }
+  75% { transform: rotate(-3deg); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes sparkleFloat {
+  0%, 100% { opacity: 0.5; transform: translateY(0) scale(0.8); }
+  50% { opacity: 1; transform: translateY(-8px) scale(1.1); }
+}
+
+// ──────────────────────────────────────────
+//  STEP 2: Mission Hook
+// ──────────────────────────────────────────
+
+.mission-visual {
+  position: relative;
+  width: clamp(180px, 50vw, 240px);
+  margin-bottom: 24px;
+}
+
+.bowl-icon {
+  font-size: 40px;
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  animation: bowlBounce 2s ease-in-out infinite;
+}
+
+.mission-dog {
+  width: 100%;
+  object-fit: contain;
+}
+
+.meals-counter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: white;
+  padding: 20px 32px;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  margin-top: 12px;
+}
+
+.counter-icon {
+  font-size: 24px;
+}
+
+.counter-number {
+  font-size: clamp(28px, 8vw, 38px);
+  font-weight: 800;
+  color: $green-dark;
+  letter-spacing: -0.5px;
+}
+
+.counter-label {
+  font-size: 14px;
+  color: $text-secondary;
+}
+
+@keyframes bowlBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-6px); }
+}
+
+// ──────────────────────────────────────────
+//  STEP 3: Mini Demo Timer
+// ──────────────────────────────────────────
+
+.demo-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.demo-ring-wrapper {
+  position: relative;
+  width: 160px;
+  height: 160px;
+}
+
+.demo-ring {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+
+  .ring-bg {
+    fill: none;
+    stroke: #e8e8e8;
+    stroke-width: 6;
+  }
+
+  .ring-progress {
+    fill: none;
+    stroke: $green;
+    stroke-width: 6;
+    stroke-linecap: round;
+    stroke-dasharray: 326.7;
+    stroke-dashoffset: 326.7;
+    transition: stroke-dashoffset 0.9s linear;
+  }
+}
+
+.demo-ring-inner {
+  position: absolute;
+  inset: 12px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f7ec;
+}
+
+.demo-dog {
+  width: 85%;
+  height: 85%;
+  object-fit: contain;
+  transition: transform 0.3s;
+
+  &.eating {
+    animation: dogEat 0.8s ease-in-out infinite;
+  }
+}
+
+.demo-timer-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.demo-seconds {
+  font-size: 32px;
+  font-weight: 800;
+  color: $text-primary;
+}
+
+.demo-label {
+  font-size: 14px;
+  color: $text-muted;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.demo-start-btn {
+  padding: 14px 36px;
+  background: linear-gradient(135deg, $green, #6fbe1a);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba($green, 0.3);
+  animation: btnPulse 2s ease-in-out infinite;
+  transition: transform 0.15s;
+
+  &:active { transform: scale(0.96); }
+}
+
+.demo-reward {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.reward-burst {
+  font-size: 48px;
+  animation: burst 0.6s ease-out;
+}
+
+.reward-text {
+  font-size: 22px;
+  font-weight: 800;
+  color: $green-dark;
+}
+
+.reward-hint {
+  font-size: 15px;
+  color: $text-secondary;
+  margin: 4px 0 0;
+}
+
+@keyframes dogEat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px) rotate(-2deg); }
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba($green, 0.3); }
+  50% { box-shadow: 0 6px 30px rgba($green, 0.5); }
+}
+
+@keyframes burst {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+// ──────────────────────────────────────────
+//  STEP 4: Goal Setting
+// ──────────────────────────────────────────
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.category-card {
+  position: relative;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 16px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:active { transform: scale(0.97); }
+
+  &.selected {
+    border-color: $green;
+    background: #f5fff0;
+    box-shadow: 0 4px 16px rgba($green, 0.15);
+  }
+}
+
+.cat-icon {
+  font-size: 32px;
+}
+
+.cat-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: $text-primary;
+  text-align: center;
+}
+
+.cat-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  ion-icon {
+    font-size: 22px;
+    color: $green;
+  }
+}
+
+.goal-heading {
+  font-size: 18px;
+  font-weight: 700;
+  color: $text-primary;
+  margin: 0 0 14px;
+}
+
+.goal-pills {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.goal-pill {
+  flex: 1;
+  min-width: 60px;
+  padding: 12px 8px;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-primary;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:active { transform: scale(0.96); }
+
+  &.active {
+    border-color: $green;
+    background: $green;
+    color: white;
+    box-shadow: 0 4px 12px rgba($green, 0.25);
+  }
+}
+
+// ──────────────────────────────────────────
+//  STEP 5: Breed Selection
+// ──────────────────────────────────────────
+
+.breed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+
+  @media (max-width: 340px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.breed-card {
+  position: relative;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: 14px;
+  padding: 12px 8px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+
+  &:active:not(.locked) { transform: scale(0.97); }
+
+  &.selected {
+    border-color: $green;
+    background: #f5fff0;
+    box-shadow: 0 4px 16px rgba($green, 0.2);
+  }
+
+  &.locked {
+    cursor: default;
+    background: #fafafa;
+    opacity: 0.7;
+  }
+}
+
+.breed-selected-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  ion-icon {
+    font-size: 22px;
+    color: $green;
+  }
+}
+
+.breed-lock-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 3px 7px;
+  border-radius: 10px;
+
+  ion-icon {
+    font-size: 11px;
+    color: white;
+  }
+
+  .pro-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: $gold;
+    letter-spacing: 0.5px;
+  }
+}
+
+.breed-img-wrap {
+  width: clamp(48px, 14vw, 72px);
+  height: clamp(48px, 14vw, 72px);
+  margin: 0 auto 6px;
+}
+
+.breed-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+
+  &.grayscale {
+    filter: grayscale(70%) opacity(0.5);
+  }
+}
+
+.breed-name {
+  display: block;
+  font-size: clamp(10px, 2.8vw, 12px);
+  font-weight: 700;
+  color: $text-primary;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.breed-desc {
+  display: block;
+  font-size: clamp(9px, 2.3vw, 11px);
+  color: $text-muted;
+  line-height: 1.3;
+  min-height: 28px;
+
+  @media (max-width: 340px) { display: none; }
+}
+
+// ──────────────────────────────────────────
+//  STEP 6: Notifications
+// ──────────────────────────────────────────
+
+.notif-visual {
+  position: relative;
+  width: clamp(180px, 50vw, 240px);
+  margin-bottom: 24px;
+}
+
+.notif-bowl {
+  font-size: 48px;
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+.notif-dog {
+  width: 100%;
+  object-fit: contain;
+}
+
+.notif-preview {
+  width: 100%;
+  max-width: 340px;
+  margin-top: 16px;
+}
+
+.mock-notification {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: white;
+  padding: 14px 16px;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  text-align: left;
+}
+
+.mock-app-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.mock-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mock-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: $text-primary;
+}
+
+.mock-body {
+  font-size: 13px;
+  color: $text-secondary;
+  line-height: 1.4;
+}
+
+.mock-time {
+  font-size: 12px;
+  color: $text-muted;
+  flex-shrink: 0;
+}
+
+// ──────────────────────────────────────────
+//  STEP 7: Trial Offer
+// ──────────────────────────────────────────
+
+.celebration-burst {
+  margin-bottom: 20px;
+}
+
+.burst-emoji {
+  font-size: 56px;
+  display: inline-block;
+  animation: burstSpin 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.trial-features {
+  width: 100%;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 24px 0;
+  text-align: left;
+}
+
+.trial-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.feature-check {
+  width: 28px;
+  height: 28px;
+  background: rgba($green, 0.12);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: $green-dark;
+  flex-shrink: 0;
+}
+
+.feature-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: $text-primary;
+}
+
+.trial-fine-print {
+  font-size: 12px;
+  color: $text-muted;
+  margin: 4px 0 0;
+}
+
+.trial-btn {
+  background: linear-gradient(135deg, $green, #65ad14);
+  box-shadow: 0 8px 30px rgba($green, 0.4);
+}
+
+@keyframes burstSpin {
+  0% { transform: scale(0) rotate(-30deg); }
+  60% { transform: scale(1.2) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}

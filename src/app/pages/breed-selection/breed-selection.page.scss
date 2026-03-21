@@ -1,0 +1,383 @@
+.breed-content {
+  --background: #F8F8F5;
+}
+
+.breed-container {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-left: max(var(--app-padding-x, 24px), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--app-padding-x, 24px), env(safe-area-inset-right, 0px));
+  padding-top: calc(clamp(30px, 7vw, 50px) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(clamp(30px, 7vw, 50px) + env(safe-area-inset-bottom, 0px));
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+// Header
+.header {
+  text-align: center;
+  margin-bottom: clamp(20px, 5vw, 36px);
+}
+
+.page-title {
+  font-size: clamp(24px, 6vw, 32px);
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 clamp(6px, 1.5vw, 10px);
+}
+
+.page-subtitle {
+  font-size: clamp(14px, 3.5vw, 17px);
+  color: #666666;
+  margin: 0;
+}
+
+// Breed Grid - 3 columns for all 9 breeds
+.breed-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(8px, 2vw, 14px);
+  margin-bottom: clamp(16px, 4vw, 28px);
+  
+  // 2 columns on very small screens
+  @media screen and (max-width: 340px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.breed-card {
+  position: relative;
+  background: white;
+  border: 2px solid #e8e8e8;
+  border-radius: clamp(12px, 3vw, 18px);
+  padding: clamp(10px, 2.5vw, 16px) clamp(8px, 2vw, 12px);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  
+  &:hover:not(.locked) {
+    border-color: #c8e8c0;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  }
+  
+  &.selected {
+    border-color: #7ED321;
+    background: #f5fff0;
+    box-shadow: 0 8px 25px rgba(126, 211, 33, 0.2);
+    
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border: 2px solid #7ED321;
+      border-radius: 18px;
+      pointer-events: none;
+    }
+  }
+  
+  &.locked {
+    cursor: not-allowed;
+    background: #fafafa;
+    
+    .breed-name {
+      color: #999999;
+    }
+  }
+}
+
+// Badges
+.premium-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  padding: 4px 10px;
+  border-radius: 20px;
+  
+  ion-icon {
+    font-size: 12px;
+    color: white;
+  }
+  
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.5px;
+  }
+}
+
+.current-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  
+  ion-icon {
+    font-size: 24px;
+    color: #7ED321;
+  }
+}
+
+.lock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  ion-icon {
+    font-size: 14px;
+    color: white;
+  }
+}
+
+// Breed Image
+.breed-image-wrapper {
+  position: relative;
+  width: clamp(50px, 16vw, 80px);
+  height: clamp(50px, 16vw, 80px);
+  margin: 0 auto clamp(6px, 1.5vw, 12px);
+}
+
+.breed-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: filter 0.3s;
+  
+  &.grayscale {
+    filter: grayscale(70%) opacity(0.6);
+  }
+}
+
+.lock-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  
+  ion-icon {
+    font-size: clamp(20px, 6vw, 30px);
+    color: #888888;
+  }
+}
+
+// Breed Info
+.breed-name {
+  display: block;
+  font-size: clamp(10px, 2.8vw, 13px);
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: clamp(2px, 0.5vw, 5px);
+  line-height: 1.2;
+  min-height: clamp(22px, 6vw, 30px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breed-description {
+  display: block;
+  font-size: clamp(9px, 2.5vw, 12px);
+  color: #888888;
+  line-height: 1.3;
+  
+  // Hide on very small screens
+  @media screen and (max-width: 340px) {
+    display: none;
+  }
+}
+
+// Unlock Info for locked breeds
+.unlock-info {
+  margin-top: 6px;
+  
+  .progress-bar {
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 4px;
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #FFD700, #FFA500);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+  }
+  
+  .unlock-text {
+    font-size: 10px;
+    color: #999;
+    font-weight: 600;
+  }
+}
+
+// Premium Prompt
+.premium-prompt {
+  margin-bottom: 20px;
+}
+
+.prompt-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #FFF8E0, #FFF5D0);
+  border: 1px solid #FFE082;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.prompt-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  ion-icon {
+    font-size: 24px;
+    color: white;
+  }
+}
+
+.prompt-text {
+  flex: 1;
+  
+  h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 4px;
+  }
+  
+  p {
+    font-size: 13px;
+    color: #666666;
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.prompt-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #1a1a1a;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  
+  ion-icon {
+    font-size: 16px;
+  }
+}
+
+// Unlock Teaser
+.unlock-teaser {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, #fff8e8, #fff5d8);
+  border: 1px solid #ffe0a0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+  
+  .teaser-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+  
+  .teaser-content {
+    flex: 1;
+    
+    .teaser-title {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 4px;
+    }
+    
+    .teaser-subtitle {
+      display: block;
+      font-size: 13px;
+      color: #666;
+      line-height: 1.4;
+    }
+  }
+}
+
+// Action Section
+.action-section {
+  margin-top: auto;
+  padding-top: clamp(14px, 4vw, 24px);
+}
+
+.continue-btn {
+  width: 100%;
+  padding: clamp(14px, 4vw, 20px);
+  min-height: 56px; // Accessibility
+  background: #7ED321;
+  border: none;
+  border-radius: clamp(14px, 3.5vw, 18px);
+  font-size: clamp(15px, 4vw, 18px);
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 8px 25px rgba(126, 211, 33, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2vw, 12px);
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(126, 211, 33, 0.4);
+  }
+  
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+  
+  &:disabled {
+    background: #cccccc;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  
+  ion-spinner {
+    color: white;
+    --color: white;
+  }
+}
+
+.change-hint {
+  text-align: center;
+  font-size: clamp(11px, 3vw, 14px);
+  color: #888888;
+  margin: clamp(10px, 2.5vw, 16px) 0 0;
+}

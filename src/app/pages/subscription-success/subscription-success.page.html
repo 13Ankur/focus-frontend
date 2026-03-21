@@ -1,0 +1,48 @@
+<ion-content class="success-content" [fullscreen]="true">
+  <div class="success-container">
+    <!-- Confetti Background -->
+    <div class="confetti-bg">
+      <div class="confetti" *ngFor="let i of confettiArray" [style.left.%]="getRandomPosition(i)" [style.animation-delay.s]="getRandomDelay(i)"></div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <!-- Dog Image -->
+      <div class="dog-section">
+        <img src="assets/images/party-dog.svg" alt="Celebrating dog" class="dog-image" width="160" height="180">
+      </div>
+
+      <!-- Title -->
+      <h1 class="title">Welcome to Premium! 🎉</h1>
+      <p class="subtitle">You're now a {{ planName }}!</p>
+
+      <!-- Impact Card -->
+      <div class="impact-card">
+        <div class="impact-header">
+          <span class="impact-icon">🌍</span>
+          <span class="impact-title">Your Impact</span>
+        </div>
+        <div class="impact-content">
+          <p class="impact-text">
+            Your subscription will help provide <strong>{{ mealsPerMonth }} meals</strong> every month to shelter dogs in need!
+          </p>
+        </div>
+      </div>
+
+      <!-- Benefits List -->
+      <div class="benefits-section">
+        <h3 class="benefits-title">What's Unlocked</h3>
+        <div class="benefit-item" *ngFor="let benefit of benefits">
+          <span class="benefit-icon">✓</span>
+          <span class="benefit-text">{{ benefit }}</span>
+        </div>
+      </div>
+
+      <!-- Continue Button -->
+      <button class="continue-btn" (click)="goHome()">
+        Start Focusing
+        <ion-icon name="arrow-forward"></ion-icon>
+      </button>
+    </div>
+  </div>
+</ion-content>

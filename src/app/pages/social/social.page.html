@@ -1,0 +1,230 @@
+<ion-content class="social-content" [fullscreen]="true" [scrollY]="true">
+  <div class="social-container">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Social</h1>
+    </div>
+
+    <!-- Tab Switcher -->
+    <div class="tab-switcher">
+      <button class="tab-btn" [class.active]="activeTab === 'rooms'" (click)="switchTab('rooms')" aria-label="Rooms tab">
+        🏠 My Rooms
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'leaderboard'" (click)="switchTab('leaderboard')" aria-label="Leaderboard tab">
+        🏆 Leaderboard
+      </button>
+    </div>
+
+    <!-- ═══════════ TAB 1: MY ROOMS ═══════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'rooms'">
+
+      <!-- Action Buttons -->
+      <div class="room-actions">
+        <button class="action-btn join" (click)="openJoinModal()" aria-label="Join a room">
+          <span class="action-icon">🔗</span>
+          <span>Join Room</span>
+        </button>
+        <button class="action-btn create" (click)="openCreateModal()" aria-label="Create a room">
+          <span class="action-icon">✨</span>
+          <span>Create Room</span>
+          <span class="pro-badge" *ngIf="!isPro">PRO</span>
+        </button>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="roomsLoading">
+        <div class="spinner"></div>
+        <p>Loading rooms...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="!roomsLoading && myRooms.length === 0">
+        <div class="empty-icon">🏠</div>
+        <h3>No rooms yet</h3>
+        <p>Create a room or join one with a friend's code to focus together!</p>
+      </div>
+
+      <!-- Room Cards -->
+      <div class="room-list" *ngIf="!roomsLoading && myRooms.length > 0">
+        <div class="room-card" *ngFor="let room of myRooms" (click)="openRoom(room)" role="button" tabindex="0">
+          <div class="room-card-header">
+            <h3 class="room-name">{{ room.name }}</h3>
+            <span class="room-code">{{ room.roomCode }}</span>
+          </div>
+          <div class="room-card-body">
+            <div class="member-avatars">
+              <span class="member-avatar" *ngFor="let m of room.members.slice(0, 5)">
+                {{ getBreedEmoji(m.activeBreed) }}
+              </span>
+              <span class="member-overflow" *ngIf="room.members.length > 5">
+                +{{ room.members.length - 5 }}
+              </span>
+            </div>
+            <span class="member-count">{{ room.members.length }}/{{ room.maxMembers }} members</span>
+          </div>
+          <div class="room-card-footer">
+            <button class="focus-now-btn" (click)="$event.stopPropagation(); openRoom(room)" aria-label="Start focus session in room">
+              Focus Now
+              <ion-icon name="chevron-forward"></ion-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ TAB 2: LEADERBOARD ═══════════ -->
+    <div class="tab-content" *ngIf="activeTab === 'leaderboard'">
+
+      <!-- Period Toggle -->
+      <div class="period-toggle">
+        <button [class.active]="leaderboardPeriod === 'weekly'" (click)="switchPeriod('weekly')" aria-label="This week">This Week</button>
+        <button [class.active]="leaderboardPeriod === 'monthly'" (click)="switchPeriod('monthly')" aria-label="This month">This Month</button>
+        <button [class.active]="leaderboardPeriod === 'alltime'" (click)="switchPeriod('alltime')" aria-label="All time">All Time</button>
+      </div>
+
+      <!-- Loading -->
+      <div class="loading-state" *ngIf="leaderboardLoading">
+        <div class="spinner"></div>
+        <p>Loading leaderboard...</p>
+      </div>
+
+      <!-- Empty Leaderboard -->
+      <div class="empty-state" *ngIf="!leaderboardLoading && leaderboard.length === 0">
+        <div class="empty-icon">🏆</div>
+        <h3>No entries yet</h3>
+        <p>Complete focus sessions to appear on the leaderboard!</p>
+      </div>
+
+      <!-- Leaderboard List -->
+      <div class="leaderboard-list" *ngIf="!leaderboardLoading && leaderboard.length > 0">
+
+        <!-- Top 3 Podium -->
+        <div class="podium" *ngIf="leaderboard.length >= 3">
+          <div class="podium-item second">
+            <div class="podium-avatar">{{ getBreedEmoji(leaderboard[1].activeBreed) }}</div>
+            <span class="podium-medal">🥈</span>
+            <span class="podium-name">{{ leaderboard[1].username }}</span>
+            <span class="podium-minutes">{{ leaderboard[1].focusMinutes }} min</span>
+          </div>
+          <div class="podium-item first">
+            <div class="podium-avatar">{{ getBreedEmoji(leaderboard[0].activeBreed) }}</div>
+            <span class="podium-medal">🥇</span>
+            <span class="podium-name">{{ leaderboard[0].username }}</span>
+            <span class="podium-minutes">{{ leaderboard[0].focusMinutes }} min</span>
+          </div>
+          <div class="podium-item third">
+            <div class="podium-avatar">{{ getBreedEmoji(leaderboard[2].activeBreed) }}</div>
+            <span class="podium-medal">🥉</span>
+            <span class="podium-name">{{ leaderboard[2].username }}</span>
+            <span class="podium-minutes">{{ leaderboard[2].focusMinutes }} min</span>
+          </div>
+        </div>
+
+        <!-- Rest of leaderboard -->
+        <div class="lb-row" *ngFor="let entry of leaderboard.slice(3); let i = index">
+          <span class="lb-rank">#{{ i + 4 }}</span>
+          <span class="lb-breed">{{ getBreedEmoji(entry.activeBreed) }}</span>
+          <div class="lb-info">
+            <span class="lb-name">{{ entry.username }}</span>
+            <span class="lb-sessions">{{ entry.sessionsCompleted }} sessions</span>
+          </div>
+          <span class="lb-minutes">{{ entry.focusMinutes }} min</span>
+        </div>
+      </div>
+
+      <!-- My Rank Sticky Bar -->
+      <div class="my-rank-bar" *ngIf="!leaderboardLoading && myRank.rank">
+        <span class="my-rank-pos">#{{ myRank.rank }}</span>
+        <span class="my-rank-label">You</span>
+        <span class="my-rank-minutes">{{ myRank.entry?.focusMinutes || 0 }} min</span>
+        <span class="my-rank-gap" *ngIf="minutesAwayText">{{ minutesAwayText }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CREATE ROOM MODAL ═══════════ -->
+  <div class="modal-backdrop" *ngIf="showCreateModal" (click)="closeCreateModal()" role="button" aria-label="Close dialog">
+    <div class="modal-sheet" (click)="$event.stopPropagation()">
+      <div class="modal-handle"></div>
+
+      <div class="modal-content" *ngIf="!createdRoomCode">
+        <h2 class="modal-title">Create Room</h2>
+        <input
+          type="text"
+          class="modal-input"
+          placeholder="Room name (e.g. Study Squad)"
+          aria-label="Room name"
+          [(ngModel)]="newRoomName"
+          maxlength="50"
+          (keyup.enter)="createRoom()"
+        >
+        <span class="char-count">{{ newRoomName.length }}/50</span>
+        <button class="modal-btn primary" [disabled]="!newRoomName.trim() || createLoading" (click)="createRoom()" aria-label="Create room">
+          {{ createLoading ? 'Creating...' : 'Create Room' }}
+        </button>
+      </div>
+
+      <div class="modal-content created" *ngIf="createdRoomCode">
+        <div class="success-icon">🎉</div>
+        <h2 class="modal-title">Room Created!</h2>
+        <p class="modal-subtitle">Share this code with friends:</p>
+        <div class="code-display">
+          <span class="code-text">{{ createdRoomCode }}</span>
+        </div>
+        <div class="code-actions">
+          <button class="code-action-btn" (click)="copyRoomCode(createdRoomCode)" aria-label="Copy room code">
+            <ion-icon name="copy-outline"></ion-icon>
+            Copy
+          </button>
+          <button class="code-action-btn" (click)="shareRoomCode(createdRoomCode, newRoomName)" aria-label="Share room code">
+            <ion-icon name="share-outline"></ion-icon>
+            Share
+          </button>
+        </div>
+        <button class="modal-btn secondary" (click)="closeCreateModal()" aria-label="Done">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ JOIN ROOM MODAL ═══════════ -->
+  <div class="modal-backdrop" *ngIf="showJoinModal" (click)="closeJoinModal()" role="button" aria-label="Close dialog">
+    <div class="modal-sheet" (click)="$event.stopPropagation()">
+      <div class="modal-handle"></div>
+      <div class="modal-content">
+        <h2 class="modal-title">Join Room</h2>
+        <p class="modal-subtitle">Enter the 6-character room code</p>
+        <input
+          type="text"
+          class="modal-input code-input"
+          placeholder="ABC123"
+          aria-label="Room code"
+          [ngModel]="joinCode"
+          (ngModelChange)="joinCode = $event; onJoinCodeInput()"
+          maxlength="6"
+        >
+
+        <!-- Preview -->
+        <div class="join-preview" *ngIf="joinPreview">
+          <div class="preview-name">{{ joinPreview.name }}</div>
+          <div class="preview-members">{{ joinPreview.members.length }}/{{ joinPreview.maxMembers }} members</div>
+          <button class="modal-btn primary" [disabled]="joinLoading" (click)="joinRoom()" aria-label="Join room">
+            {{ joinLoading ? 'Joining...' : 'Join Room' }}
+          </button>
+        </div>
+
+        <!-- Error -->
+        <div class="join-error" *ngIf="joinError">{{ joinError }}</div>
+
+        <!-- Loading indicator for preview -->
+        <div class="loading-state small" *ngIf="joinLoading && !joinPreview && !joinError">
+          <div class="spinner small"></div>
+          <p>Looking up room...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</ion-content>

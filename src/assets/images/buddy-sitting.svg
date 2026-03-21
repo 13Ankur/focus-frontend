@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="sitFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="sitDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Ears -->
+  <ellipse cx="28" cy="28" rx="14" ry="22" fill="url(#sitDark)" transform="rotate(-15, 28, 28)"/>
+  <ellipse cx="28" cy="30" rx="9" ry="15" fill="url(#sitFur)" transform="rotate(-15, 28, 28)"/>
+  <ellipse cx="92" cy="28" rx="14" ry="22" fill="url(#sitDark)" transform="rotate(15, 92, 28)"/>
+  <ellipse cx="92" cy="30" rx="9" ry="15" fill="url(#sitFur)" transform="rotate(15, 92, 28)"/>
+  
+  <!-- Body -->
+  <ellipse cx="60" cy="90" rx="35" ry="25" fill="url(#sitFur)"/>
+  
+  <!-- Front paws -->
+  <ellipse cx="40" cy="100" rx="12" ry="10" fill="url(#sitDark)"/>
+  <ellipse cx="80" cy="100" rx="12" ry="10" fill="url(#sitDark)"/>
+  
+  <!-- Head -->
+  <ellipse cx="60" cy="50" rx="32" ry="35" fill="url(#sitFur)"/>
+  
+  <!-- Face patch -->
+  <ellipse cx="60" cy="58" rx="20" ry="18" fill="#FFF5E0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="60" cy="65" rx="12" ry="9" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="60" cy="60" rx="7" ry="5" fill="#333"/>
+  <ellipse cx="58" cy="58" rx="2" ry="1.5" fill="#555"/>
+  
+  <!-- Eyes -->
+  <circle cx="45" cy="45" r="8" fill="white"/>
+  <circle cx="75" cy="45" r="8" fill="white"/>
+  <circle cx="46" cy="46" r="5" fill="#3D2B1F"/>
+  <circle cx="76" cy="46" r="5" fill="#3D2B1F"/>
+  <circle cx="44" cy="43" r="2" fill="white"/>
+  <circle cx="74" cy="43" r="2" fill="white"/>
+  
+  <!-- Happy mouth -->
+  <path d="M50 72 Q60 80 70 72" stroke="#8B6B4D" stroke-width="2" fill="none"/>
+  
+  <!-- Tongue -->
+  <ellipse cx="60" cy="78" rx="6" ry="8" fill="#FF8FA0"/>
+  
+  <!-- Collar -->
+  <path d="M35 80 Q60 88 85 80" stroke="#7ED321" stroke-width="5" fill="none"/>
+  <circle cx="60" cy="84" r="5" fill="#FFD700"/>
+</svg>

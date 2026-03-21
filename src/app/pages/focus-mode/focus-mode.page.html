@@ -1,0 +1,101 @@
+<ion-content class="focus-content" [fullscreen]="true">
+  <div class="focus-container">
+    
+    <!-- Header -->
+    <div class="focus-header">
+      <div class="header-left">
+        <span class="lock-icon">🍽️</span>
+        <span class="header-title">FEEDING TIME</span>
+      </div>
+    </div>
+
+    <!-- Main Timer Card -->
+    <div class="timer-card">
+      <!-- Mode Badge -->
+      <div class="mode-badge">
+        <span class="badge-icon">😋</span>
+        <span class="badge-text">{{ buddyName }} is Eating</span>
+      </div>
+
+      <!-- Timer Display -->
+      <div class="timer-display">
+        <span class="timer-text">{{ formattedTime }}</span>
+        <span class="timer-label">until meal complete</span>
+      </div>
+
+      <!-- Circular Progress with Dog -->
+      <div class="circular-progress-container">
+        <svg class="progress-ring" viewBox="0 0 280 280">
+          <!-- Background circle -->
+          <circle
+            class="progress-bg"
+            cx="140"
+            cy="140"
+            r="120"
+            stroke="#e8e8e8"
+            stroke-width="8"
+            fill="none"
+          />
+          <!-- Progress circle -->
+          <circle
+            class="progress-stroke"
+            cx="140"
+            cy="140"
+            r="120"
+            stroke="url(#focusGradient)"
+            stroke-width="8"
+            fill="none"
+            stroke-linecap="round"
+            [attr.stroke-dasharray]="circumference"
+            [attr.stroke-dashoffset]="dashOffset"
+          />
+          <!-- Gradient definition -->
+          <defs>
+            <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#7ED321"/>
+              <stop offset="100%" stop-color="#5CB215"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        
+        <!-- Dog Image Inside Circle -->
+        <div class="dog-circle">
+          <img [src]="buddyImage" [alt]="buddyName + ' eating'" class="dog-image eating" width="180" height="180">
+          <!-- Eating animation particles -->
+          <div class="eating-particles">
+            <span class="particle p1">🦴</span>
+            <span class="particle p2">🍖</span>
+            <span class="particle p3">🥩</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Food Bowl Progress -->
+      <div class="food-bowl-container">
+        <div class="food-bowl">
+          <span class="bowl-emoji">🥣</span>
+          <div class="bowl-progress">
+            <div class="bowl-fill" [style.width.%]="progress * 100"></div>
+          </div>
+          <span class="bowl-label">{{ (progress * 100) | number:'1.0-0' }}% full</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Earning Progress -->
+    <div class="earning-section">
+      <p class="earning-text">{{ buddyName }} is enjoying the meal... 😋</p>
+      <div class="earning-progress">
+        <div class="earning-fill" [style.width.%]="progress * 100"></div>
+      </div>
+    </div>
+
+    <!-- End Session Button -->
+    <div class="action-section">
+      <button class="end-btn" (click)="endSession()">
+        <ion-icon name="close-outline"></ion-icon>
+        <span>Stop Feeding</span>
+      </button>
+    </div>
+  </div>
+</ion-content>

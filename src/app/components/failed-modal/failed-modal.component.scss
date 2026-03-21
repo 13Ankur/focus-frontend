@@ -1,0 +1,227 @@
+$green: #7ED321;
+$green-dark: #2D5A27;
+
+.failed-modal {
+  min-height: 100%;
+  background: linear-gradient(180deg, #f5f2eb 0%, #faf8f3 50%, #f8f8f5 100%);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  padding-top: calc(56px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  min-height: 100vh;
+}
+
+// ── Dog Section ──
+
+.dog-section {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin-bottom: 24px;
+}
+
+.gentle-glow {
+  position: absolute;
+  inset: -16px;
+  background: radial-gradient(circle, rgba(#f0dba8, 0.25) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.dog-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  animation: gentleBreath 3s ease-in-out infinite;
+}
+
+.understanding-emoji {
+  position: absolute;
+  bottom: -4px;
+  right: -8px;
+  font-size: 28px;
+  z-index: 2;
+  animation: softFloat 2.5s ease-in-out infinite;
+}
+
+@keyframes gentleBreath {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes softFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+// ── Title ──
+
+.title {
+  font-size: clamp(24px, 6.5vw, 30px);
+  font-weight: 800;
+  color: #1a1a1a;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: #666;
+  margin: 0 0 24px;
+  text-align: center;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+// ── Credit Card ──
+
+.credit-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: white;
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  width: 100%;
+  max-width: 340px;
+
+  &.no-credit {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+.credit-icon {
+  font-size: 30px;
+  flex-shrink: 0;
+}
+
+.credit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.credit-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: $green-dark;
+}
+
+.credit-label {
+  font-size: 13px;
+  color: #999;
+  font-weight: 600;
+}
+
+.credit-text {
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
+}
+
+// ── Tips ──
+
+.tips-section {
+  width: 100%;
+  max-width: 340px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tip-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 14px 16px;
+  border-radius: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.tip-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  flex: 1;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.4;
+}
+
+.tip-pro {
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #FF9500, #FF6B00);
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+// ── Actions ──
+
+.actions {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.btn-retry-short {
+  width: 100%;
+  padding: 16px;
+  background: $green;
+  border: none;
+  border-radius: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba($green, 0.3);
+  transition: all 0.2s;
+
+  &:active { transform: scale(0.97); }
+}
+
+.btn-retry-same {
+  width: 100%;
+  padding: 14px;
+  background: white;
+  border: 2px solid #e0e0e0;
+  border-radius: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:active { transform: scale(0.97); border-color: $green; }
+}
+
+.btn-done {
+  background: none;
+  border: none;
+  font-size: 15px;
+  color: #999;
+  cursor: pointer;
+  padding: 10px;
+  align-self: center;
+
+  &:active { color: #666; }
+}

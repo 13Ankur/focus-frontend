@@ -1,0 +1,609 @@
+/*
+ * App Global CSS
+ * ----------------------------------------------------------------------------
+ * Paws Focus - Stay Focused, Save Paws
+ * Responsive Design for all devices
+ */
+
+/* Core CSS required for Ionic components to work properly */
+@import "@ionic/angular/css/core.css";
+
+/* Basic CSS for apps built with Ionic */
+@import "@ionic/angular/css/normalize.css";
+@import "@ionic/angular/css/structure.css";
+@import "@ionic/angular/css/typography.css";
+@import "@ionic/angular/css/display.css";
+
+/* Optional CSS utils */
+@import "@ionic/angular/css/padding.css";
+@import "@ionic/angular/css/float-elements.css";
+@import "@ionic/angular/css/text-alignment.css";
+@import "@ionic/angular/css/text-transformation.css";
+@import "@ionic/angular/css/flex-utils.css";
+
+/* CSS Variables for App Theme */
+:root {
+  --app-background: #F8F8F5;
+  --app-primary: #7ED321;
+  --app-primary-dark: #5fb318;
+  --app-secondary: #667eea;
+  --app-text: #2C2C2C;
+  --app-text-muted: #666666;
+  --app-border: #e8e8e8;
+  --app-success: #4caf50;
+  --app-error: #ff6b6b;
+  --app-warning: #ffc107;
+  
+  /* Safe area insets - Enhanced for notch/Dynamic Island */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+  
+  /* Responsive spacing - Default (small phones like iPhone SE) */
+  --app-padding-x: 16px;
+  --app-padding-y: 16px;
+  --app-card-radius: 16px;
+  --app-btn-radius: 14px;
+  
+  /* Typography scale - Base */
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-base: 14px;
+  --font-size-md: 16px;
+  --font-size-lg: 20px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 36px;
+  --font-size-timer: 42px;
+  
+  /* Component sizes */
+  --dog-card-size: 120px;
+  --timer-ring-size: 280px;
+  --duration-btn-size: 70px;
+  --stat-icon-size: 22px;
+}
+
+/* Small phones (iPhone SE, small Android) - 320px to 375px */
+@media screen and (max-width: 375px) {
+  :root {
+    --app-padding-x: 14px;
+    --app-padding-y: 12px;
+    --app-card-radius: 14px;
+    --font-size-xs: 9px;
+    --font-size-sm: 11px;
+    --font-size-base: 13px;
+    --font-size-md: 15px;
+    --font-size-lg: 18px;
+    --font-size-xl: 22px;
+    --font-size-2xl: 26px;
+    --font-size-3xl: 32px;
+    --font-size-timer: 36px;
+    --dog-card-size: 100px;
+    --timer-ring-size: 240px;
+    --duration-btn-size: 60px;
+    --stat-icon-size: 20px;
+  }
+}
+
+/* Regular phones (iPhone 12/13/14, Pixel) - 376px to 414px */
+@media screen and (min-width: 376px) and (max-width: 414px) {
+  :root {
+    --app-padding-x: 20px;
+    --app-padding-y: 16px;
+    --app-card-radius: 18px;
+    --font-size-timer: 48px;
+    --dog-card-size: 130px;
+    --timer-ring-size: 300px;
+    --duration-btn-size: 75px;
+  }
+}
+
+/* Large phones (iPhone Pro Max, Galaxy S Ultra) - 415px to 480px */
+@media screen and (min-width: 415px) and (max-width: 480px) {
+  :root {
+    --app-padding-x: 24px;
+    --app-padding-y: 20px;
+    --app-card-radius: 20px;
+    --font-size-lg: 22px;
+    --font-size-xl: 26px;
+    --font-size-2xl: 32px;
+    --font-size-3xl: 40px;
+    --font-size-timer: 56px;
+    --dog-card-size: 150px;
+    --timer-ring-size: 340px;
+    --duration-btn-size: 85px;
+    --stat-icon-size: 26px;
+  }
+}
+
+/* Small tablets (iPad Mini) - 481px to 768px */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+  :root {
+    --app-padding-x: 32px;
+    --app-padding-y: 24px;
+    --app-card-radius: 22px;
+    --font-size-base: 16px;
+    --font-size-md: 18px;
+    --font-size-lg: 24px;
+    --font-size-xl: 28px;
+    --font-size-2xl: 36px;
+    --font-size-3xl: 44px;
+    --font-size-timer: 64px;
+    --dog-card-size: 180px;
+    --timer-ring-size: 400px;
+    --duration-btn-size: 100px;
+    --stat-icon-size: 30px;
+  }
+}
+
+/* Large tablets (iPad, iPad Air, iPad Pro) - 769px+ */
+@media screen and (min-width: 769px) {
+  :root {
+    --app-padding-x: 48px;
+    --app-padding-y: 32px;
+    --app-card-radius: 24px;
+    --font-size-base: 17px;
+    --font-size-md: 19px;
+    --font-size-lg: 26px;
+    --font-size-xl: 32px;
+    --font-size-2xl: 40px;
+    --font-size-3xl: 52px;
+    --font-size-timer: 80px;
+    --dog-card-size: 200px;
+    --timer-ring-size: 450px;
+    --duration-btn-size: 110px;
+    --stat-icon-size: 34px;
+  }
+}
+
+/* Force light mode - disable dark mode globally */
+html {
+  color-scheme: light only;
+}
+
+/* Completely disable dark mode - override system preference */
+html[data-theme="light"],
+html:not([data-theme]) {
+  color-scheme: light only !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* Force light mode even when system prefers dark */
+  html, body, ion-app {
+    color-scheme: light only !important;
+    background-color: #F8F8F5 !important;
+  }
+  
+  /* Override any dark mode styles */
+  ion-content {
+    --background: #F8F8F5 !important;
+  }
+  
+  /* Fix all Ionic components to be visible in light mode */
+  ion-select, 
+  ion-popover, 
+  ion-action-sheet, 
+  ion-alert,
+  ion-modal,
+  ion-toast,
+  ion-loading {
+    --background: #ffffff !important;
+    --color: #2C2C2C !important;
+  }
+  
+  ion-select::part(placeholder),
+  ion-select::part(text),
+  ion-select::part(icon) {
+    color: #2C2C2C !important;
+  }
+  
+  /* Ensure popovers and modals are visible */
+  ion-popover::part(content),
+  ion-modal::part(content) {
+    background: #ffffff !important;
+    color: #2C2C2C !important;
+  }
+  
+  /* Fix action sheets and alerts */
+  ion-action-sheet,
+  ion-alert {
+    --background: #ffffff !important;
+    
+    .action-sheet-button,
+    .alert-button {
+      color: #2C2C2C !important;
+    }
+  }
+  
+  /* Ensure all text and icons are visible */
+  * {
+    color: inherit !important;
+  }
+  
+  /* Fix any native dropdowns or selects */
+  select, option {
+    background-color: #ffffff !important;
+    color: #2C2C2C !important;
+  }
+}
+
+/* Global Paws Focus Styles */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: var(--app-background);
+  color: var(--app-text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+ion-content {
+  --background: var(--app-background);
+  
+  // Ensure content respects safe areas by default
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+}
+
+// Safe area utility class - use on containers inside ion-content
+.safe-area-container {
+  padding-left: max(var(--app-padding-x), env(safe-area-inset-left, 16px));
+  padding-right: max(var(--app-padding-x), env(safe-area-inset-right, 16px));
+  padding-top: max(var(--app-padding-y), env(safe-area-inset-top, 16px));
+  padding-bottom: calc(100px + env(safe-area-inset-bottom, 34px)); // Tab bar height + safe area
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+// For pages without tab bar (modals, standalone pages)
+.safe-area-container-no-tabs {
+  padding-left: max(var(--app-padding-x), env(safe-area-inset-left, 16px));
+  padding-right: max(var(--app-padding-x), env(safe-area-inset-right, 16px));
+  padding-top: max(var(--app-padding-y), env(safe-area-inset-top, 16px));
+  padding-bottom: max(var(--app-padding-y), env(safe-area-inset-bottom, 24px));
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+// Safe area bottom padding for elements that need to clear the home indicator
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+// Safe area top padding for elements that need to clear the notch/dynamic island
+.safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Ionic App wrapper */
+ion-app {
+  background-color: var(--app-background);
+}
+
+/* Modal styles */
+.success-modal,
+.failed-modal {
+  --height: 100%;
+  --width: 100%;
+  --border-radius: 0;
+}
+
+/* Hide header safe area padding on modals */
+ion-modal ion-content {
+  --padding-top: env(safe-area-inset-top);
+}
+
+/* Smooth scrolling */
+ion-content::part(scroll) {
+  scroll-behavior: smooth;
+}
+
+/* Focus states for accessibility */
+ion-button:focus-visible {
+  outline: 2px solid #2D5A27;
+  outline-offset: 2px;
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(45, 90, 39, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(45, 90, 39, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(45, 90, 39, 0.3);
+}
+
+/* Update Alert Styles */
+.update-alert,
+.maintenance-alert {
+  --backdrop-opacity: 0.7;
+  
+  .alert-wrapper {
+    border-radius: 20px;
+    padding: 8px;
+  }
+  
+  .alert-head {
+    padding-bottom: 12px;
+    
+    .alert-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+  }
+  
+  .alert-message {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--app-text-muted);
+    
+    strong {
+      color: var(--app-text);
+    }
+  }
+  
+  .alert-button-group {
+    padding-top: 16px;
+    
+    .alert-button {
+      border-radius: 12px;
+      font-weight: 600;
+      min-height: 48px;
+      
+      &.primary-button {
+        background: var(--app-primary);
+        color: white;
+      }
+      
+      &.secondary-button {
+        background: transparent;
+        color: var(--app-text-muted);
+      }
+    }
+  }
+}
+
+.maintenance-alert {
+  .alert-head {
+    .alert-title {
+      color: var(--app-warning);
+    }
+  }
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Container max-width for tablets */
+.responsive-container {
+  max-width: 600px;
+  margin: 0 auto;
+  
+  @media screen and (min-width: 769px) {
+    max-width: 700px;
+  }
+  
+  @media screen and (min-width: 1024px) {
+    max-width: 800px;
+  }
+}
+
+/* Safe area padding utility classes */
+.safe-area-top {
+  padding-top: var(--safe-area-top);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.safe-area-all {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+/* Flexible text sizing */
+.text-responsive {
+  font-size: clamp(12px, 3.5vw, 18px);
+}
+
+/* Timer text that scales but stays readable */
+.timer-text-responsive {
+  font-size: clamp(36px, 12vw, 80px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+}
+
+/* ============================================
+   NOTCH / DYNAMIC ISLAND HANDLING
+   ============================================ */
+
+/*
+ * IMPORTANT:
+ * Do NOT apply a global safe-area top padding to `ion-content`.
+ * Many pages in this app already add `env(safe-area-inset-top)` to their own containers.
+ * A global padding here causes a visible "extra space" (double safe-area) on real devices.
+ *
+ * Safe-area should be handled per-page (container padding) or via Ionic defaults.
+ */
+
+/* Landscape orientation - handle notch on sides */
+@media screen and (orientation: landscape) {
+  .home-container,
+  .kennel-container,
+  .profile-container,
+  .auth-container {
+    padding-left: calc(var(--app-padding-x) + env(safe-area-inset-left, 0px));
+    padding-right: calc(var(--app-padding-x) + env(safe-area-inset-right, 0px));
+  }
+}
+
+/* ============================================
+   TOUCH TARGET SIZES (WCAG 2.1)
+   ============================================ */
+
+/* Minimum 44x44px touch targets for accessibility */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Larger touch targets for primary actions */
+.touch-target-lg {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+/* ============================================
+   FLEXIBLE GRID UTILITIES
+   ============================================ */
+
+/* Responsive grid that adjusts columns based on screen */
+.responsive-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, 1fr);
+  
+  @media screen and (max-width: 375px) {
+    gap: 8px;
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @media screen and (min-width: 481px) {
+    gap: 16px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  @media screen and (min-width: 769px) {
+    gap: 20px;
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Stats row that wraps on small screens */
+.stats-row-responsive {
+  display: flex;
+  gap: 10px;
+  
+  @media screen and (max-width: 375px) {
+    flex-wrap: wrap;
+    
+    > * {
+      flex: 1 1 45%;
+      min-width: 0;
+    }
+  }
+}
+
+/* ============================================
+   FONT SCALING FOR ACCESSIBILITY
+   ============================================ */
+
+/* Respect user's font size preferences */
+@media screen and (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :root {
+    --app-text: #000000;
+    --app-text-muted: #333333;
+    --app-border: #666666;
+  }
+}
+
+/* ============================================
+   PLATFORM-SPECIFIC ADJUSTMENTS
+   ============================================ */
+
+/* iOS-specific fixes */
+.ios {
+  /* Fix bounce scroll background */
+  ion-content {
+    --background: var(--app-background);
+  }
+  
+  /* Fix status bar overlap */
+  ion-header ion-toolbar:first-of-type {
+    padding-top: var(--safe-area-top);
+  }
+}
+
+/* Android-specific fixes */
+.md {
+  /* Android typically has smaller safe areas */
+  ion-content {
+    --padding-top: max(16px, env(safe-area-inset-top));
+  }
+}
+
+/* ============================================
+   KEYBOARD HANDLING
+   ============================================ */
+
+/* Adjust layout when keyboard is visible */
+ion-content.keyboard-visible {
+  --keyboard-offset: 0px;
+}
+
+/* Prevent content jumping on keyboard open */
+.keyboard-aware {
+  transition: padding-bottom 0.2s ease;
+}
+
+/* ============================================
+   SMOOTH INTERACTIONS
+   ============================================ */
+
+/* Button press states */
+button, 
+.clickable {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  
+  &:active {
+    opacity: 0.85;
+    transform: scale(0.98);
+  }
+}
+
+/* Prevent text selection on interactive elements */
+ion-button,
+ion-tab-button,
+.btn,
+.card-clickable {
+  user-select: none;
+  -webkit-user-select: none;
+}

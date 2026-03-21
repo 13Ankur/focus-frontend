@@ -1,0 +1,104 @@
+<ion-content class="achievements-content" [fullscreen]="true" [scrollY]="true">
+  <div class="achievements-container">
+
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Achievements</h1>
+      <span class="trophy-icon">🏆</span>
+    </div>
+
+    <!-- Progress Summary -->
+    <div class="progress-card">
+      <div class="progress-info">
+        <span class="progress-count">{{ unlockedCount }} / {{ totalCount }}</span>
+        <span class="progress-label">Unlocked</span>
+      </div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" [style.width.%]="progressPercent"></div>
+        </div>
+      </div>
+      <div class="progress-badges" *ngIf="unclaimedCount > 0">
+        <span class="unclaimed-badge">{{ unclaimedCount }} unclaimed!</span>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading-state" *ngIf="loading">
+      <ion-spinner name="crescent"></ion-spinner>
+    </div>
+
+    <!-- Achievement Grid -->
+    <div class="achievement-grid" *ngIf="!loading">
+      <div
+        *ngFor="let a of achievements"
+        class="achievement-card"
+        [class.unlocked]="a.unlocked && a.claimed"
+        [class.unclaimed]="a.unlocked && !a.claimed"
+        [class.locked]="!a.unlocked"
+        (click)="claimAchievement(a)"
+      >
+        <!-- Icon -->
+        <div class="ach-icon-wrap" [class.glow]="a.unlocked && !a.claimed">
+          <span class="ach-icon" [class.grayscale]="!a.unlocked">{{ a.icon }}</span>
+          <ion-icon name="checkmark-circle" class="claimed-check" *ngIf="a.claimed"></ion-icon>
+        </div>
+
+        <!-- Name -->
+        <span class="ach-name">{{ a.unlocked || a.progress ? a.name : '???' }}</span>
+
+        <!-- Description -->
+        <span class="ach-desc">{{ a.desc }}</span>
+
+        <!-- Claim Button (unclaimed) -->
+        <button
+          class="claim-btn"
+          *ngIf="a.unlocked && !a.claimed"
+          [disabled]="claiming === a.id"
+        >
+          <span *ngIf="claiming !== a.id">Claim {{ a.kibble }} 🦴</span>
+          <ion-spinner name="crescent" *ngIf="claiming === a.id"></ion-spinner>
+        </button>
+
+        <!-- Progress (locked with trackable progress) -->
+        <div class="ach-progress" *ngIf="!a.unlocked && a.progress">
+          <div class="ach-progress-bar">
+            <div class="ach-progress-fill" [style.width.%]="a.progress.percent"></div>
+          </div>
+          <span class="ach-progress-text">{{ a.progress.current }} / {{ a.progress.target }}</span>
+        </div>
+
+        <!-- Reward indicator (locked, no progress) -->
+        <span class="ach-reward" *ngIf="!a.unlocked && !a.progress">{{ a.kibble }} 🦴</span>
+
+        <!-- Claimed indicator -->
+        <span class="ach-claimed-label" *ngIf="a.claimed">Claimed ✓</span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && achievements.length === 0">
+      <span class="empty-icon">🏆</span>
+      <p>Complete focus sessions to unlock achievements!</p>
+    </div>
+  </div>
+
+  <!-- Celebration Overlay -->
+  <div class="celebration-overlay" *ngIf="showCelebration" @claimPop>
+    <div class="celebration-card">
+      <span class="celebration-icon">{{ celebrationAchievement?.icon }}</span>
+      <h2 class="celebration-title">Achievement Claimed!</h2>
+      <p class="celebration-name">{{ celebrationAchievement?.name }}</p>
+      <p class="celebration-kibble">+{{ celebrationAchievement?.kibble }} kibble earned! 🦴</p>
+      <div class="celebration-sparkles">
+        <span class="sparkle s1">✨</span>
+        <span class="sparkle s2">🌟</span>
+        <span class="sparkle s3">✨</span>
+        <span class="sparkle s4">⭐</span>
+      </div>
+    </div>
+  </div>
+</ion-content>

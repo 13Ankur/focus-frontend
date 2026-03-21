@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 250">
+  <defs>
+    <linearGradient id="plushFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="plushDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+    <filter id="plushShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Ears -->
+  <ellipse cx="45" cy="55" rx="30" ry="45" fill="url(#plushDark)" transform="rotate(-20, 45, 55)"/>
+  <ellipse cx="45" cy="58" rx="20" ry="32" fill="url(#plushFur)" transform="rotate(-20, 45, 55)"/>
+  <ellipse cx="155" cy="55" rx="30" ry="45" fill="url(#plushDark)" transform="rotate(20, 155, 55)"/>
+  <ellipse cx="155" cy="58" rx="20" ry="32" fill="url(#plushFur)" transform="rotate(20, 155, 55)"/>
+  
+  <!-- Body -->
+  <ellipse cx="100" cy="185" rx="70" ry="55" fill="url(#plushFur)" filter="url(#plushShadow)"/>
+  
+  <!-- Arms -->
+  <ellipse cx="40" cy="160" rx="20" ry="35" fill="url(#plushDark)" transform="rotate(-20, 40, 160)"/>
+  <ellipse cx="160" cy="160" rx="20" ry="35" fill="url(#plushDark)" transform="rotate(20, 160, 160)"/>
+  
+  <!-- Feet -->
+  <ellipse cx="60" cy="230" rx="28" ry="18" fill="url(#plushDark)"/>
+  <ellipse cx="140" cy="230" rx="28" ry="18" fill="url(#plushDark)"/>
+  <circle cx="50" cy="230" r="6" fill="#D4A85F"/>
+  <circle cx="62" cy="235" r="5" fill="#D4A85F"/>
+  <circle cx="74" cy="230" r="6" fill="#D4A85F"/>
+  <circle cx="130" cy="230" r="6" fill="#D4A85F"/>
+  <circle cx="142" cy="235" r="5" fill="#D4A85F"/>
+  <circle cx="154" cy="230" r="6" fill="#D4A85F"/>
+  
+  <!-- Head -->
+  <ellipse cx="100" cy="95" rx="65" ry="70" fill="url(#plushFur)" filter="url(#plushShadow)"/>
+  
+  <!-- Face patch -->
+  <ellipse cx="100" cy="110" rx="40" ry="35" fill="#FFF5E0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="100" cy="125" rx="22" ry="16" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="100" cy="115" rx="12" ry="9" fill="#333"/>
+  <ellipse cx="97" cy="112" rx="4" ry="3" fill="#555"/>
+  
+  <!-- Eyes -->
+  <circle cx="70" cy="85" r="15" fill="white"/>
+  <circle cx="130" cy="85" r="15" fill="white"/>
+  <circle cx="72" cy="87" r="10" fill="#3D2B1F"/>
+  <circle cx="132" cy="87" r="10" fill="#3D2B1F"/>
+  <circle cx="69" cy="83" r="4" fill="white"/>
+  <circle cx="129" cy="83" r="4" fill="white"/>
+  
+  <!-- Mouth -->
+  <path d="M85 135 Q100 145 115 135" stroke="#8B6B4D" stroke-width="3" fill="none"/>
+  
+  <!-- Tongue -->
+  <ellipse cx="100" cy="148" rx="10" ry="15" fill="#FF8FA0"/>
+  
+  <!-- Collar -->
+  <path d="M50 150 Q100 165 150 150" stroke="#7ED321" stroke-width="8" fill="none"/>
+  <circle cx="100" cy="158" r="10" fill="#5CB215"/>
+  <circle cx="100" cy="158" r="6" fill="#FFD700"/>
+</svg>

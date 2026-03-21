@@ -1,0 +1,149 @@
+.dog-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: transform 0.3s ease;
+  
+  &.active,
+  &.eating {
+    animation: gentle-bounce 1s ease-in-out infinite;
+  }
+  
+  &.hungry {
+    .dog-image {
+      filter: grayscale(0.1);
+    }
+  }
+}
+
+.dog-image {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  transition: all 0.3s ease;
+  
+  &.eating {
+    filter: drop-shadow(0 4px 12px rgba(45, 90, 39, 0.3));
+    animation: eating-wiggle 0.5s ease-in-out infinite;
+  }
+}
+
+.food-bowl-indicator {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 24px;
+  animation: bowl-shake 2s ease-in-out infinite;
+  
+  .bowl-empty {
+    opacity: 0.7;
+  }
+}
+
+.eating-particles {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  
+  .particle {
+    font-size: 16px;
+    animation: float-up 1.5s ease-in-out infinite;
+    
+    &:nth-child(2) {
+      animation-delay: 0.5s;
+    }
+  }
+}
+
+.dog-shadow {
+  width: 80px;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.15) 0%, transparent 70%);
+  margin-top: 8px;
+  transition: all 0.3s ease;
+  
+  &.active {
+    width: 100px;
+    animation: shadow-pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes gentle-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes eating-wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-2deg);
+  }
+  75% {
+    transform: rotate(2deg);
+  }
+}
+
+@keyframes bowl-shake {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes shadow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(0.9);
+    opacity: 0.4;
+  }
+}
+
+@media (max-width: 380px) {
+  .dog-image {
+    width: 90px;
+    height: 90px;
+  }
+
+  .dog-shadow {
+    width: 60px;
+
+    &.active {
+      width: 75px;
+    }
+  }
+
+  .food-bowl-indicator {
+    font-size: 20px;
+  }
+}

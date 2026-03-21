@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="walkFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="walkDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Tail wagging -->
+  <ellipse cx="100" cy="65" rx="18" ry="8" fill="url(#walkDark)" transform="rotate(-30, 100, 65)">
+    <animateTransform attributeName="transform" type="rotate" values="-30 100 65;-10 100 65;-30 100 65" dur="0.4s" repeatCount="indefinite"/>
+  </ellipse>
+  
+  <!-- Ears (one flopping) -->
+  <ellipse cx="30" cy="22" rx="12" ry="20" fill="url(#walkDark)" transform="rotate(-20, 30, 22)"/>
+  <ellipse cx="30" cy="24" rx="8" ry="14" fill="url(#walkFur)" transform="rotate(-20, 30, 24)"/>
+  <ellipse cx="80" cy="22" rx="12" ry="20" fill="url(#walkDark)" transform="rotate(5, 80, 22)">
+    <animateTransform attributeName="transform" type="rotate" values="5 80 22;15 80 22;5 80 22" dur="0.5s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="80" cy="24" rx="8" ry="14" fill="url(#walkFur)" transform="rotate(5, 80, 24)">
+    <animateTransform attributeName="transform" type="rotate" values="5 80 24;15 80 24;5 80 24" dur="0.5s" repeatCount="indefinite"/>
+  </ellipse>
+  
+  <!-- Body -->
+  <ellipse cx="60" cy="75" rx="38" ry="22" fill="url(#walkFur)"/>
+  
+  <!-- Legs walking animation -->
+  <g>
+    <!-- Back left leg -->
+    <ellipse cx="32" cy="95" rx="8" ry="15" fill="url(#walkDark)">
+      <animateTransform attributeName="transform" type="rotate" values="10 32 85;-10 32 85;10 32 85" dur="0.3s" repeatCount="indefinite"/>
+    </ellipse>
+    <!-- Back right leg -->
+    <ellipse cx="48" cy="95" rx="8" ry="15" fill="url(#walkDark)">
+      <animateTransform attributeName="transform" type="rotate" values="-10 48 85;10 48 85;-10 48 85" dur="0.3s" repeatCount="indefinite"/>
+    </ellipse>
+    <!-- Front left leg -->
+    <ellipse cx="68" cy="95" rx="8" ry="15" fill="url(#walkDark)">
+      <animateTransform attributeName="transform" type="rotate" values="-10 68 85;10 68 85;-10 68 85" dur="0.3s" repeatCount="indefinite"/>
+    </ellipse>
+    <!-- Front right leg -->
+    <ellipse cx="84" cy="95" rx="8" ry="15" fill="url(#walkDark)">
+      <animateTransform attributeName="transform" type="rotate" values="10 84 85;-10 84 85;10 84 85" dur="0.3s" repeatCount="indefinite"/>
+    </ellipse>
+  </g>
+  
+  <!-- Head -->
+  <ellipse cx="55" cy="42" rx="28" ry="30" fill="url(#walkFur)"/>
+  
+  <!-- Face patch -->
+  <ellipse cx="55" cy="50" rx="18" ry="16" fill="#FFF5E0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="55" cy="56" rx="10" ry="8" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="55" cy="52" rx="6" ry="4" fill="#333"/>
+  
+  <!-- Eyes - excited look -->
+  <circle cx="42" cy="38" r="7" fill="white"/>
+  <circle cx="68" cy="38" r="7" fill="white"/>
+  <circle cx="43" cy="39" r="4.5" fill="#3D2B1F"/>
+  <circle cx="69" cy="39" r="4.5" fill="#3D2B1F"/>
+  <circle cx="41" cy="36" r="2" fill="white"/>
+  <circle cx="67" cy="36" r="2" fill="white"/>
+  
+  <!-- Happy open mouth -->
+  <path d="M45 62 Q55 72 65 62" stroke="#8B6B4D" stroke-width="2" fill="none"/>
+  <ellipse cx="55" cy="66" rx="8" ry="10" fill="#FF8FA0"/>
+  
+  <!-- Collar -->
+  <path d="M32 68 Q55 76 78 68" stroke="#7ED321" stroke-width="4" fill="none"/>
+  <circle cx="55" cy="72" r="4" fill="#FFD700"/>
+</svg>

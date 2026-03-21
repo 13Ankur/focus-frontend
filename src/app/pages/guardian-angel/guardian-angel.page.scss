@@ -1,0 +1,373 @@
+.guardian-content {
+  --background: #1a1a1a;
+}
+
+.guardian-container {
+  min-height: 100%;
+  padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+}
+
+// Header
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.back-btn,
+.share-btn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  
+  ion-icon {
+    font-size: 24px;
+    color: white;
+  }
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: white;
+}
+
+// Badge Section
+.badge-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.founder-badge {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  
+  .paw-container {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #f5c518 0%, #d4a010 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 30px rgba(245, 197, 24, 0.4);
+    
+    .paw-icon {
+      width: 60px;
+      height: 60px;
+      filter: brightness(0) invert(1);
+    }
+  }
+  
+  .founding-label {
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2a2a2a;
+    border: 2px solid #f5c518;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #f5c518;
+    text-align: center;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+}
+
+// Title
+.main-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.tier-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: #f5c518;
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+// Video Card
+.video-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.video-thumbnail {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  filter: brightness(0.7);
+}
+
+.play-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 56px;
+  height: 56px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  ion-icon {
+    font-size: 24px;
+    color: #2C2C2C;
+    margin-left: 4px;
+  }
+}
+
+.video-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 16px;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  
+  .video-title {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+  }
+  
+  .video-subtitle {
+    display: block;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 2px;
+  }
+}
+
+// Donation Card
+.donation-card {
+  background: linear-gradient(135deg, #2a2a2a 0%, #333333 100%);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.donation-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 8px;
+}
+
+.donation-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  .donation-amount {
+    font-size: 28px;
+    font-weight: 800;
+    color: white;
+  }
+  
+  .donation-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(245, 197, 24, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+}
+
+// Description
+.description {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.6;
+  text-align: center;
+  margin: 0 0 24px;
+}
+
+// Perks Section
+.perks-section {
+  margin-bottom: 24px;
+}
+
+.perks-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  
+  ion-icon {
+    font-size: 20px;
+    color: #f5c518;
+  }
+  
+  span {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+  }
+}
+
+.perk-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin-bottom: 12px;
+}
+
+.perk-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  ion-icon {
+    font-size: 22px;
+  }
+  
+  &.gold {
+    background: rgba(245, 197, 24, 0.2);
+    ion-icon { color: #f5c518; }
+  }
+  
+  &.heart {
+    background: rgba(255, 100, 100, 0.2);
+    ion-icon { color: #ff6464; }
+  }
+  
+  &.star {
+    background: rgba(100, 150, 255, 0.2);
+    ion-icon { color: #6496ff; }
+  }
+}
+
+.perk-info {
+  flex: 1;
+  
+  .perk-title {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 2px;
+  }
+  
+  .perk-subtitle {
+    display: block;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
+
+// Join Button
+.join-btn {
+  --background: linear-gradient(135deg, #f5c518 0%, #d4a010 100%);
+  --background-hover: linear-gradient(135deg, #e0b015 0%, #c99510 100%);
+  --border-radius: 28px;
+  --padding-top: 18px;
+  --padding-bottom: 18px;
+  --color: #1a1a1a;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.price-info {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 380px) {
+  .guardian-container {
+    padding: 16px;
+  }
+
+  .founder-badge {
+    width: 90px;
+    height: 90px;
+  }
+
+  .paw-icon {
+    font-size: 44px;
+  }
+
+  .main-title {
+    font-size: 24px;
+  }
+
+  .main-subtitle {
+    font-size: 14px;
+  }
+
+  .video-thumbnail {
+    height: 130px;
+  }
+
+  .play-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .donation-icon {
+    font-size: 36px;
+  }
+
+  .donation-amount {
+    font-size: 22px;
+  }
+
+  .perk-icon {
+    font-size: 36px;
+  }
+
+  .perk-title {
+    font-size: 14px;
+  }
+
+  .perk-desc {
+    font-size: 12px;
+  }
+
+  .subscribe-btn {
+    font-size: 15px;
+    padding: 14px;
+  }
+}

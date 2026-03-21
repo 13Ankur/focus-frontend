@@ -1,0 +1,314 @@
+<ion-content class="profile-content" [fullscreen]="true" [scrollY]="true">
+  <div class="profile-container">
+
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="user-info">
+        <div class="avatar-wrapper" [ngClass]="tierBadgeClass">
+          <img src="assets/images/user-avatar.svg" alt="User avatar" class="user-avatar" width="56" height="56">
+          <div class="level-badge">
+            <span>{{ userLevel }}</span>
+          </div>
+        </div>
+        <div class="user-details">
+          <h1 class="user-name">{{ userName }}</h1>
+          <p class="user-title">Level {{ userLevel }} {{ levelTitle }}</p>
+          
+        </div>
+      </div>
+      <button class="settings-btn" (click)="goToSettings()" aria-label="Go to settings">
+        <ion-icon name="settings-outline"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Global Impact Banner -->
+    <div class="global-impact-banner" (click)="showGlobalImpact()" role="button" aria-label="View global impact">
+      <span class="impact-icon">🌍</span>
+      <span class="impact-text">{{ globalMeals | number }} meals donated globally</span>
+      <ion-icon name="arrow-forward" class="impact-arrow"></ion-icon>
+    </div>
+
+    <!-- Daily Goal Progress -->
+    <div class="daily-goal-section">
+      <div class="goal-ring-wrapper">
+        <svg class="goal-ring" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="54" class="ring-bg" />
+          <circle
+            cx="60" cy="60" r="54"
+            class="ring-fill"
+            [attr.stroke-dasharray]="dailyProgressCircumference"
+            [attr.stroke-dashoffset]="dailyProgressDashOffset"
+          />
+        </svg>
+        <div class="goal-ring-inner">
+          <span class="goal-value">{{ dailyMinutes }}</span>
+          <span class="goal-unit">/ {{ dailyGoal }} min</span>
+        </div>
+      </div>
+      <div class="goal-info">
+        <span class="goal-label" *ngIf="!dailyGoalReached">
+          Keep going! {{ dailyGoalRemaining }} minutes to your goal
+        </span>
+        <span class="goal-label reached" *ngIf="dailyGoalReached">
+          🎉 Goal reached! Keep the momentum!
+        </span>
+      </div>
+    </div>
+
+    <!-- Period Selector -->
+    <div class="period-selector">
+      <button class="period-btn" [class.active]="selectedPeriod === 'today'" (click)="selectPeriod('today')" aria-label="View Today stats">Today</button>
+      <button class="period-btn" [class.active]="selectedPeriod === 'week'" (click)="selectPeriod('week')" aria-label="View Week stats">Week</button>
+      <button class="period-btn" [class.active]="selectedPeriod === 'month'" (click)="selectPeriod('month')"
+        aria-label="View Month stats">
+        Month
+      </button>
+      <button class="period-btn" [class.active]="selectedPeriod === 'all'" (click)="selectPeriod('all')"
+        aria-label="View All Time stats">
+        All Time
+      </button>
+    </div>
+
+    <!-- Period Stats Cards -->
+    <div class="period-stats" *ngIf="periodHasData">
+      <div class="main-stat-card">
+        <div class="main-stat-icon">
+          <ion-icon name="time-outline"></ion-icon>
+        </div>
+        <div class="main-stat-content">
+          <span class="main-stat-value">{{ displayStats.focusTime }}</span>
+          <span class="main-stat-label">Focus Time</span>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="mini-stat">
+          <span class="mini-value">{{ displayStats.sessions }}</span>
+          <span class="mini-label">Sessions</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-value">{{ displayStats.kibble }}</span>
+          <span class="mini-label">Kibble</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-value">{{ displayStats.meals }}</span>
+          <span class="mini-label">Meals</span>
+        </div>
+        <div class="mini-stat">
+          <span class="mini-value">{{ displayStats.avgPerDay }}</span>
+          <span class="mini-label">Avg/Day</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Data State -->
+    <div class="no-data-card" *ngIf="!periodHasData">
+      <span class="no-data-icon">📊</span>
+      <span class="no-data-text">{{ noDataMessage }}</span>
+      <button class="start-btn" (click)="goToFocus()" aria-label="Start a focus session">
+        Start Focusing
+        <ion-icon name="arrow-forward"></ion-icon>
+      </button>
+    </div>
+
+    <!-- Tag Breakdown -->
+    <div class="tag-section">
+      <h2 class="section-title">Tag Breakdown</h2>
+
+      <div class="tag-content" *ngIf="tagBreakdown.length > 0">
+        <div class="tag-bar-row" *ngFor="let tag of tagBreakdown">
+          <div class="tag-label-row">
+            <span class="tag-icon">{{ tag.icon }}</span>
+            <span class="tag-name">{{ formatTagName(tag.tag) }}</span>
+            <span class="tag-time">{{ formatTagTime(tag.minutes) }}</span>
+          </div>
+          <div class="tag-bar">
+            <div class="tag-bar-fill" [style.width.%]="tag.percent"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tag-content empty" *ngIf="tagBreakdown.length === 0">
+        <span class="empty-text">Complete sessions with tags to see your breakdown</span>
+      </div>
+    </div>
+
+    <!-- Weekly Activity Chart -->
+    <div class="activity-section">
+      <h2 class="section-title">Weekly Activity</h2>
+      <div class="activity-chart">
+        <div
+          class="activity-bar"
+          *ngFor="let day of weeklyData"
+          [class.today]="day.isToday"
+          [class.empty]="day.minutes === 0"
+          [class.selected]="selectedDay?.date === day.date"
+          (click)="selectChartDay(day)"
+          role="button"
+          [attr.aria-label]="day.date + ': ' + day.minutes + ' minutes focused'"
+        >
+          <div class="bar-fill" [style.height.%]="getBarHeight(day.minutes)"></div>
+          <span class="bar-value" *ngIf="day.minutes > 0">{{ day.minutes }}</span>
+          <span class="bar-label">{{ day.label }}</span>
+        </div>
+      </div>
+      <div class="day-detail" *ngIf="selectedDay">
+        <span>{{ selectedDay.date }}: {{ selectedDay.minutes }} min, {{ selectedDay.sessions }} session{{ selectedDay.sessions !== 1 ? 's' : '' }}</span>
+      </div>
+      <p class="chart-hint" *ngIf="maxMinutes <= 1 && !hasAnyData">Start focusing to see your chart!</p>
+      <p class="chart-hint" *ngIf="maxMinutes > 1">Minutes focused per day</p>
+    </div>
+
+    <!-- Focus Insights -->
+    <div class="insights-section" *ngIf="insights.length > 0">
+      <h2 class="section-title">Focus Insights</h2>
+      <div class="insight-card" *ngFor="let insight of insights" [ngClass]="getInsightTrend(insight)">
+        <span class="insight-icon">{{ getInsightIcon(insight.type) }}</span>
+        <div class="insight-body">
+          <span class="insight-label">{{ getInsightLabel(insight.type) }}</span>
+          <span class="insight-text">{{ insight.text }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lifetime Stats -->
+    <div class="lifetime-section">
+      <h2 class="section-title">Lifetime Stats</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-value">{{ totalFocusTime }}</div>
+          <div class="stat-label">Total Focus</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value">{{ totalSessions }}</div>
+          <div class="stat-label">Sessions</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-icon">🍖</div>
+          <div class="stat-value">{{ totalMeals }}</div>
+          <div class="stat-label">Meals Donated</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🦴</div>
+          <div class="stat-value">{{ totalKibble }}</div>
+          <div class="stat-label">Total Kibble</div>
+        </div>
+      </div>
+
+      <!-- Level Progress -->
+      <div class="level-progress-section">
+        <div class="level-header">
+          <span class="level-title-text">Level {{ userLevel }} — {{ levelTitle }}</span>
+          <span class="level-next">{{ totalFocusMinutes }} / {{ nextLevelMinutes }} min</span>
+        </div>
+        <div class="level-bar">
+          <div class="level-bar-fill" [style.width.%]="Math.min(levelProgress, 100)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Streaks Section -->
+    <div class="streaks-section">
+      <h2 class="section-title">
+        <ion-icon name="flame-outline"></ion-icon>
+        Streaks
+      </h2>
+      <div class="streaks-grid">
+        <div class="streak-card current" [class.active]="currentStreak > 0">
+          <div class="streak-flames">
+            <span *ngFor="let i of [].constructor(Math.min(currentStreak, 7))">🔥</span>
+            <span *ngIf="currentStreak === 0">💤</span>
+          </div>
+          <div class="streak-value">{{ currentStreak }}</div>
+          <div class="streak-label">Current Streak</div>
+        </div>
+        <div class="streak-card best">
+          <div class="streak-icon">🏆</div>
+          <div class="streak-value">{{ longestStreak }}</div>
+          <div class="streak-label">Best Streak</div>
+        </div>
+      </div>
+
+      <!-- Streak Shield -->
+      <div class="shield-row" *ngIf="currentStreak > 0">
+        <button
+          class="shield-btn"
+          [disabled]="!shieldAvailable || shieldLoading"
+          (click)="useStreakShield()"
+          aria-label="Use streak shield"
+        >
+          <ion-icon name="shield-checkmark"></ion-icon>
+          <span *ngIf="shieldAvailable">Use Streak Shield</span>
+          <span *ngIf="!shieldAvailable">Shield recharges {{ shieldNextDate }}</span>
+        </button>
+        <span class="shield-hint">1 per week — protects your streak for today</span>
+      </div>
+
+      <p class="streak-hint" *ngIf="currentStreak === 0">
+        Complete a session today to start your streak!
+      </p>
+      <p class="streak-hint" *ngIf="currentStreak > 0 && currentStreak < longestStreak">
+        {{ longestStreak - currentStreak }} more days to beat your record!
+      </p>
+      <p class="streak-hint" *ngIf="currentStreak > 0 && currentStreak >= longestStreak">
+        🎉 You're on your best streak ever!
+      </p>
+
+      <!-- Streak Calendar -->
+      <div class="streak-calendar" *ngIf="streakCalendar.length > 0">
+        <h3 class="calendar-title">Last 30 Days</h3>
+        <div class="calendar-grid">
+          <div
+            *ngFor="let day of streakCalendar"
+            class="calendar-day"
+            [class.active]="day.sessions > 0"
+            [class.goal-met]="day.goalMet"
+            [attr.title]="day.date + ': ' + day.minutes + ' min'"
+            role="button"
+            tabindex="0"
+          >
+            <span class="day-num">{{ day.dayOfMonth }}</span>
+          </div>
+        </div>
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="legend-dot gray"></span> No session</span>
+          <span class="legend-item"><span class="legend-dot green"></span> Session</span>
+          <span class="legend-item"><span class="legend-dot gold"></span> Goal met</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Breed Collection -->
+    <div class="collection-section" (click)="goToKennel()" role="button" aria-label="Go to breed collection">
+      <div class="collection-card">
+        <div class="collection-icon">🐕</div>
+        <div class="collection-info">
+          <span class="collection-title">Breed Collection</span>
+          <span class="collection-progress">{{ unlockedBreeds }}/{{ totalBreeds }} unlocked</span>
+        </div>
+        <div class="collection-bar">
+          <div class="collection-fill" [style.width.%]="(unlockedBreeds / totalBreeds) * 100"></div>
+        </div>
+        <ion-icon name="arrow-forward" class="collection-arrow"></ion-icon>
+      </div>
+    </div>
+
+    <!-- Achievement Collection -->
+    <div class="collection-section" (click)="goToAchievements()" role="button" aria-label="Go to achievements">
+      <div class="collection-card">
+        <div class="collection-icon">🏆</div>
+        <div class="collection-info">
+          <span class="collection-title">Achievements</span>
+          <span class="collection-progress">{{ achievementCount }}/{{ totalAchievements }} unlocked</span>
+        </div>
+        <div class="collection-bar">
+          <div class="collection-fill" [style.width.%]="(achievementCount / totalAchievements) * 100"></div>
+        </div>
+        <ion-icon name="arrow-forward" class="collection-arrow"></ion-icon>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

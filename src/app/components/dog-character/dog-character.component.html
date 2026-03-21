@@ -1,0 +1,20 @@
+<div class="dog-container" [class.active]="isActive" [class.eating]="isActive" [class.hungry]="!isActive">
+  <img 
+    [src]="imageSrc" 
+    [alt]="altText"
+    class="dog-image"
+    [class.eating]="isActive"
+    width="120"
+    height="120"
+  />
+  <!-- Food bowl indicator -->
+  <div class="food-bowl-indicator" *ngIf="!isActive">
+    <span class="bowl-empty">🥣</span>
+  </div>
+  <!-- Eating particles when active -->
+  <div class="eating-particles" *ngIf="isActive">
+    <span class="particle">🦴</span>
+    <span class="particle">🍖</span>
+  </div>
+  <div class="dog-shadow" [class.active]="isActive"></div>
+</div>

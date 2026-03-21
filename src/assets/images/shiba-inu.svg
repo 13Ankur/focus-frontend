@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="shibaOrange" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5A855"/>
+      <stop offset="50%" stop-color="#E8923A"/>
+      <stop offset="100%" stop-color="#D47D28"/>
+    </linearGradient>
+    <linearGradient id="shibaDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D47D28"/>
+      <stop offset="100%" stop-color="#B8691A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Ears (triangular) -->
+  <polygon points="20,12 32,42 8,38" fill="url(#shibaOrange)"/>
+  <polygon points="22,18 30,40 12,36" fill="#FFF5E8"/>
+  <polygon points="80,12 68,42 92,38" fill="url(#shibaOrange)"/>
+  <polygon points="78,18 70,40 88,36" fill="#FFF5E8"/>
+  
+  <!-- Body -->
+  <ellipse cx="50" cy="82" rx="30" ry="16" fill="url(#shibaOrange)"/>
+  
+  <!-- Head -->
+  <ellipse cx="50" cy="50" rx="34" ry="32" fill="url(#shibaOrange)"/>
+  
+  <!-- Face (white cheeks) -->
+  <ellipse cx="50" cy="58" rx="28" ry="24" fill="#FFF8F0"/>
+  
+  <!-- Nose -->
+  <ellipse cx="50" cy="62" rx="8" ry="5" fill="#333"/>
+  
+  <!-- Eyes (squinty smile) -->
+  <path d="M32 48 Q40 44 48 48" stroke="#2D2D2D" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M52 48 Q60 44 68 48" stroke="#2D2D2D" stroke-width="4" fill="none" stroke-linecap="round"/>
+  
+  <!-- Mouth (doge smile) -->
+  <path d="M40 72 Q50 80 60 72" stroke="#8B6B4D" stroke-width="2" fill="none"/>
+  
+  <!-- Blush -->
+  <ellipse cx="28" cy="58" rx="8" ry="5" fill="#FFB8B8" opacity="0.5"/>
+  <ellipse cx="72" cy="58" rx="8" ry="5" fill="#FFB8B8" opacity="0.5"/>
+</svg>

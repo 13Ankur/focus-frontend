@@ -1,0 +1,232 @@
+<ion-content class="privacy-content" [fullscreen]="true" [scrollY]="true">
+  <div class="privacy-container">
+    
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Privacy Policy</h1>
+    </div>
+
+    <!-- Last Updated -->
+    <div class="updated-badge">
+      <span>Last Updated: {{ lastUpdated }}</span>
+    </div>
+
+    <!-- Content -->
+    <div class="legal-content">
+      
+      <!-- Introduction -->
+      <section class="section">
+        <h2>Introduction</h2>
+        <p>
+          Welcome to {{ appName }} ("we," "our," or "us"). We are committed to protecting your privacy 
+          and ensuring you have a positive experience when using our mobile application (the "App"). 
+          This Privacy Policy explains how we collect, use, disclose, and safeguard your information 
+          when you use our App.
+        </p>
+        <p>
+          Please read this Privacy Policy carefully. By using the App, you agree to the collection 
+          and use of information in accordance with this policy. If you do not agree with this policy, 
+          please do not use our App.
+        </p>
+      </section>
+
+      <!-- Information We Collect -->
+      <section class="section">
+        <h2>Information We Collect</h2>
+        
+        <h3>1. Information You Provide Directly</h3>
+        <ul>
+          <li><strong>Account Information:</strong> When you create an account, we collect your email address, username, and password (encrypted).</li>
+          <li><strong>Profile Information:</strong> Optional information you may provide such as your name or profile preferences.</li>
+          <li><strong>Communication:</strong> If you contact us for support, we collect the information you provide in your message.</li>
+        </ul>
+
+        <h3>2. Information Collected Automatically</h3>
+        <ul>
+          <li><strong>Usage Data:</strong> We collect information about how you use the App, including focus session duration, completion rates, and feature usage.</li>
+          <li><strong>Device Information:</strong> We may collect device type, operating system version, unique device identifiers, and mobile network information.</li>
+          <li><strong>Log Data:</strong> Our servers automatically record information including your IP address, access times, and app crashes or errors.</li>
+        </ul>
+
+        <h3>3. Information from Third Parties</h3>
+        <ul>
+          <li><strong>Social Sign-In:</strong> If you sign in using Google or Apple, we receive your name and email address as permitted by your privacy settings on those platforms.</li>
+          <li><strong>Analytics:</strong> We use analytics services to understand App usage patterns (see "Third-Party Services" below).</li>
+        </ul>
+      </section>
+
+      <!-- How We Use Information -->
+      <section class="section">
+        <h2>How We Use Your Information</h2>
+        <p>We use the information we collect to:</p>
+        <ul>
+          <li>Provide, maintain, and improve the App</li>
+          <li>Create and manage your account</li>
+          <li>Track your focus sessions and display your statistics</li>
+          <li>Unlock virtual dog breeds based on your progress</li>
+          <li>Calculate and display impact metrics (meals provided to shelter dogs)</li>
+          <li>Send you notifications related to your focus sessions (with your permission)</li>
+          <li>Respond to your comments, questions, and support requests</li>
+          <li>Monitor and analyze usage trends to improve user experience</li>
+          <li>Detect, prevent, and address technical issues and security threats</li>
+          <li>Comply with legal obligations</li>
+        </ul>
+      </section>
+
+      <!-- Data Sharing -->
+      <section class="section">
+        <h2>How We Share Your Information</h2>
+        <p>We do not sell, trade, or rent your personal information to third parties. We may share information in the following circumstances:</p>
+        <ul>
+          <li><strong>Service Providers:</strong> We may share information with third-party vendors who perform services on our behalf (e.g., hosting, analytics, email delivery).</li>
+          <li><strong>Legal Requirements:</strong> We may disclose information if required by law or in response to valid legal requests.</li>
+          <li><strong>Business Transfers:</strong> If we are involved in a merger, acquisition, or sale of assets, your information may be transferred.</li>
+          <li><strong>Aggregated Data:</strong> We may share aggregated, non-personally identifiable information publicly (e.g., total meals provided to shelter dogs).</li>
+        </ul>
+      </section>
+
+      <!-- Third-Party Services -->
+      <section class="section">
+        <h2>Third-Party Services</h2>
+        <p>Our App may use the following third-party services:</p>
+        <ul>
+          <li><strong>Google Analytics/Firebase:</strong> For app analytics and crash reporting</li>
+          <li><strong>SendGrid:</strong> For email delivery (account verification, password reset)</li>
+          <li><strong>Apple Sign-In / Google Sign-In:</strong> For authentication</li>
+        </ul>
+        <p>These services have their own privacy policies. We encourage you to review them.</p>
+      </section>
+
+
+      <!-- Data Storage and Security -->
+      <section class="section">
+        <h2>Data Storage and Security</h2>
+        <p>
+          We implement appropriate technical and organizational security measures to protect your 
+          personal information against unauthorized access, alteration, disclosure, or destruction. 
+          These measures include:
+        </p>
+        <ul>
+          <li>Encryption of data in transit (HTTPS/TLS)</li>
+          <li>Secure password hashing (bcrypt)</li>
+          <li>Regular security assessments</li>
+          <li>Access controls and authentication</li>
+        </ul>
+        <p>
+          Your data is stored on secure servers. While we strive to protect your information, 
+          no method of transmission over the Internet is 100% secure.
+        </p>
+      </section>
+
+      <!-- Data Retention -->
+      <section class="section">
+        <h2>Data Retention</h2>
+        <p>
+          We retain your personal information for as long as your account is active or as needed 
+          to provide you services. If you delete your account, we will delete your personal 
+          information within 30 days, except where we are required to retain it for legal purposes.
+        </p>
+        <p>Aggregated, anonymized data may be retained indefinitely for analytics purposes.</p>
+      </section>
+
+      <!-- Your Rights -->
+      <section class="section">
+        <h2>Your Rights and Choices</h2>
+        <p>Depending on your location, you may have the following rights:</p>
+        <ul>
+          <li><strong>Access:</strong> Request a copy of your personal data</li>
+          <li><strong>Correction:</strong> Request correction of inaccurate data</li>
+          <li><strong>Deletion:</strong> Request deletion of your personal data</li>
+          <li><strong>Export:</strong> Request a portable copy of your data</li>
+          <li><strong>Opt-Out:</strong> Opt out of marketing communications</li>
+          <li><strong>Withdraw Consent:</strong> Withdraw consent for data processing</li>
+        </ul>
+        <p>
+          To exercise any of these rights, please contact us at 
+          <a href="mailto:{{ contactEmail }}">{{ contactEmail }}</a> or use the account deletion 
+          feature in the App's Settings.
+        </p>
+      </section>
+
+      <!-- Account Deletion -->
+      <section class="section highlight">
+        <h2>Account Deletion</h2>
+        <p>
+          You can delete your account at any time through the App:
+        </p>
+        <ol>
+          <li>Go to <strong>Settings</strong></li>
+          <li>Scroll to <strong>Account</strong></li>
+          <li>Tap <strong>Delete Account</strong></li>
+          <li>Confirm your decision</li>
+        </ol>
+        <p>
+          When you delete your account, all your personal data including focus history, 
+          breed collection, and statistics will be permanently deleted within 30 days.
+        </p>
+      </section>
+
+      <!-- Children's Privacy -->
+      <section class="section">
+        <h2>Children's Privacy</h2>
+        <p>
+          Our App is not intended for children under the age of 13. We do not knowingly collect 
+          personal information from children under 13. If you are a parent or guardian and believe 
+          your child has provided us with personal information, please contact us at 
+          <a href="mailto:{{ contactEmail }}">{{ contactEmail }}</a> and we will delete such 
+          information.
+        </p>
+        <p>
+          If you are between 13 and 18 years old, you may use the App only with the involvement 
+          of a parent or guardian.
+        </p>
+      </section>
+
+      <!-- International Users -->
+      <section class="section">
+        <h2>International Users</h2>
+        <p>
+          If you are accessing the App from outside the United States, please be aware that your 
+          information may be transferred to, stored, and processed in the United States or other 
+          countries. By using the App, you consent to such transfer.
+        </p>
+        <p>
+          <strong>European Users (GDPR):</strong> We process your data based on legitimate interests, 
+          consent, and contractual necessity. You have additional rights under GDPR including the 
+          right to lodge a complaint with a supervisory authority.
+        </p>
+        <p>
+          <strong>California Users (CCPA):</strong> California residents have specific rights 
+          regarding their personal information. We do not sell personal information.
+        </p>
+      </section>
+
+      <!-- Changes to Policy -->
+      <section class="section">
+        <h2>Changes to This Privacy Policy</h2>
+        <p>
+          We may update this Privacy Policy from time to time. We will notify you of any changes 
+          by posting the new Privacy Policy in the App and updating the "Last Updated" date.
+        </p>
+        <p>
+          We encourage you to review this Privacy Policy periodically. Your continued use of the 
+          App after any changes indicates your acceptance of the updated policy.
+        </p>
+      </section>
+
+      <!-- Contact -->
+      <section class="section contact">
+        <h2>Contact Us</h2>
+        <p>If you have questions or concerns about this Privacy Policy, please contact us:</p>
+        <div class="contact-info">
+          <p><strong>{{ companyName }}</strong></p>
+          <p>Email: <a href="mailto:{{ contactEmail }}">{{ contactEmail }}</a></p>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</ion-content>

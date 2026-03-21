@@ -1,0 +1,93 @@
+<ion-content class="otp-content" [scrollY]="true">
+  <div class="otp-container">
+    <!-- Back Button -->
+    <button class="back-btn" (click)="goBack()" aria-label="Go back">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+    </button>
+
+    <!-- Header -->
+    <div class="otp-header">
+      <div class="icon-wrapper">
+        <ion-icon [name]="mode === 'password' ? 'lock-closed-outline' : 'mail-outline'"></ion-icon>
+      </div>
+      <h1>{{ mode === 'password' ? 'Reset Password' : 'Verify Email' }}</h1>
+      <p class="subtitle">
+        {{ mode === 'password' ? 'Enter the 6-digit code to reset your password' : 'Enter the 6-digit code sent to' }}
+      </p>
+      <p class="email" *ngIf="email">{{ getMaskedEmail() }}</p>
+    </div>
+
+    <!-- OTP Input -->
+    <div class="otp-inputs-container" role="group" aria-label="Enter 6-digit verification code">
+      <ion-input-otp
+        #otpInput
+        [length]="6"
+        [disabled]="isVerifying || isExpired"
+        [class.error]="errorMessage && !isVerifying"
+        [class.success]="successMessage"
+        (ionInput)="onOtpChange($event)"
+        (ionComplete)="onOtpComplete()"
+        inputmode="numeric"
+        autocomplete="one-time-code"
+      ></ion-input-otp>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-container" [class.expired]="isExpired">
+      <ion-icon [name]="isExpired ? 'alert-circle-outline' : 'time-outline'"></ion-icon>
+      <span *ngIf="!isExpired">Code expires in {{ displayTime }}</span>
+      <span *ngIf="isExpired">Code has expired</span>
+    </div>
+
+    <!-- Messages -->
+    <div class="message-container">
+      <div class="error-message" *ngIf="errorMessage">
+        <ion-icon name="alert-circle-outline"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+      <div class="success-message" *ngIf="successMessage">
+        <ion-icon name="checkmark-circle-outline"></ion-icon>
+        <span>{{ successMessage }}</span>
+      </div>
+    </div>
+
+    <!-- Verify Button -->
+    <button
+      class="verify-btn"
+      [class.loading]="isVerifying"
+      [disabled]="!isOtpComplete() || isVerifying || isExpired"
+      (click)="verifyOTP()"
+      aria-label="Verify OTP code"
+    >
+      <span *ngIf="!isVerifying">Verify Code</span>
+      <div class="spinner" *ngIf="isVerifying">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+    </button>
+
+    <!-- Resend Section -->
+    <div class="resend-section">
+      <p class="resend-text">Didn't receive the code?</p>
+      <button
+        class="resend-btn"
+        [class.disabled]="!canResend || isResending || resendCount >= maxResends"
+        [disabled]="!canResend || isResending || resendCount >= maxResends"
+        (click)="resendOTP()"
+        aria-label="Resend verification code"
+      >
+        <span *ngIf="!isResending && canResend && resendCount < maxResends">Resend Code</span>
+        <span *ngIf="!isResending && !canResend && resendCount < maxResends">Resend in {{ resendCooldown }}s</span>
+        <span *ngIf="!isResending && resendCount >= maxResends">Max resends reached</span>
+        <ion-spinner name="dots" *ngIf="isResending"></ion-spinner>
+      </button>
+      <p class="resend-count" *ngIf="resendCount > 0 && resendCount < maxResends">
+        {{ maxResends - resendCount }} resend{{ maxResends - resendCount !== 1 ? 's' : '' }} remaining
+      </p>
+    </div>
+
+    <!-- Help Text -->
+    <div class="help-text">
+      <p>Check your spam folder if you don't see the email</p>
+    </div>
+  </div>
+</ion-content>

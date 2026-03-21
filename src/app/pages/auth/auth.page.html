@@ -1,0 +1,124 @@
+<ion-content class="auth-content" [fullscreen]="true" [scrollY]="true">
+  <div class="auth-container">
+    <!-- Back Button -->
+    <button class="back-button" (click)="goBack()" [disabled]="isLoading" aria-label="Go back">
+      <ion-icon name="arrow-back"></ion-icon>
+    </button>
+
+    <!-- Mode Badge Indicator -->
+    <div class="mode-indicator">
+      <span class="mode-badge" [class.login-mode]="isLoginMode" [class.signup-mode]="!isLoginMode">
+        {{ isLoginMode ? 'LOG IN' : 'SIGN UP' }}
+      </span>
+    </div>
+
+    <!-- Dog Mascot in Circle -->
+    <div class="mascot-section">
+      <div class="mascot-circle">
+        <img src="assets/images/login-dog.png" alt="Paws Focus Mascot" class="mascot-image" width="180" height="180">
+      </div>
+      <div class="focus-badge">
+        <span class="badge-icon">⏱️</span>
+        <span class="badge-text">25m Focus</span>
+      </div>
+    </div>
+
+    <!-- Title Section -->
+    <div class="title-section">
+      <h1 class="main-title">
+        <ng-container *ngIf="isLoginMode">Welcome Back!</ng-container>
+        <ng-container *ngIf="!isLoginMode">Create Account</ng-container>
+      </h1>
+      <p class="subtitle">
+        <ng-container *ngIf="isLoginMode">Sign in to continue your focus journey</ng-container>
+        <ng-container *ngIf="!isLoginMode">Join Paws Focus to care for your virtual companions while you get work
+          done.</ng-container>
+      </p>
+    </div>
+
+    <!-- Form Section -->
+    <div class="form-section">
+      <!-- Email Input -->
+      <div class="input-group" [class.has-error]="emailError">
+        <label class="input-label" for="email-input">Email Address</label>
+        <div class="input-wrapper">
+          <ion-icon name="mail-outline" class="input-icon"></ion-icon>
+          <input id="email-input" type="email" [(ngModel)]="email" (blur)="onEmailBlur()"
+            placeholder="hello@pawsfocus.com" class="text-input" autocomplete="email" [disabled]="isLoading">
+        </div>
+        <span class="field-error" *ngIf="emailError">{{ emailError }}</span>
+      </div>
+
+      <!-- Password Input -->
+      <div class="input-group" [class.has-error]="passwordError">
+        <label class="input-label" for="password-input">Password</label>
+        <div class="input-wrapper">
+          <ion-icon name="lock-closed-outline" class="input-icon"></ion-icon>
+          <input id="password-input" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password"
+            (blur)="onPasswordBlur()" placeholder="••••••••" class="text-input" autocomplete="current-password"
+            [disabled]="isLoading">
+          <button class="visibility-toggle" (click)="togglePasswordVisibility()" type="button" [disabled]="isLoading"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+            <ion-icon [name]="showPassword ? 'eye-outline' : 'eye-off-outline'"></ion-icon>
+          </button>
+        </div>
+        <span class="field-error" *ngIf="passwordError">{{ passwordError }}</span>
+      </div>
+
+      <!-- Forgot Password -->
+      <div class="forgot-password-row" *ngIf="isLoginMode">
+        <button class="forgot-password-link" (click)="onForgotPassword()" type="button" [disabled]="isLoading"
+          aria-label="Forgot password">
+          Forgot Password?
+        </button>
+      </div>
+
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="errorMessage">
+        <ion-icon name="alert-circle"></ion-icon>
+        <span>{{ errorMessage }}</span>
+      </div>
+
+      <!-- Success Message -->
+      <div class="success-message" *ngIf="successMessage">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <!-- Submit Button -->
+      <ion-button expand="block" class="submit-btn" [disabled]="isLoading" (click)="onSubmit()"
+        [attr.aria-label]="isLoginMode ? 'Log in' : 'Sign up'">
+        <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
+        <span *ngIf="!isLoading">
+          {{ isLoginMode ? 'Log In' : 'Create Free Account' }}
+        </span>
+      </ion-button>
+
+      <!-- Toggle Mode Link -->
+      <div class="toggle-mode">
+        <span class="toggle-text">
+          {{ isLoginMode ? "New here?" : 'Already have an account?' }}
+        </span>
+        <button class="toggle-link" (click)="toggleMode()" type="button" [disabled]="isLoading"
+          [attr.aria-label]="isLoginMode ? 'Switch to sign up' : 'Switch to log in'">
+          {{ isLoginMode ? 'Create Account' : 'Log In Instead' }}
+        </button>
+      </div>
+
+      <!-- Legal Links -->
+      <div class="legal-footer">
+        <p class="legal-text">
+          By {{ isLoginMode ? 'logging in' : 'creating an account' }}, you agree to our
+          <button type="button" class="legal-link" (click)="openTerms()" aria-label="Terms of Service">Terms of
+            Service</button>
+          and
+          <button type="button" class="legal-link" (click)="openPrivacy()" aria-label="Privacy Policy">Privacy
+            Policy</button>.
+        </p>
+        <p class="age-disclaimer">
+          You must be at least 13 years old to use this app.
+        </p>
+      </div>
+    </div>
+  </div>
+</ion-content>

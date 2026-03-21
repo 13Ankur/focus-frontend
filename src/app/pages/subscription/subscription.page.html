@@ -1,0 +1,74 @@
+<ion-content class="subscription-content" [fullscreen]="true" [scrollY]="true">
+  <div class="subscription-container">
+    
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" (click)="goBack()" aria-label="Go back">
+        <ion-icon name="arrow-back"></ion-icon>
+      </button>
+      <h1 class="page-title">Good News!</h1>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero-section">
+      <img src="assets/images/party-dog.svg" alt="Happy dog" class="hero-image" width="160" height="160">
+      <h2 class="hero-title">🎉 Everything is Free!</h2>
+      <p class="hero-subtitle">We believe everyone should be able to help shelter dogs. That's why all features are completely free.</p>
+    </div>
+
+    <!-- Features -->
+    <div class="features-section">
+      <h3 class="features-title">All Features Included</h3>
+      
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon">🐕</div>
+          <div class="feature-text">
+            <span class="feature-name">All Dog Breeds</span>
+            <span class="feature-desc">Choose any companion you like</span>
+          </div>
+          <ion-icon name="checkmark-circle" class="feature-check"></ion-icon>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">⏱️</div>
+          <div class="feature-text">
+            <span class="feature-name">Unlimited Focus Sessions</span>
+            <span class="feature-desc">Focus as much as you want</span>
+          </div>
+          <ion-icon name="checkmark-circle" class="feature-check"></ion-icon>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🦴</div>
+          <div class="feature-text">
+            <span class="feature-name">Earn Kibble</span>
+            <span class="feature-desc">No limits on rewards</span>
+          </div>
+          <ion-icon name="checkmark-circle" class="feature-check"></ion-icon>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">🌍</div>
+          <div class="feature-text">
+            <span class="feature-name">Help Shelter Dogs</span>
+            <span class="feature-desc">Every session makes a difference</span>
+          </div>
+          <ion-icon name="checkmark-circle" class="feature-check"></ion-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="action-section">
+      <button class="continue-btn" (click)="goToHome()">
+        <span>🐕</span>
+        Start Walking Now
+      </button>
+      
+      <p class="thank-you-text">
+        Thank you for helping shelter dogs! 💚
+      </p>
+    </div>
+  </div>
+</ion-content>

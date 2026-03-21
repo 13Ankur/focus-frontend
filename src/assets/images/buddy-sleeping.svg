@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120">
+  <defs>
+    <linearGradient id="sleepFur" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DBA5"/>
+      <stop offset="50%" stop-color="#E8C17A"/>
+      <stop offset="100%" stop-color="#D4A85F"/>
+    </linearGradient>
+    <linearGradient id="sleepDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4A85F"/>
+      <stop offset="100%" stop-color="#B8914A"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Body (lying down) -->
+  <ellipse cx="100" cy="80" rx="70" ry="30" fill="url(#sleepFur)"/>
+  
+  <!-- Back legs -->
+  <ellipse cx="155" cy="95" rx="18" ry="12" fill="url(#sleepDark)"/>
+  <ellipse cx="170" cy="90" rx="15" ry="10" fill="url(#sleepDark)"/>
+  
+  <!-- Tail -->
+  <ellipse cx="175" cy="70" rx="20" ry="8" fill="url(#sleepDark)" transform="rotate(-20, 175, 70)"/>
+  
+  <!-- Front legs -->
+  <ellipse cx="45" cy="95" rx="18" ry="12" fill="url(#sleepDark)"/>
+  <ellipse cx="30" cy="90" rx="15" ry="10" fill="url(#sleepDark)"/>
+  
+  <!-- Ears (droopy) -->
+  <ellipse cx="38" cy="40" rx="15" ry="25" fill="url(#sleepDark)" transform="rotate(-40, 38, 40)"/>
+  <ellipse cx="90" cy="35" rx="15" ry="25" fill="url(#sleepDark)" transform="rotate(30, 90, 35)"/>
+  
+  <!-- Head (resting) -->
+  <ellipse cx="60" cy="55" rx="40" ry="35" fill="url(#sleepFur)"/>
+  
+  <!-- Face patch -->
+  <ellipse cx="55" cy="62" rx="25" ry="20" fill="#FFF5E0"/>
+  
+  <!-- Snout -->
+  <ellipse cx="45" cy="70" rx="15" ry="10" fill="#FFF8EA"/>
+  
+  <!-- Nose -->
+  <ellipse cx="38" cy="68" rx="8" ry="5" fill="#333"/>
+  <ellipse cx="36" cy="66" rx="2" ry="1.5" fill="#555"/>
+  
+  <!-- Closed eyes (sleeping) -->
+  <path d="M50 52 Q60 48 70 52" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M75 50 Q85 46 95 50" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Sleeping mouth (slight smile) -->
+  <path d="M35 80 Q45 85 55 80" stroke="#8B6B4D" stroke-width="2" fill="none"/>
+  
+  <!-- Collar -->
+  <ellipse cx="60" cy="85" rx="28" ry="8" fill="none" stroke="#7ED321" stroke-width="5"/>
+  <circle cx="45" cy="88" r="4" fill="#FFD700"/>
+  
+  <!-- Zzz animation -->
+  <g fill="#7ED321" font-family="Comic Sans MS, cursive" font-weight="bold">
+    <text x="95" y="25" font-size="16" opacity="0.9">
+      <animate attributeName="opacity" values="0.9;0.5;0.9" dur="2s" repeatCount="indefinite"/>
+      <animate attributeName="y" values="25;20;25" dur="2s" repeatCount="indefinite"/>
+      Z
+    </text>
+    <text x="110" y="15" font-size="14" opacity="0.7">
+      <animate attributeName="opacity" values="0.7;0.3;0.7" dur="2s" repeatCount="indefinite" begin="0.3s"/>
+      <animate attributeName="y" values="15;10;15" dur="2s" repeatCount="indefinite" begin="0.3s"/>
+      z
+    </text>
+    <text x="122" y="8" font-size="12" opacity="0.5">
+      <animate attributeName="opacity" values="0.5;0.2;0.5" dur="2s" repeatCount="indefinite" begin="0.6s"/>
+      <animate attributeName="y" values="8;3;8" dur="2s" repeatCount="indefinite" begin="0.6s"/>
+      z
+    </text>
+  </g>
+</svg>
