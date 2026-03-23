@@ -10,6 +10,7 @@ import {
   ModalController,
   AlertController,
   ToastController,
+  IonicSafeString,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -25,6 +26,7 @@ import {
   volumeHigh,
   volumeMute,
   shieldCheckmark,
+  informationCircleOutline,
 } from 'ionicons/icons';
 import { Subscription } from 'rxjs';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -45,6 +47,7 @@ import { SocialService, FocusRoom } from '../../services/social.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
+import { KibbleInfoModalComponent } from '../../components/kibble-info-modal/kibble-info-modal.component';
 import { FailedModalComponent } from '../../components/failed-modal/failed-modal.component';
 
 
@@ -206,13 +209,22 @@ export class HomePage implements OnInit, OnDestroy {
     private alertController: AlertController,
     private toastController: ToastController,
   ) {
-    addIcons({ settingsOutline, chevronForward, closeOutline, play, pause, lockClosed, timerOutline, musicalNotes, musicalNote, volumeHigh, volumeMute, shieldCheckmark });
+    addIcons({ settingsOutline, info: informationCircleOutline, informationCircleOutline, chevronForward, closeOutline, play, pause, lockClosed, timerOutline, musicalNotes, musicalNote, volumeHigh, volumeMute, shieldCheckmark });
   }
 
   // ── Lifecycle ──
 
+  userName = 'User';
+
   ngOnInit(): void {
     this.loadUserTier();
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userName = user.username || 'User';
+      }
+    });
+
+    this.checkSessionStatus();
     this.buildDurationOptions();
     this.timerService.setDuration(this.selectedDuration);
     this.loadDailyGoal();
@@ -356,7 +368,8 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   get kibbleToEarn(): number {
-    return this.selectedDuration;
+    const REWARDS: { [key: number]: number } = { 15: 15, 25: 30, 45: 55, 60: 75, 90: 120, 120: 180 };
+    return REWARDS[this.selectedDuration] || this.selectedDuration;
   }
 
   get mealProgress(): number {
@@ -713,7 +726,7 @@ export class HomePage implements OnInit, OnDestroy {
         streakIncreased,
         totalKibble: this.userKibble,
         nextBreedName: nextBreed?.name || '',
-        nextBreedCost: nextBreed?.sessionUnlockRequirement || nextBreed?.unlockRequirement || 0,
+        nextBreedCost: nextBreed?.unlockRequirement || 0,
         newBreedUnlocked: newlyUnlocked?.name || '',
         isFirstSession: this.completedSessions <= 1,
         isAdFree: true,
@@ -796,9 +809,8 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.soundPreviewingId = null;
     await this.focusSoundService.playSound(sound.id);
-    if (!this.isTimerRunning) {
-      await this.focusSoundService.stopSound();
-    }
+    this.currentSoundName = sound.name;
+    this.currentSoundIcon = sound.icon;
     this.closeSoundPicker();
   }
 
@@ -989,5 +1001,23 @@ export class HomePage implements OnInit, OnDestroy {
     if (!src.includes('golden_retriever.png')) {
       img.src = 'assets/images/golden_retriever.png';
     }
+  }
+
+  async showKibbleInfo(): Promise<void> {
+    const modal = await this.modalController.create({
+      component: KibbleInfoModalComponent,
+      cssClass: 'kibble-info-modal',
+      initialBreakpoint: 0.65,
+      breakpoints: [0, 0.65, 0.85]
+    });
+    await modal.present();
+  }
+
+  private checkSessionStatus(): void {
+    this.isTimerRunning = this.timerService.isRunning;
+    this.remainingSeconds = this.timerService.remainingSeconds;
+    this.totalSeconds = this.timerService.totalSeconds;
+    this.currentPhase = this.timerService.phase;
+    this.currentCycle = this.timerService.currentCycle;
   }
 }

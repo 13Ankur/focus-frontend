@@ -33,19 +33,19 @@
   --app-success: #4caf50;
   --app-error: #ff6b6b;
   --app-warning: #ffc107;
-  
+
   /* Safe area insets - Enhanced for notch/Dynamic Island */
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-left: env(safe-area-inset-left, 0px);
   --safe-area-right: env(safe-area-inset-right, 0px);
-  
+
   /* Responsive spacing - Default (small phones like iPhone SE) */
   --app-padding-x: 16px;
   --app-padding-y: 16px;
   --app-card-radius: 16px;
   --app-btn-radius: 14px;
-  
+
   /* Typography scale - Base */
   --font-size-xs: 10px;
   --font-size-sm: 12px;
@@ -56,7 +56,7 @@
   --font-size-2xl: 28px;
   --font-size-3xl: 36px;
   --font-size-timer: 42px;
-  
+
   /* Component sizes */
   --dog-card-size: 120px;
   --timer-ring-size: 280px;
@@ -169,21 +169,24 @@ html:not([data-theme]) {
 }
 
 @media (prefers-color-scheme: dark) {
+
   /* Force light mode even when system prefers dark */
-  html, body, ion-app {
+  html,
+  body,
+  ion-app {
     color-scheme: light only !important;
     background-color: #F8F8F5 !important;
   }
-  
+
   /* Override any dark mode styles */
   ion-content {
     --background: #F8F8F5 !important;
   }
-  
+
   /* Fix all Ionic components to be visible in light mode */
-  ion-select, 
-  ion-popover, 
-  ion-action-sheet, 
+  ion-select,
+  ion-popover,
+  ion-action-sheet,
   ion-alert,
   ion-modal,
   ion-toast,
@@ -191,38 +194,39 @@ html:not([data-theme]) {
     --background: #ffffff !important;
     --color: #2C2C2C !important;
   }
-  
+
   ion-select::part(placeholder),
   ion-select::part(text),
   ion-select::part(icon) {
     color: #2C2C2C !important;
   }
-  
+
   /* Ensure popovers and modals are visible */
   ion-popover::part(content),
   ion-modal::part(content) {
     background: #ffffff !important;
     color: #2C2C2C !important;
   }
-  
+
   /* Fix action sheets and alerts */
   ion-action-sheet,
   ion-alert {
     --background: #ffffff !important;
-    
+
     .action-sheet-button,
     .alert-button {
       color: #2C2C2C !important;
     }
   }
-  
+
   /* Ensure all text and icons are visible */
   * {
     color: inherit !important;
   }
-  
+
   /* Fix any native dropdowns or selects */
-  select, option {
+  select,
+  option {
     background-color: #ffffff !important;
     color: #2C2C2C !important;
   }
@@ -248,7 +252,7 @@ body {
 
 ion-content {
   --background: var(--app-background);
-  
+
   // Ensure content respects safe areas by default
   --padding-top: 0;
   --padding-bottom: 0;
@@ -337,44 +341,44 @@ ion-button:focus-visible {
 .update-alert,
 .maintenance-alert {
   --backdrop-opacity: 0.7;
-  
+
   .alert-wrapper {
     border-radius: 20px;
     padding: 8px;
   }
-  
+
   .alert-head {
     padding-bottom: 12px;
-    
+
     .alert-title {
       font-size: 20px;
       font-weight: 700;
     }
   }
-  
+
   .alert-message {
     font-size: 15px;
     line-height: 1.5;
     color: var(--app-text-muted);
-    
+
     strong {
       color: var(--app-text);
     }
   }
-  
+
   .alert-button-group {
     padding-top: 16px;
-    
+
     .alert-button {
       border-radius: 12px;
       font-weight: 600;
       min-height: 48px;
-      
+
       &.primary-button {
         background: var(--app-primary);
         color: white;
       }
-      
+
       &.secondary-button {
         background: transparent;
         color: var(--app-text-muted);
@@ -399,11 +403,11 @@ ion-button:focus-visible {
 .responsive-container {
   max-width: 600px;
   margin: 0 auto;
-  
+
   @media screen and (min-width: 769px) {
     max-width: 700px;
   }
-  
+
   @media screen and (min-width: 1024px) {
     max-width: 800px;
   }
@@ -452,6 +456,7 @@ ion-button:focus-visible {
 
 /* Landscape orientation - handle notch on sides */
 @media screen and (orientation: landscape) {
+
   .home-container,
   .kennel-container,
   .profile-container,
@@ -489,17 +494,17 @@ ion-button:focus-visible {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(2, 1fr);
-  
+
   @media screen and (max-width: 375px) {
     gap: 8px;
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   @media screen and (min-width: 481px) {
     gap: 16px;
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   @media screen and (min-width: 769px) {
     gap: 20px;
     grid-template-columns: repeat(4, 1fr);
@@ -510,11 +515,11 @@ ion-button:focus-visible {
 .stats-row-responsive {
   display: flex;
   gap: 10px;
-  
+
   @media screen and (max-width: 375px) {
     flex-wrap: wrap;
-    
-    > * {
+
+    >* {
       flex: 1 1 45%;
       min-width: 0;
     }
@@ -548,11 +553,12 @@ ion-button:focus-visible {
 
 /* iOS-specific fixes */
 .ios {
+
   /* Fix bounce scroll background */
   ion-content {
     --background: var(--app-background);
   }
-  
+
   /* Fix status bar overlap */
   ion-header ion-toolbar:first-of-type {
     padding-top: var(--safe-area-top);
@@ -561,6 +567,7 @@ ion-button:focus-visible {
 
 /* Android-specific fixes */
 .md {
+
   /* Android typically has smaller safe areas */
   ion-content {
     --padding-top: max(16px, env(safe-area-inset-top));
@@ -586,13 +593,13 @@ ion-content.keyboard-visible {
    ============================================ */
 
 /* Button press states */
-button, 
+button,
 .clickable {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
-  
+
   &:active {
     opacity: 0.85;
     transform: scale(0.98);
@@ -606,4 +613,77 @@ ion-tab-button,
 .card-clickable {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Kibble Info Alert Styles */
+.kibble-info-alert {
+  --background: #ffffff;
+  --max-width: 320px;
+
+  .alert-wrapper {
+    border-radius: 20px;
+  }
+
+  .alert-head {
+    padding-bottom: 8px;
+
+    .alert-title {
+      color: var(--app-primary);
+      font-weight: 800;
+    }
+
+    .alert-sub-title {
+      font-weight: 600;
+      color: var(--app-text-muted);
+    }
+  }
+
+  .alert-message {
+    padding-top: 5px;
+
+    .kibble-info-list {
+      p {
+        margin: 8px 0;
+        font-size: 15px;
+        color: var(--app-text);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        b {
+          color: var(--app-primary);
+          font-weight: 700;
+        }
+
+        .bonus-text {
+          font-size: 12px;
+          background: rgba(126, 211, 33, 0.15);
+          color: #5fb318;
+          padding: 2px 8px;
+          border-radius: 10px;
+          font-weight: 700;
+          margin-left: 8px;
+        }
+      }
+    }
+
+    .kibble-info-footer {
+      margin-top: 15px;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--app-text-muted);
+      text-align: center;
+      border-top: 1px solid var(--app-border);
+      padding-top: 10px;
+    }
+  }
+
+  .alert-button-group {
+    .alert-button {
+      color: var(--app-primary);
+      font-weight: 700;
+      text-transform: none;
+      font-size: 16px;
+    }
+  }
 }

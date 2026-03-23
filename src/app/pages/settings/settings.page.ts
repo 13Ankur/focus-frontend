@@ -74,6 +74,12 @@ export class SettingsPage implements OnInit {
   }
 
   ngOnInit(): void {
+    this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userName = user.username || 'User';
+        this.userEmail = user.email || 'user@example.com';
+      }
+    });
     this.loadSettings();
   }
 
@@ -137,8 +143,23 @@ export class SettingsPage implements OnInit {
           text: 'Save',
           handler: (data) => {
             if (data.username?.trim()) {
-              this.userName = data.username.trim();
-              // In a real app, save to backend
+              const newUsername = data.username.trim();
+              this.authService.updateProfile({ username: newUsername }).subscribe({
+                next: (res) => {
+                  if (res.success) {
+                    this.userName = newUsername;
+                  }
+                },
+                error: async (err) => {
+                  // Revert if error or show alert
+                  const errorAlert = await this.alertController.create({
+                    header: 'Update Failed',
+                    message: err.error?.message || 'Could not update username. It might be already taken.',
+                    buttons: ['OK']
+                  });
+                  await errorAlert.present();
+                }
+              });
             }
           }
         }

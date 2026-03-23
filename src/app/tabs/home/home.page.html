@@ -160,7 +160,12 @@
 
     <!-- Duration Selection (when idle) -->
     <div class="duration-section" *ngIf="!isTimerRunning && !isOnBreak" @fadeSlide>
-      <p class="duration-label">Choose your focus duration</p>
+      <div class="duration-header">
+        <p class="duration-label">Choose your focus duration</p>
+        <button class="kibble-info-btn" (click)="showKibbleInfo()" aria-label="Kibble earning info">
+          <ion-icon name="information-circle-outline"></ion-icon>
+        </button>
+      </div>
       <div class="duration-buttons">
         <button *ngFor="let opt of durationOptions" class="duration-btn"
           [class.selected]="selectedDuration === opt.value && !showCustomPicker" (click)="selectDuration(opt)">
@@ -177,8 +182,12 @@
       <!-- Custom Duration Picker -->
       <div class="custom-picker" *ngIf="showCustomPicker" @fadeSlide>
         <div class="picker-row">
+          <button class="picker-stepper-btn"
+            (click)="customDuration = Math.max(5, customDuration - 5); $event.stopPropagation()">−</button>
           <input type="range" [min]="5" [max]="120" [step]="5" [(ngModel)]="customDuration" class="custom-slider"
             aria-label="Custom focus duration">
+          <button class="picker-stepper-btn"
+            (click)="customDuration = Math.min(120, customDuration + 5); $event.stopPropagation()">+</button>
           <span class="picker-value">{{ customDuration }} min</span>
         </div>
         <button class="picker-apply-btn" (click)="applyCustomDuration()">
@@ -195,7 +204,8 @@
         </button>
       </div>
 
-      <!-- App Blocking Toggle -->
+      <!-- App Blocking hidden as requested -->
+      <!--
       <div class="blocking-toggle-row">
         <div class="blocking-toggle-left" (click)="toggleBlockingFromHome()" role="switch"
           [attr.aria-checked]="blockingEnabled" aria-label="Toggle app blocking">
@@ -210,6 +220,7 @@
           <ion-icon name="chevron-forward"></ion-icon>
         </button>
       </div>
+      -->
 
       <!-- Pomodoro Toggle -->
       <div class="pomodoro-section">

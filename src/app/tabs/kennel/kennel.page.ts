@@ -50,7 +50,7 @@ interface AccessoryItem {
 
 type AccessorySlot = 'hat' | 'collar' | 'background' | 'special';
 
-const GUARDIAN_BREED_IDS: string[] = [];
+const GUARDIAN_BREED_IDS: string[] = ['dachshund', 'australian_shepherd', 'maltese'];
 
 @Component({
   selector: 'app-kennel',
@@ -171,7 +171,7 @@ export class KennelPage implements OnInit, OnDestroy {
     const statsSub = this.statsService.stats$.subscribe(stats => {
       this.kibbleBalance = stats.totalKibble;
       this.completedSessions = stats.completedSessions;
-      const newlyUnlocked = this.breedService.checkSessionUnlocks(stats.completedSessions);
+      const newlyUnlocked = this.breedService.checkKibbleUnlocks(stats.totalKibble);
       if (newlyUnlocked) {
         this.newBreedJustUnlocked = true;
         this.updateSpeechBubble();
@@ -223,8 +223,8 @@ export class KennelPage implements OnInit, OnDestroy {
       const res: any = await this.http
         .post(`${this.apiUrl}/breeds/check-unlocks`, {}, { headers })
         .toPromise();
-      if (res?.completedSessions != null) {
-        this.completedSessions = res.completedSessions;
+      if (res?.totalKibble != null) {
+        this.totalKibble = res.totalKibble;
       }
       if (res?.newlyUnlocked?.length > 0) {
         await this.breedService.syncWithServer();
@@ -601,9 +601,6 @@ export class KennelPage implements OnInit, OnDestroy {
     return this.breedService.getKibbleToUnlock(breed.id);
   }
 
-  getSessionsToUnlock(breed: DogBreed): number {
-    return this.breedService.getSessionsToUnlock(breed.id);
-  }
 
   async selectBreed(breed: DogBreed): Promise<void> {
     if (this.isTimerRunning) {
@@ -622,12 +619,12 @@ export class KennelPage implements OnInit, OnDestroy {
 
 
     if (!this.isBreedUnlocked(breed)) {
-      const sessionsNeeded = this.breedService.getSessionsToUnlock(breed.id);
-      const sessionsRequired = breed.sessionUnlockRequirement || 0;
+      const kibbleNeeded = this.breedService.getKibbleToUnlock(breed.id);
+      const kibbleRequired = breed.unlockRequirement || 0;
       const alert = await this.alertController.create({
         header: '🔒 Locked',
-        message: sessionsNeeded > 0
-          ? `Complete ${sessionsNeeded} more focus session${sessionsNeeded === 1 ? '' : 's'} to unlock ${breed.name} (${sessionsRequired} total needed).`
+        message: kibbleNeeded > 0
+          ? `You need ${kibbleNeeded} more kibble to unlock ${breed.name} (${kibbleRequired} total needed).`
           : `${breed.name} is ready to unlock!`,
         buttons: [
           { text: 'Start Focus', handler: () => this.router.navigate(['/tabs/home']) },

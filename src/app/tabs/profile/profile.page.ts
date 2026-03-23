@@ -168,6 +168,13 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    const userSub = this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        this.userName = user.username || 'Focus Champion';
+      }
+    });
+    this.subscriptions.push(userSub);
+
     this.loadUserData();
 
     const statsSub = this.statsService.stats$.subscribe(() => {

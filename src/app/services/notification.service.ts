@@ -51,7 +51,7 @@ export class NotificationService {
     private router: Router,
     private statsService: StatsService,
     private breedService: BreedService,
-  ) {}
+  ) { }
 
   // ── Initialization ──
 
@@ -181,6 +181,13 @@ export class NotificationService {
 
   async scheduleAllNotifications(): Promise<void> {
     if (!this.prefs.enabled || !Capacitor.isNativePlatform()) return;
+
+    // Check permission before scheduling
+    const hasPermission = await this.checkPermissionStatus();
+    if (!hasPermission) {
+      console.warn('Cannot schedule notifications: permission not granted');
+      return;
+    }
 
     await this.cancelAllNotifications();
 

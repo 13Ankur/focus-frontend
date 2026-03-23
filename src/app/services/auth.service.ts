@@ -427,6 +427,20 @@ export class AuthService {
     );
   }
 
+  updateProfile(data: { username?: string, avatar?: string }): Observable<any> {
+    const headers = this.getAuthHeaders();
+    return this.http.patch(`${this.apiUrl}/user/profile`, data, { headers }).pipe(
+      tap((res: any) => {
+        if (res.success && this.currentUser) {
+          const updatedUser = { ...this.currentUser };
+          if (res.user.username) updatedUser.username = res.user.username;
+          if (res.user.avatar) updatedUser.avatar = res.user.avatar;
+          this.storeUser(updatedUser);
+        }
+      })
+    );
+  }
+
   updateLocalKibble(amount: number): void {
     if (this.currentUser) {
       this.storeUser({

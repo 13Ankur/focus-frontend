@@ -12,24 +12,24 @@ export interface SoundTrack {
 }
 
 const SOUND_LIBRARY: SoundTrack[] = [
-  { id: 'silence',      name: 'Silence',         icon: '🤫', category: 'silence', tier: 'free' },
-  { id: 'rain',          name: 'Gentle Rain',     icon: '🌧', category: 'nature',  tier: 'free' },
-  { id: 'forest',        name: 'Forest Birds',    icon: '🌲', category: 'nature',  tier: 'free' },
-  { id: 'ocean',         name: 'Ocean Waves',     icon: '🌊', category: 'nature',  tier: 'free' },
-  { id: 'cafe',          name: 'Coffee Shop',     icon: '☕', category: 'ambient', tier: 'free' },
-  { id: 'fireplace',     name: 'Fireplace',       icon: '🔥', category: 'ambient', tier: 'free' },
-  { id: 'library',       name: 'Library Hum',     icon: '📚', category: 'ambient', tier: 'free' },
-  { id: 'lofi',          name: 'Lo-Fi Beats',     icon: '🎵', category: 'music',   tier: 'free' },
-  { id: 'white_noise',   name: 'White Noise',     icon: '⚪', category: 'noise',   tier: 'free' },
-  { id: 'brown_noise',   name: 'Brown Noise',     icon: '🟤', category: 'noise',   tier: 'free' },
-  { id: 'binaural',      name: 'Focus Binaural',  icon: '🧠', category: 'noise',   tier: 'free' },
-  { id: 'thunderstorm',  name: 'Thunderstorm',    icon: '⛈',  category: 'nature',  tier: 'free' },
+  { id: 'silence', name: 'Silence', icon: '🤫', category: 'silence', tier: 'free' },
+  { id: 'rain', name: 'Gentle Rain', icon: '🌧', category: 'nature', tier: 'free' },
+  { id: 'forest', name: 'Forest Birds', icon: '🌲', category: 'nature', tier: 'free' },
+  { id: 'ocean', name: 'Ocean Waves', icon: '🌊', category: 'nature', tier: 'free' },
+  { id: 'cafe', name: 'Coffee Shop', icon: '☕', category: 'ambient', tier: 'free' },
+  { id: 'fireplace', name: 'Fireplace', icon: '🔥', category: 'ambient', tier: 'free' },
+  { id: 'library', name: 'Library Hum', icon: '📚', category: 'ambient', tier: 'free' },
+  { id: 'lofi', name: 'Lo-Fi Beats', icon: '🎵', category: 'music', tier: 'free' },
+  { id: 'white_noise', name: 'White Noise', icon: '⚪', category: 'noise', tier: 'free' },
+  { id: 'brown_noise', name: 'Brown Noise', icon: '🟤', category: 'noise', tier: 'free' },
+  { id: 'binaural', name: 'Focus Binaural', icon: '🧠', category: 'noise', tier: 'free' },
+  { id: 'thunderstorm', name: 'Thunderstorm', icon: '⛈', category: 'nature', tier: 'free' },
 ];
 
 const PREFS_KEY = 'paws_focus_sound';
 const PREFS_VOLUME_KEY = 'paws_focus_sound_volume';
 const PREFS_MIX_KEY = 'paws_focus_sound_mix';
-const FADE_DURATION = 2;
+const FADE_DURATION = 0.5;
 const MAX_MIX_COUNT = 3;
 
 interface ActiveSource {
@@ -187,7 +187,7 @@ export class FocusSoundService implements OnDestroy {
     const fadePromises = this.activeSources.map(source =>
       this.fadeOut(source.gainNode).then(() => {
         source.generator.stop();
-        try { source.gainNode.disconnect(); } catch {}
+        try { source.gainNode.disconnect(); } catch { }
       })
     );
 
@@ -224,7 +224,7 @@ export class FocusSoundService implements OnDestroy {
 
       setTimeout(() => {
         generator.stop();
-        try { previewGain.disconnect(); } catch {}
+        try { previewGain.disconnect(); } catch { }
       }, durationMs);
     } catch {
       // AudioContext blocked or unavailable
@@ -234,14 +234,14 @@ export class FocusSoundService implements OnDestroy {
   dispose(): void {
     this.activeSources.forEach(source => {
       source.generator.stop();
-      try { source.gainNode.disconnect(); } catch {}
+      try { source.gainNode.disconnect(); } catch { }
     });
     this.activeSources = [];
     this._isPlaying = false;
     this.playingSubject.next(false);
 
     if (this.audioContext && this.audioContext.state !== 'closed') {
-      this.audioContext.close().catch(() => {});
+      this.audioContext.close().catch(() => { });
       this.audioContext = null;
       this.masterGain = null;
     }

@@ -14,7 +14,6 @@ export interface DogBreed {
   sleepingImage: string;
 
   unlockRequirement: number;
-  sessionUnlockRequirement: number;
   order: number;
 }
 
@@ -72,9 +71,7 @@ export class BreedService {
       image: 'assets/images/golden_retriever.png',
       eatingImage: 'assets/images/golden_retriever.png',
       sleepingImage: 'assets/images/golden_retriever_sleeping.png',
-
       unlockRequirement: 0,
-      sessionUnlockRequirement: 0,
       order: 1
     },
     {
@@ -84,9 +81,7 @@ export class BreedService {
       image: 'assets/images/husky.png',
       eatingImage: 'assets/images/husky.png',
       sleepingImage: 'assets/images/husky_sleeping.png',
-
-      unlockRequirement: 500,
-      sessionUnlockRequirement: 5,
+      unlockRequirement: 150,
       order: 2
     },
     {
@@ -96,9 +91,7 @@ export class BreedService {
       image: 'assets/images/shiba_inu.png',
       eatingImage: 'assets/images/shiba_inu.png',
       sleepingImage: 'assets/images/shiba_inu_sleeping.png',
-
-      unlockRequirement: 1000,
-      sessionUnlockRequirement: 15,
+      unlockRequirement: 350,
       order: 3
     },
     {
@@ -108,9 +101,7 @@ export class BreedService {
       image: 'assets/images/cavapoo.png',
       eatingImage: 'assets/images/cavapoo.png',
       sleepingImage: 'assets/images/cavapoo_sleeping.png',
-
-      unlockRequirement: 2000,
-      sessionUnlockRequirement: 30,
+      unlockRequirement: 700,
       order: 4
     },
     {
@@ -120,9 +111,7 @@ export class BreedService {
       image: 'assets/images/french_bulldog.png',
       eatingImage: 'assets/images/french_bulldog.png',
       sleepingImage: 'assets/images/french_bulldog_sleeping.png',
-
-      unlockRequirement: 3000,
-      sessionUnlockRequirement: 50,
+      unlockRequirement: 1000,
       order: 5
     },
     {
@@ -132,9 +121,7 @@ export class BreedService {
       image: 'assets/images/labrador.png',
       eatingImage: 'assets/images/labrador.png',
       sleepingImage: 'assets/images/labrador_sleeping.png',
-
-      unlockRequirement: 4000,
-      sessionUnlockRequirement: 75,
+      unlockRequirement: 1400,
       order: 6
     },
     {
@@ -144,9 +131,7 @@ export class BreedService {
       image: 'assets/images/dachshund.png',
       eatingImage: 'assets/images/dachshund.png',
       sleepingImage: 'assets/images/dachshund_sleeping.png',
-
-      unlockRequirement: 6000,
-      sessionUnlockRequirement: 100,
+      unlockRequirement: 1800,
       order: 7
     },
     {
@@ -156,9 +141,7 @@ export class BreedService {
       image: 'assets/images/australian_shepherd.png',
       eatingImage: 'assets/images/australian_shepherd.png',
       sleepingImage: 'assets/images/australian_shepherd_sleeping.png',
-
-      unlockRequirement: 8000,
-      sessionUnlockRequirement: 150,
+      unlockRequirement: 2400,
       order: 8
     },
     {
@@ -168,9 +151,7 @@ export class BreedService {
       image: 'assets/images/maltese.png',
       eatingImage: 'assets/images/maltese.png',
       sleepingImage: 'assets/images/maltese_sleeping.png',
-
-      unlockRequirement: 10000,
-      sessionUnlockRequirement: 200,
+      unlockRequirement: 3200,
       order: 9
     }
   ];
@@ -326,9 +307,9 @@ export class BreedService {
 
   getUnlockProgress(breedId: string): number {
     const breed = this.allBreeds.find(b => b.id === breedId);
-    if (!breed || breed.sessionUnlockRequirement === 0) return 100;
+    if (!breed || breed.unlockRequirement === 0) return 100;
 
-    const progress = (this.collection.completedSessions / breed.sessionUnlockRequirement) * 100;
+    const progress = (this.collection.totalKibble / breed.unlockRequirement) * 100;
     return Math.min(100, Math.max(0, progress));
   }
 
@@ -337,14 +318,6 @@ export class BreedService {
     if (!breed) return 0;
 
     const remaining = breed.unlockRequirement - this.collection.totalKibble;
-    return Math.max(0, remaining);
-  }
-
-  getSessionsToUnlock(breedId: string): number {
-    const breed = this.allBreeds.find(b => b.id === breedId);
-    if (!breed) return 0;
-
-    const remaining = breed.sessionUnlockRequirement - this.collection.completedSessions;
     return Math.max(0, remaining);
   }
 
@@ -395,15 +368,15 @@ export class BreedService {
     return null;
   }
 
-  checkSessionUnlocks(completedSessions: number): DogBreed | null {
+  checkKibbleUnlocks(totalKibble: number): DogBreed | null {
     const current = this.collection;
     let firstNewUnlock: DogBreed | null = null;
 
     const newUnlocked = [...current.unlockedBreeds];
     for (const breed of this.allBreeds) {
       if (
-        breed.sessionUnlockRequirement > 0 &&
-        completedSessions >= breed.sessionUnlockRequirement &&
+        breed.unlockRequirement > 0 &&
+        totalKibble >= breed.unlockRequirement &&
         !newUnlocked.includes(breed.id)
       ) {
         newUnlocked.push(breed.id);
@@ -413,7 +386,7 @@ export class BreedService {
 
     this.collectionSubject.next({
       ...current,
-      completedSessions,
+      totalKibble,
       unlockedBreeds: newUnlocked,
     });
     this.saveToLocalStorage();
@@ -456,7 +429,7 @@ export class BreedService {
   }
 
   getNextBreedToUnlock(): DogBreed | null {
-    const locked = this.lockedBreeds.sort((a, b) => a.sessionUnlockRequirement - b.sessionUnlockRequirement);
+    const locked = this.lockedBreeds.sort((a, b) => a.unlockRequirement - b.unlockRequirement);
     return locked.length > 0 ? locked[0] : null;
   }
 
