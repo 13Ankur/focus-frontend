@@ -28,7 +28,7 @@ import {
   shieldCheckmark,
   informationCircleOutline,
 } from 'ionicons/icons';
-import { Subscription } from 'rxjs';
+import { Subscription, firstValueFrom } from 'rxjs';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 
@@ -44,6 +44,7 @@ import { AppBlockerService } from '../../services/app-blocker.service';
 import { WidgetService } from '../../services/widget.service';
 import { NotificationService } from '../../services/notification.service';
 import { SocialService, FocusRoom } from '../../services/social.service';
+import { ApiService } from '../../services/api.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
@@ -203,6 +204,7 @@ export class HomePage implements OnInit, OnDestroy {
     private widgetService: WidgetService,
     private notificationService: NotificationService,
     private socialService: SocialService,
+    private apiService: ApiService,
     private http: HttpClient,
     public router: Router,
     private modalController: ModalController,
@@ -522,15 +524,12 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.isProcessing = true;
     try {
-      const headers = this.getAuthHeaders();
-      const res: any = await this.http
-        .post(`${this.apiUrl}/focus/start`, { duration: this.selectedDuration }, { headers })
-        .toPromise();
+      const res: any = await firstValueFrom(this.apiService.startFocusSession(this.selectedDuration));
 
       if (!res?.allowed) {
         const toast = await this.toastController.create({
           message: res?.message || 'Could not start session.',
-          duration: 2500, position: 'top', color: 'warning',
+          duration: 3500, position: 'top', color: 'warning',
         });
         await toast.present();
         return;
@@ -560,9 +559,10 @@ export class HomePage implements OnInit, OnDestroy {
       const endTimeMs = Date.now() + this.selectedDuration * 60 * 1000;
       this.widgetService.setSessionActive(true, endTimeMs);
     } catch (err: any) {
+      console.error('Start session error:', err);
       const toast = await this.toastController.create({
-        message: 'Could not start session. Check your connection.',
-        duration: 2500, position: 'top', color: 'danger',
+        message: err.message || 'Could not start session. Check your connection.',
+        duration: 4000, position: 'top', color: 'danger',
       });
       await toast.present();
     } finally {
@@ -603,22 +603,20 @@ export class HomePage implements OnInit, OnDestroy {
 
     let partialKibble = 0;
     try {
-      const headers = this.getAuthHeaders();
-      const res: any = await this.http
-        .post(`${this.apiUrl}/focus/fail`, {
-          duration: this.selectedDuration,
-          startTime: new Date(Date.now() - elapsed * 1000).toISOString(),
-          minutesCompleted,
-          sessionToken: token,
-        }, { headers })
-        .toPromise();
+      const res: any = await firstValueFrom(this.apiService.failFocusSession({
+        duration: this.selectedDuration,
+        startTime: new Date(Date.now() - elapsed * 1000).toISOString(),
+        minutesCompleted,
+        sessionToken: token || '',
+      }));
 
       partialKibble = res?.partialKibble || 0;
       if (partialKibble > 0) {
         this.statsService.recordCompletedSession(partialKibble, 0);
         this.authService.updateLocalKibble(partialKibble);
       }
-    } catch {
+    } catch (err: any) {
+      console.error('Session fail recording error:', err);
       // Offline — calculate locally
       partialKibble = minutesCompleted >= 5 ? Math.floor(minutesCompleted / 5) : 0;
     }
@@ -653,14 +651,11 @@ export class HomePage implements OnInit, OnDestroy {
     let streakIncreased = false;
 
     try {
-      const headers = this.getAuthHeaders();
-      const res: any = await this.http
-        .post(`${this.apiUrl}/focus/complete`, {
-          duration: this.selectedDuration,
-          startTime: new Date(Date.now() - this.selectedDuration * 60 * 1000).toISOString(),
-          sessionToken: token,
-        }, { headers })
-        .toPromise();
+      const res: any = await firstValueFrom(this.apiService.completeFocusSession({
+        duration: this.selectedDuration,
+        startTime: new Date(Date.now() - this.selectedDuration * 60 * 1000).toISOString(),
+        sessionToken: token || '',
+      }));
 
       const earned = res?.kibbleEarned || kibble;
       this.statsService.recordCompletedSession(earned, this.selectedDuration);
@@ -675,7 +670,8 @@ export class HomePage implements OnInit, OnDestroy {
         this.pendingAchievements = res.newAchievements;
         this.newAchievementCount += res.newAchievements.length;
       }
-    } catch {
+    } catch (err: any) {
+      console.error('Session complete error:', err);
       this.statsService.recordCompletedSession(kibble, this.selectedDuration);
       this.authService.updateLocalKibble(kibble);
     }

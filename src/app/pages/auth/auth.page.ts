@@ -187,7 +187,7 @@ export class AuthPage implements OnInit, OnDestroy {
     const errorMsg = error.error?.message?.toLowerCase() || '';
 
     if (error.status === 0) {
-      this.errorMessage = 'Unable to connect to server. Please check your internet connection.';
+      this.errorMessage = 'Unable to connect to server. Check your internet or CORS settings.';
     } else if (error.status === 401) {
       if (this.isLoginMode) {
         this.errorMessage = 'Incorrect email or password. Please try again.';

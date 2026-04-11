@@ -20,7 +20,7 @@ export interface VersionCheckResponse {
   providedIn: 'root'
 })
 export class VersionService {
-  private readonly APP_VERSION = '1.0.2'; // Update this with each release
+  private readonly APP_VERSION = '1.0.3'; // Update this with each release
   private hasShownUpdatePopup = false;
   private readonly SKIP_UPDATE_KEY = 'skip_update_version';
 

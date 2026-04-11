@@ -106,11 +106,14 @@ export class ApiService {
     } else {
       // Server-side error
       if (error.status === 0) {
-        errorMessage = 'Unable to connect to server. Please check your internet connection.';
-        this.isOnlineSubject.next(false);
+        errorMessage = 'Unable to connect to server. Check your internet or CORS settings.';
+        // Trigger a background check instead of assuming offline
+        this.checkConnection().subscribe();
       } else if (error.status === 401) {
         errorMessage = 'Session expired. Please log in again.';
         this.clearToken();
+      } else if (error.status === 429) {
+        errorMessage = error.error?.message || 'Too many requests. Please wait a moment.';
       } else if (error.status === 503) {
         errorMessage = 'Database unavailable. Please try again later.';
       } else if (error.error?.message) {
@@ -231,6 +234,32 @@ export class ApiService {
 
   feedBuddy(amount: number = 10): Observable<any> {
     return this.post<any>('/buddy/feed', { amount });
+  }
+
+  // ============ FOCUS ENDPOINTS ============
+
+  startFocusSession(duration: number): Observable<any> {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const headers = this.getHeaders().set('x-timezone', timezone);
+    return this.http.post<any>(`${this.baseUrl}/focus/start`, { duration }, { headers }).pipe(
+      catchError(this.handleError.bind(this))
+    );
+  }
+
+  completeFocusSession(data: { duration: number, startTime: string, sessionToken: string }): Observable<any> {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const headers = this.getHeaders().set('x-timezone', timezone);
+    return this.http.post<any>(`${this.baseUrl}/focus/complete`, data, { headers }).pipe(
+      catchError(this.handleError.bind(this))
+    );
+  }
+
+  failFocusSession(data: { duration: number, startTime: string, minutesCompleted: number, sessionToken: string }): Observable<any> {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const headers = this.getHeaders().set('x-timezone', timezone);
+    return this.http.post<any>(`${this.baseUrl}/focus/fail`, data, { headers }).pipe(
+      catchError(this.handleError.bind(this))
+    );
   }
 
   // ============ USER PROFILE ============
