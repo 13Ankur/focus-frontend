@@ -21,6 +21,7 @@ import { TimerService } from '../../services/timer.service';
 import { SoundService } from '../../services/sound.service';
 import { DogBarkService } from '../../services/dog-bark.service';
 import { AdService } from '../../services/ad.service';
+import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
 
@@ -78,10 +79,10 @@ export class KennelPage implements OnInit, OnDestroy {
 
   isTimerRunning: boolean = false;
 
-  // Tier (all features free)
-  userTier: UserTier = 'guardian';
-  isPro = true;
-  isGuardian = true;
+  // Tier
+  userTier: UserTier = 'free';
+  isPro = false;
+  isGuardian = false;
   completedSessions = 0;
 
   // Ad-powered free treat
@@ -150,6 +151,7 @@ export class KennelPage implements OnInit, OnDestroy {
     private soundService: SoundService,
     private dogBarkService: DogBarkService,
     private adService: AdService,
+    private revenueCatService: RevenueCatService,
     private http: HttpClient,
     private router: Router,
     private toastController: ToastController,
@@ -185,6 +187,13 @@ export class KennelPage implements OnInit, OnDestroy {
       this.isTimerRunning = running;
     });
     this.subscriptions.push(timerSub);
+
+    const proSub = this.revenueCatService.isPro$.subscribe(isPro => {
+      this.isPro = isPro;
+      this.isGuardian = isPro; // For now, treating Pro as Guardian for simplicity
+      this.userTier = isPro ? 'pro' : 'free';
+    });
+    this.subscriptions.push(proSub);
 
     this.updateSpeechBubble();
   }
@@ -619,16 +628,19 @@ export class KennelPage implements OnInit, OnDestroy {
 
 
     if (!this.isBreedUnlocked(breed)) {
-      const kibbleNeeded = this.breedService.getKibbleToUnlock(breed.id);
-      const kibbleRequired = breed.unlockRequirement || 0;
       const alert = await this.alertController.create({
-        header: '🔒 Locked',
-        message: kibbleNeeded > 0
-          ? `You need ${kibbleNeeded} more kibble to unlock ${breed.name} (${kibbleRequired} total needed).`
-          : `${breed.name} is ready to unlock!`,
+        header: `🔒 ${breed.name} is Locked`,
+        message: `Subscribe to Pro ($5/month) to unlock all dog breeds instantly!`,
         buttons: [
-          { text: 'Start Focus', handler: () => this.router.navigate(['/tabs/home']) },
-          { text: 'OK', role: 'cancel' }
+          { text: 'Later', role: 'cancel' },
+          {
+            text: 'Unlock All Breeds',
+            handler: () => {
+              this.router.navigate(['/paywall'], {
+                queryParams: { trigger: 'breed_lock', breedName: breed.name, returnUrl: '/tabs/kennel' }
+              });
+            }
+          }
         ]
       });
       await alert.present();

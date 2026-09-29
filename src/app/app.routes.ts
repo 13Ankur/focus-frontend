@@ -38,10 +38,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/focus-mode/focus-mode.page').then(m => m.FocusModePage),
     canActivate: [AuthGuard]
   },
-  // Paywall routes disabled — redirect to home (all features are free)
-  { path: 'subscription', redirectTo: 'tabs/home', pathMatch: 'full' },
-  { path: 'paywall', redirectTo: 'tabs/home', pathMatch: 'full' },
-  { path: 'guardian-angel', redirectTo: 'tabs/home', pathMatch: 'full' },
+  // Paywall route enabled
+  {
+    path: 'paywall',
+    loadComponent: () => import('./pages/paywall/paywall.page').then(m => m.PaywallPage),
+    canActivate: [AuthGuard]
+  },
+  { path: 'subscription', redirectTo: 'paywall', pathMatch: 'full' },
+  { path: 'guardian-angel', redirectTo: 'paywall', pathMatch: 'full' },
   { path: 'subscription-success', redirectTo: 'tabs/home', pathMatch: 'full' },
   {
     path: 'settings',

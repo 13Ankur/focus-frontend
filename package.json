@@ -36,6 +36,8 @@
     "@capacitor/status-bar": "^8.0.0",
     "@capawesome-team/capacitor-android-foreground-service": "^8.0.0",
     "@ionic/angular": "^8.0.0",
+    "@revenuecat/purchases-capacitor": "^13.1.4",
+    "@revenuecat/purchases-capacitor-ui": "^13.1.4",
     "ionicons": "^7.0.0",
     "rxjs": "~7.8.0",
     "swiper": "^12.0.3",

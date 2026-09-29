@@ -24,11 +24,11 @@
         <div class="sparkle sparkle-3">✨</div>
       </div>
       <h1 class="hero-headline">{{ headline }}</h1>
-      <p class="hero-subtitle">Join thousands of focusers helping shelter dogs</p>
+      <p class="hero-subtitle">Join thousands of focusers achieving their goals</p>
     </div>
 
-    <!-- Billing Toggle -->
-    <div class="billing-toggle">
+    <!-- Billing Toggle (web only — native IAP pricing is managed by RevenueCat) -->
+    <div class="billing-toggle" *ngIf="!isNative">
       <button
         class="toggle-btn"
         [class.active]="billingPeriod === 'monthly'"
@@ -44,17 +44,21 @@
       </button>
     </div>
 
-    <!-- Plan Cards -->
+    <!-- Plan Card -->
     <div class="plan-cards">
 
       <!-- Pro Card -->
-      <div class="plan-card pro-card" [class.selected]="selectedPlan === 'pro'" (click)="selectedPlan = 'pro'" role="button" aria-label="Select Pro plan">
+      <div class="plan-card pro-card selected" role="button" aria-label="Pro plan">
         <div class="popular-badge">MOST POPULAR</div>
         <div class="plan-header-row">
           <h3 class="plan-name">Pro</h3>
-          <div class="plan-price">
+          <div class="plan-price" *ngIf="!isNative">
             <span class="price-amount">{{ billingPeriod === 'monthly' ? '$4.99' : '$39.99' }}</span>
             <span class="price-period">{{ billingPeriod === 'monthly' ? '/month' : '/year' }}</span>
+          </div>
+          <div class="plan-price" *ngIf="isNative">
+            <span class="price-amount">Pro</span>
+            <span class="price-period">subscription</span>
           </div>
         </div>
 
@@ -67,51 +71,23 @@
 
         <button
           class="subscribe-btn pro-btn"
-          (click)="trialAvailable ? onStartTrial() : onSubscribe('pro')"
+          (click)="trialAvailable ? onStartTrial() : onSubscribe()"
           [disabled]="loading"
         >
-          <ion-spinner *ngIf="loading && selectedPlan === 'pro'" name="crescent"></ion-spinner>
-          <span *ngIf="!(loading && selectedPlan === 'pro')">
+          <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+          <span *ngIf="!loading">
             {{ trialAvailable ? 'Start 7-Day Free Trial' : 'Subscribe to Pro' }}
           </span>
         </button>
         <p class="trial-note" *ngIf="trialAvailable">No charge for 7 days. Cancel anytime.</p>
-      </div>
-
-      <!-- Guardian Card -->
-      <div class="plan-card guardian-card" [class.selected]="selectedPlan === 'guardian'" (click)="selectedPlan = 'guardian'" role="button" aria-label="Select Guardian Angel plan">
-        <div class="impact-badge">MAXIMUM IMPACT</div>
-        <div class="plan-header-row">
-          <h3 class="plan-name guardian-name">Guardian Angel</h3>
-          <div class="plan-price">
-            <span class="price-amount guardian-price">{{ billingPeriod === 'monthly' ? '$9.99' : '$79.99' }}</span>
-            <span class="price-period guardian-period">{{ billingPeriod === 'monthly' ? '/month' : '/year' }}</span>
-          </div>
-        </div>
-
-        <ul class="feature-list guardian-features">
-          <li *ngFor="let f of guardianFeatures">
-            <ion-icon name="checkmark-circle" class="check-guardian"></ion-icon>
-            <span>{{ f }}</span>
-          </li>
-        </ul>
-
-        <button
-          class="subscribe-btn guardian-btn"
-          (click)="onSubscribe('guardian')"
-          [disabled]="loading"
-        >
-          <ion-spinner *ngIf="loading && selectedPlan === 'guardian'" name="crescent"></ion-spinner>
-          <span *ngIf="!(loading && selectedPlan === 'guardian')">Become a Guardian Angel</span>
-        </button>
       </div>
     </div>
 
     <!-- Social Proof -->
     <div class="social-proof">
       <div class="proof-item">
-        <span class="proof-icon">🌍</span>
-        <span class="proof-text">247,583 meals donated by StayPaws users</span>
+        <span class="proof-icon">⚡</span>
+        <span class="proof-text">Over 1,000,000 focus minutes logged</span>
       </div>
       <div class="proof-item">
         <span class="proof-icon">⭐</span>

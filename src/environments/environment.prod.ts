@@ -11,10 +11,13 @@ export const environment = {
   appleClientId: 'com.staypaws.app',
   appleRedirectUri: 'https://staypaws.zavvi.co.in/auth/apple/callback',
 
-  // RevenueCat — replace with real API keys from RevenueCat dashboard
+  // RevenueCat
+  // ⚠️ TODO: Replace Android test key with production key when Google Play app is set up
   revenueCatApiKey: {
-    ios: 'appl_REPLACE_WITH_REAL_KEY',
-    android: 'goog_REPLACE_WITH_REAL_KEY',
+    ios: 'appl_OeYspijIChGBNykiicvABUKLewU',
+    android: 'test_dCdyoioMFzDLnWvQvcyPaxcikGn',  // ← REPLACE with goog_... key when ready
   },
 
+  // Razorpay (public key only — plan IDs live on the server)
+  razorpayKeyId: 'rzp_live_T0E1gmDDGHQVdV',
 };

@@ -21,6 +21,7 @@ import { BreedService } from '../../services/breed.service';
 import { SoundService } from '../../services/sound.service';
 import { AppBlockerService } from '../../services/app-blocker.service';
 import { NotificationService, NotificationPreferences } from '../../services/notification.service';
+import { RevenueCatService } from '../../services/revenue-cat.service';
 
 @Component({
   selector: 'app-settings',
@@ -68,7 +69,8 @@ export class SettingsPage implements OnInit {
     private notificationService: NotificationService,
     private router: Router,
     private alertController: AlertController,
-    private actionSheetController: ActionSheetController
+    private actionSheetController: ActionSheetController,
+    private revenueCatService: RevenueCatService
   ) {
     addIcons({ arrowBack, pencilOutline, chevronForward, logOutOutline });
   }
@@ -323,6 +325,10 @@ export class SettingsPage implements OnInit {
 
   openTerms(): void {
     this.router.navigate(['/terms']);
+  }
+
+  async manageSubscription(): Promise<void> {
+    await this.revenueCatService.presentCustomerCenter();
   }
 
   async openAbout(): Promise<void> {

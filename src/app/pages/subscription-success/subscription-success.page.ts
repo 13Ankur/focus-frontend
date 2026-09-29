@@ -20,15 +20,18 @@ import { arrowForward } from 'ionicons/icons';
   styleUrls: ['./subscription-success.page.scss']
 })
 export class SubscriptionSuccessPage implements OnInit {
-  planName: string = 'Champion';
-  mealsPerMonth: number = 15;
+  planName: string = 'Pro';
   confettiArray: number[] = Array.from({ length: 20 }, (_, i) => i);
   
   benefits: string[] = [
-    'All premium dog breeds',
-    '2x kibble earnings',
+    'Unlimited focus sessions',
+    'Custom & long focus timers',
+    'All dog breeds unlocked',
+    'Focus sounds & ambient audio',
+    'App blocking during sessions',
+    'Full analytics & insights',
     'Ad-free experience',
-    'Monthly shelter updates'
+    'Weekly streak shield',
   ];
 
   constructor(private router: Router) {
@@ -40,30 +43,15 @@ export class SubscriptionSuccessPage implements OnInit {
   }
 
   private loadPlanDetails(): void {
-    const planId = localStorage.getItem('subscription_plan');
-    
-    const plans: { [key: string]: { name: string; meals: number; benefits: string[] } } = {
-      'protector': {
-        name: 'Protector',
-        meals: 5,
-        benefits: ['All premium dog breeds', 'Ad-free experience', 'Priority support']
-      },
-      'champion': {
-        name: 'Champion',
-        meals: 15,
-        benefits: ['All premium dog breeds', '2x kibble earnings', 'Ad-free experience', 'Exclusive accessories', 'Monthly shelter updates']
-      },
-      'guardian': {
-        name: 'Guardian Angel',
-        meals: 50,
-        benefits: ['All premium dog breeds', '3x kibble earnings', 'Name a shelter dog', 'Direct impact reports', 'VIP shelter visits']
+    try {
+      const stored = localStorage.getItem('focus_user');
+      if (stored) {
+        const user = JSON.parse(stored);
+        const tier = user?.subscriptionTier || 'pro';
+        this.planName = tier === 'guardian' ? 'Guardian Angel' : 'Pro';
       }
-    };
-    
-    if (planId && plans[planId]) {
-      this.planName = plans[planId].name;
-      this.mealsPerMonth = plans[planId].meals;
-      this.benefits = plans[planId].benefits;
+    } catch {
+      // Default to Pro
     }
   }
 

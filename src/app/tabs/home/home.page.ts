@@ -45,11 +45,13 @@ import { WidgetService } from '../../services/widget.service';
 import { NotificationService } from '../../services/notification.service';
 import { SocialService, FocusRoom } from '../../services/social.service';
 import { ApiService } from '../../services/api.service';
+import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
 import { KibbleInfoModalComponent } from '../../components/kibble-info-modal/kibble-info-modal.component';
 import { FailedModalComponent } from '../../components/failed-modal/failed-modal.component';
+import { Capacitor } from '@capacitor/core';
 
 
 type UserTier = 'free' | 'pro' | 'guardian';
@@ -59,7 +61,7 @@ interface DurationOption {
   locked: boolean;
 }
 
-const FREE_DURATIONS = [15, 25];
+const FREE_DURATIONS = [15];
 const PRO_DURATIONS = [15, 25, 45, 60, 90, 120];
 const CUSTOM_MIN = 5;
 const CUSTOM_MAX = 120;
@@ -118,9 +120,9 @@ export class HomePage implements OnInit, OnDestroy {
   showCustomPicker = false;
   customDuration = 30;
 
-  // ── User tier (all features free) ──
-  userTier: UserTier = 'guardian';
-  isPro = true;
+  // ── User tier ──
+  userTier: UserTier = 'free';
+  isPro = false;
 
   // ── Pomodoro ──
   pomodoroEnabled = false;
@@ -205,6 +207,7 @@ export class HomePage implements OnInit, OnDestroy {
     private notificationService: NotificationService,
     private socialService: SocialService,
     private apiService: ApiService,
+    private revenueCatService: RevenueCatService,
     private http: HttpClient,
     public router: Router,
     private modalController: ModalController,
@@ -219,7 +222,19 @@ export class HomePage implements OnInit, OnDestroy {
   userName = 'User';
 
   ngOnInit(): void {
-    this.loadUserTier();
+    // Native platforms: keep RevenueCat entitlement in sync.
+    // Web: subscription status comes from the API (Razorpay).
+    if (Capacitor.isNativePlatform()) {
+      const proSub = this.revenueCatService.isPro$.subscribe(isPro => {
+        if (isPro) {
+          this.applyTier('pro', true);
+        } else {
+          this.loadUserTier();
+        }
+      });
+      this.subscriptions.push(proSub);
+    }
+
     this.authService.currentUser$.subscribe(user => {
       if (user) {
         this.userName = user.username || 'User';
@@ -227,6 +242,7 @@ export class HomePage implements OnInit, OnDestroy {
     });
 
     this.checkSessionStatus();
+    this.loadUserTier();
     this.buildDurationOptions();
     this.timerService.setDuration(this.selectedDuration);
     this.loadDailyGoal();
@@ -457,11 +473,20 @@ export class HomePage implements OnInit, OnDestroy {
   // ── Duration selection ──
 
   private buildDurationOptions(): void {
-    this.durationOptions = PRO_DURATIONS.map(v => ({ value: v, locked: false }));
+    const allowed = this.isPro ? PRO_DURATIONS : FREE_DURATIONS;
+    this.durationOptions = PRO_DURATIONS.map(v => ({ 
+      value: v, 
+      locked: !allowed.includes(v) 
+    }));
   }
 
   selectDuration(option: DurationOption): void {
     if (this.isTimerRunning || this.isProcessing) return;
+
+    if (option.locked) {
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'timer_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
 
     this.soundService.play('tap');
     this.selectedDuration = option.value;
@@ -475,6 +500,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   toggleCustomPicker(): void {
     if (this.isTimerRunning || this.isProcessing) return;
+    if (!this.isPro) {
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'timer_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
     this.showCustomPicker = !this.showCustomPicker;
   }
 
@@ -560,8 +589,15 @@ export class HomePage implements OnInit, OnDestroy {
       this.widgetService.setSessionActive(true, endTimeMs);
     } catch (err: any) {
       console.error('Start session error:', err);
+      const msg = err.message || 'Could not start session. Check your connection.';
+      if (msg.toLowerCase().includes('daily limit') || msg.toLowerCase().includes('upgrade to pro')) {
+        this.router.navigate(['/paywall'], {
+          queryParams: { trigger: 'session_limit', breedName: this.activeBreedName, returnUrl: '/tabs/home' },
+        });
+        return;
+      }
       const toast = await this.toastController.create({
-        message: err.message || 'Could not start session. Check your connection.',
+        message: msg,
         duration: 4000, position: 'top', color: 'danger',
       });
       await toast.present();
@@ -798,6 +834,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async selectSound(sound: SoundTrack & { locked: boolean }): Promise<void> {
+    if (sound.locked) {
+      this.closeSoundPicker();
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'sound_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
+
     if (this.soundMixMode) {
       this.toggleMixSelection(sound.id);
       return;
@@ -811,6 +853,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   async previewSound(soundId: string): Promise<void> {
+    if (this.focusSoundService.isSoundLocked(soundId)) {
+      this.closeSoundPicker();
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'sound_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
+
     if (this.soundPreviewingId === soundId) {
       this.soundPreviewingId = null;
       return;
@@ -927,9 +975,49 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ── Helpers ──
 
-  private loadUserTier(): void {
-    this.userTier = 'guardian';
-    this.isPro = true;
+  private async loadUserTier(): Promise<void> {
+    // Prefer server subscription status (covers Razorpay web purchases)
+    try {
+      const headers = this.getAuthHeaders();
+      const res: any = await firstValueFrom(
+        this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
+      );
+
+      if (res?.tier) {
+        const tier = (res.tier as UserTier) || 'free';
+        const isPro = tier === 'pro' || tier === 'guardian' || !!res.isPremium;
+        this.applyTier(tier, isPro);
+
+        try {
+          const user = JSON.parse(safeGetItem('focus_user') || '{}');
+          user.subscriptionTier = tier;
+          user.isPremium = isPro;
+          if (res.expiry) user.subscriptionExpiry = res.expiry;
+          safeSetItem('focus_user', JSON.stringify(user));
+        } catch { /* ignore local cache write errors */ }
+
+        return;
+      }
+    } catch {
+      // Fall through to local / RevenueCat
+    }
+
+    try {
+      const user = JSON.parse(safeGetItem('focus_user') || '{}');
+      const localTier = (user?.subscriptionTier as UserTier) || 'free';
+      const localPro = localTier === 'pro' || localTier === 'guardian' || !!user?.isPremium;
+      const rcPro = Capacitor.isNativePlatform() && this.revenueCatService.isProSync;
+      const isPro = localPro || rcPro;
+      this.applyTier(isPro ? (localTier !== 'free' ? localTier : 'pro') : 'free', isPro);
+    } catch {
+      const isPro = Capacitor.isNativePlatform() && this.revenueCatService.isProSync;
+      this.applyTier(isPro ? 'pro' : 'free', isPro);
+    }
+  }
+
+  private applyTier(tier: UserTier, isPro: boolean): void {
+    this.userTier = tier;
+    this.isPro = isPro;
     this.buildDurationOptions();
     this.refreshSoundLibrary();
   }

@@ -9,6 +9,7 @@ import { VersionService } from './services/version.service';
 import { AdService } from './services/ad.service';
 import { WidgetService } from './services/widget.service';
 import { NotificationService } from './services/notification.service';
+import { RevenueCatService } from './services/revenue-cat.service';
 import { App } from '@capacitor/app';
 
 @Component({
@@ -25,6 +26,7 @@ export class AppComponent implements OnInit {
     private adService: AdService,
     private widgetService: WidgetService,
     private notificationService: NotificationService,
+    private revenueCatService: RevenueCatService
   ) { }
 
   async ngOnInit(): Promise<void> {

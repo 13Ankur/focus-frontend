@@ -54,7 +54,7 @@
       <div class="welcome-icon">🍽️</div>
       <div class="welcome-content">
         <span class="welcome-title">{{ activeBreedName }} is Hungry!</span>
-        <span class="welcome-subtitle">Feed {{ activeBreedName }} to help shelter dogs get their meals</span>
+        <span class="welcome-subtitle">Feed {{ activeBreedName }} by starting your focus session</span>
       </div>
     </div>
 
@@ -167,14 +167,16 @@
         </button>
       </div>
       <div class="duration-buttons">
-        <button *ngFor="let opt of durationOptions" class="duration-btn"
+        <button *ngFor="let opt of durationOptions" class="duration-btn" [class.locked]="opt.locked"
           [class.selected]="selectedDuration === opt.value && !showCustomPicker" (click)="selectDuration(opt)">
+          <ion-icon name="lock-closed" class="duration-lock-icon" *ngIf="opt.locked"></ion-icon>
           <span class="duration-time">{{ opt.value }}</span>
           <span class="duration-unit">min</span>
         </button>
 
-        <button class="duration-btn custom-btn" [class.selected]="showCustomPicker" (click)="toggleCustomPicker()">
-          <ion-icon name="timer-outline" class="custom-icon"></ion-icon>
+        <button class="duration-btn custom-btn" [class.locked]="!isPro" [class.selected]="showCustomPicker" (click)="toggleCustomPicker()">
+          <ion-icon name="lock-closed" class="duration-lock-icon" *ngIf="!isPro"></ion-icon>
+          <ion-icon name="timer-outline" class="custom-icon" *ngIf="isPro"></ion-icon>
           <span class="duration-unit">Custom</span>
         </button>
       </div>
@@ -327,7 +329,7 @@
         Stay focused and help {{ activeBreedName }} earn {{ kibbleToEarn }} kibble!
       </p>
       <p class="action-hint first-session" *ngIf="!isTimerRunning && completedSessions === 0">
-        🎉 Feed {{ activeBreedName }} to provide a meal for a shelter dog!
+        🎉 Feed {{ activeBreedName }} by completing your first focus session!
       </p>
       <p class="action-hint warning" *ngIf="isTimerRunning && isInGracePeriod">
         Free cancel for {{ graceSecondsRemaining }}s — no penalty

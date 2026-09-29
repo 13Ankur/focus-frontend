@@ -270,12 +270,12 @@ export class OnboardingPage implements OnInit, OnDestroy {
   // ── Step 5: Breed selection ──
 
   selectBreed(breed: DogBreed): void {
-    if (breed.unlockRequirement > 0) return;
+    if (!this.breedService.isBreedUnlocked(breed.id)) return;
     this.selectedBreed = breed.id;
   }
 
   isBreedFree(breed: DogBreed): boolean {
-    return breed.unlockRequirement === 0;
+    return this.breedService.isBreedUnlocked(breed.id);
   }
 
   continueWithBreed(): void {

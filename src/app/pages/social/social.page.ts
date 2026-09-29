@@ -31,7 +31,7 @@ export class SocialPage implements OnInit {
   // Rooms
   myRooms: FocusRoom[] = [];
   roomsLoading = true;
-  isPro = true;
+  isPro = false;
 
   // Create room modal
   showCreateModal = false;
@@ -68,11 +68,18 @@ export class SocialPage implements OnInit {
   }
 
   ionViewWillEnter(): void {
+    this.loadUserTier();
     this.loadRooms();
   }
 
   private loadUserTier(): void {
-    this.isPro = true;
+    try {
+      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier || 'free';
+      this.isPro = tier === 'pro' || tier === 'guardian' || !!user?.isPremium;
+    } catch {
+      this.isPro = false;
+    }
   }
 
   goBack(): void {
@@ -105,6 +112,12 @@ export class SocialPage implements OnInit {
   // ── Create Room ──
 
   openCreateModal(): void {
+    if (!this.isPro) {
+      this.router.navigate(['/paywall'], {
+        queryParams: { trigger: 'generic', returnUrl: '/social' },
+      });
+      return;
+    }
     this.showCreateModal = true;
     this.newRoomName = '';
     this.createdRoomCode = '';

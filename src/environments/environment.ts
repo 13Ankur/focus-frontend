@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://staypawsapi.zavvi.co.in',
+  apiUrl: 'http://localhost:5001',
   focusDurationMinutes: 25,
   kibblePerSession: 25,
 
@@ -13,8 +13,10 @@ export const environment = {
 
   // RevenueCat
   revenueCatApiKey: {
-    ios: 'appl_DEV_PLACEHOLDER',
-    android: 'goog_DEV_PLACEHOLDER',
+    ios: 'appl_OeYspijIChGBNykiicvABUKLewU',
+    android: 'test_dCdyoioMFzDLnWvQvcyPaxcikGn',
   },
 
+  // Razorpay (public key only — plan IDs live on the server)
+  razorpayKeyId: 'rzp_live_T0E1gmDDGHQVdV',
 };

@@ -96,8 +96,8 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   userName = 'Focus Champion';
   userLevel = 1;
-  userTier: UserTier = 'guardian';
-  isPro = true;
+  userTier: UserTier = 'free';
+  isPro = false;
 
   selectedPeriod: TimePeriod = 'week';
 
@@ -213,7 +213,20 @@ export class ProfilePage implements OnInit, OnDestroy {
     if (user) {
       this.userName = user.username || 'Focus Champion';
     }
+    this.applyLocalTier();
     this.loadDailyGoal();
+  }
+
+  private applyLocalTier(): void {
+    try {
+      const stored = JSON.parse(safeGetItem('focus_user') || '{}');
+      const tier = (stored?.subscriptionTier as UserTier) || 'free';
+      this.userTier = tier;
+      this.isPro = tier === 'pro' || tier === 'guardian' || !!stored?.isPremium;
+    } catch {
+      this.userTier = 'free';
+      this.isPro = false;
+    }
   }
 
   private loadDailyGoal(): void {
@@ -265,8 +278,7 @@ export class ProfilePage implements OnInit, OnDestroy {
 
       if (!res) return;
 
-      this.userTier = 'guardian';
-      this.isPro = true;
+      this.applyLocalTier();
 
       if (res.allTime) {
         this.currentStreak = res.allTime.currentStreak ?? this.currentStreak;

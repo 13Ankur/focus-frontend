@@ -180,6 +180,15 @@
           <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
         </div>
 
+        <div class="setting-item" (click)="manageSubscription()" role="button" aria-label="Manage Subscription">
+          <div class="setting-icon">💎</div>
+          <div class="setting-info">
+            <span class="setting-label">Manage Subscription</span>
+            <span class="setting-subtitle">View, upgrade, or cancel</span>
+          </div>
+          <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
+        </div>
+
         <div class="setting-item" (click)="openAbout()" role="button" aria-label="About Paws Focus">
           <div class="setting-icon">ℹ️</div>
           <div class="setting-info">
@@ -226,7 +235,7 @@
 
     <!-- App Version Footer -->
     <div class="app-footer">
-      <p class="footer-text">Paws Focus v1.0.2</p>
+      <p class="footer-text">Paws Focus v1.0.4</p>
       <p class="footer-text muted">Made with 💚 for dog lovers</p>
     </div>
   </div>

@@ -15,14 +15,17 @@ import { addIcons } from 'ionicons';
 import { close, checkmarkCircle } from 'ionicons/icons';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Capacitor } from '@capacitor/core';
 import { environment } from '../../../environments/environment';
+import { safeSetItem } from '../../utils/storage';
+import { RevenueCatService } from '../../services/revenue-cat.service';
 
 type Trigger = 'session_limit' | 'timer_lock' | 'breed_lock' | 'sound_lock' | 'app_block' | 'generic';
 
 const HEADLINES: Record<Trigger, string> = {
-  session_limit: '🐾 {breed} is Still Hungry!',
+  session_limit: '🐾 Keep {breed} Happy & Focused!',
   timer_lock:    '⏱ Unlock Longer Focus Sessions',
-  breed_lock:    '🐕 Unlock All 9 Dog Breeds',
+  breed_lock:    '🐕 Unlock All Dog Breeds',
   sound_lock:    '🎵 Focus Better with Ambient Sounds',
   app_block:     '🔒 Block Distracting Apps',
   generic:       '🚀 Supercharge Your Focus',
@@ -50,30 +53,23 @@ export class PaywallPage implements OnInit, OnDestroy {
   returnUrl = '/tabs/home';
   headline = HEADLINES.generic;
 
-  billingPeriod: 'monthly' | 'annual' = 'annual';
-  selectedPlan: 'pro' | 'guardian' = 'pro';
+  billingPeriod: 'monthly' | 'annual' = 'monthly';
+  selectedPlan: 'pro' = 'pro';
   trialAvailable = true;
   loading = false;
 
+  /** True when running inside iOS / Android (use RevenueCat IAP) */
+  isNative = Capacitor.isNativePlatform();
+
   proFeatures = [
     'Unlimited focus sessions',
-    'Custom timer (5–120 min)',
-    'All 9 dog breeds',
-    'Focus sounds & ambience',
+    'Custom & long focus timer (5–120 min)',
+    'All dog breeds unlocked',
+    'Focus sounds & ambient audio',
     'App blocking during sessions',
     'Full analytics & insights',
     'Ad-free experience',
     'Weekly streak shield',
-  ];
-
-  guardianFeatures = [
-    'Everything in Pro',
-    '100 extra shelter meals/month',
-    'Exclusive gold dog skins',
-    '3 Guardian-only breeds',
-    'Monthly shelter impact video',
-    'Guardian badge on profile',
-    'Priority support',
   ];
 
   private apiUrl = environment.apiUrl;
@@ -85,6 +81,7 @@ export class PaywallPage implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
     private http: HttpClient,
+    private revenueCatService: RevenueCatService
   ) {
     addIcons({ close, checkmarkCircle });
   }
@@ -109,30 +106,136 @@ export class PaywallPage implements OnInit, OnDestroy {
 
   // ── Actions ──
 
-  async onSubscribe(tier: 'pro' | 'guardian') {
-    this.selectedPlan = tier;
+  /**
+   * Primary subscribe action.
+   * Native platforms → RevenueCat's native IAP paywall (Apple / Google IAP).
+   * Web → Razorpay checkout (allowed by Apple guidelines since it's not on device).
+   */
+  async onSubscribe() {
+    if (this.isNative) {
+      await this.subscribeViaNativeIAP();
+    } else {
+      await this.subscribeViaRazorpay();
+    }
+  }
+
+  /**
+   * Native IAP flow — uses RevenueCat's managed paywall.
+   * Apple & Google handle billing; RevenueCat webhook tells our backend.
+   */
+  private async subscribeViaNativeIAP() {
+    this.loading = true;
+    try {
+      await this.revenueCatService.presentPaywall();
+
+      // After paywall dismissal, check if they are now pro
+      if (this.revenueCatService.isProSync) {
+        // Sync local cache so the rest of the app picks it up
+        const user = this.getLocalUser();
+        user.isPremium = true;
+        user.subscriptionTier = 'pro';
+        safeSetItem('focus_user', JSON.stringify(user));
+
+        await this.showToast('Welcome to Pro! 🎉', 'success');
+        this.router.navigateByUrl(this.returnUrl);
+      }
+    } catch (err) {
+      console.error('Native IAP error:', err);
+      await this.showToast('Could not complete purchase. Please try again.', 'danger');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /**
+   * Web-only flow — Razorpay subscription checkout.
+   * Only used when the app is running in a browser (not on iOS / Android).
+   */
+  private async subscribeViaRazorpay() {
     this.loading = true;
 
     try {
-      // RevenueCat / IAP integration placeholder
-      // In production, this would call Capacitor RevenueCat plugin
-      await this.showToast(`${tier === 'pro' ? 'Pro' : 'Guardian Angel'} subscription started!`, 'success');
-      this.router.navigateByUrl(this.returnUrl);
-    } catch (err: any) {
-      if (err?.userCancelled) {
-        // User cancelled — stay on page
-      } else {
-        const alert = await this.alertCtrl.create({
-          header: 'Something went wrong',
-          message: 'We couldn\'t process your subscription. Please try again.',
-          buttons: [
-            { text: 'Cancel', role: 'cancel' },
-            { text: 'Retry', handler: () => this.onSubscribe(tier) },
-          ],
-        });
-        await alert.present();
+      const headers = this.getAuthHeaders();
+      const tier = 'pro';
+      const createRes: any = await this.http
+        .post(`${this.apiUrl}/subscription/razorpay/create`, { tier }, { headers })
+        .toPromise();
+
+      if (!createRes?.subscriptionId) {
+        throw new Error('Could not start checkout. Please try again.');
       }
-    } finally {
+
+      const user = this.getLocalUser();
+      const options = {
+        key: createRes.keyId || environment.razorpayKeyId,
+        subscription_id: createRes.subscriptionId,
+        name: 'StayPaws',
+        description: 'StayPaws Pro Monthly Plan',
+        image: 'assets/icon/favicon.png',
+        prefill: {
+          name: user?.username || 'Focus Member',
+          email: user?.email || '',
+        },
+        theme: {
+          color: '#7ED321',
+        },
+        handler: async (response: any) => {
+          console.log('Razorpay Payment Response:', response);
+          try {
+            const verifyRes: any = await this.http
+              .post(
+                `${this.apiUrl}/subscription/verify-razorpay`,
+                {
+                  paymentId: response.razorpay_payment_id,
+                  subscriptionId: response.razorpay_subscription_id || createRes.subscriptionId,
+                  signature: response.razorpay_signature,
+                  tier,
+                },
+                { headers },
+              )
+              .toPromise();
+
+            user.isPremium = true;
+            user.subscriptionTier = verifyRes?.tier || tier;
+            if (verifyRes?.expiry) {
+              user.subscriptionExpiry = verifyRes.expiry;
+            }
+            safeSetItem('focus_user', JSON.stringify(user));
+
+            await this.showToast('Welcome to Pro! 🎉', 'success');
+            this.router.navigateByUrl(this.returnUrl);
+          } catch (verifyErr) {
+            console.error('Razorpay verification failed:', verifyErr);
+            await this.showToast('Payment verification pending. Please refresh.', 'warning');
+          } finally {
+            this.loading = false;
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            this.loading = false;
+          },
+        },
+      };
+
+      if ((window as any).Razorpay) {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } else {
+        throw new Error('Razorpay SDK not loaded. Check your internet connection.');
+      }
+    } catch (err: any) {
+      console.error('Subscription Error:', err);
+      const message =
+        err?.error?.message ||
+        err?.message ||
+        'We couldn\'t process your subscription. Please try again.';
+      const alert = await this.alertCtrl.create({
+        header: 'Subscription Failed',
+        message,
+        buttons: ['OK'],
+      });
+      await alert.present();
       this.loading = false;
     }
   }
@@ -144,6 +247,12 @@ export class PaywallPage implements OnInit, OnDestroy {
     try {
       const headers = this.getAuthHeaders();
       await this.http.post(`${this.apiUrl}/subscription/start-trial`, {}, { headers }).toPromise();
+
+      const user = this.getLocalUser();
+      user.isPremium = true;
+      user.subscriptionTier = 'pro';
+      user.trialUsed = true;
+      safeSetItem('focus_user', JSON.stringify(user));
 
       const alert = await this.alertCtrl.create({
         header: '🎉 Trial Started!',
@@ -169,14 +278,11 @@ export class PaywallPage implements OnInit, OnDestroy {
     this.loading = true;
 
     try {
-      // RevenueCat restore placeholder
-      // In production: await Purchases.restorePurchases()
-      const headers = this.getAuthHeaders();
-      const res: any = await this.http.get(`${this.apiUrl}/subscription/status`, { headers }).toPromise();
-
-      if (res?.tier && res.tier !== 'free') {
+      const success = await this.revenueCatService.restorePurchases();
+      
+      if (success && this.revenueCatService.isProSync) {
         await this.showToast('Subscription restored!', 'success');
-        this.navCtrl.back();
+        this.dismiss();
       } else {
         const alert = await this.alertCtrl.create({
           header: 'No Subscription Found',
@@ -185,7 +291,7 @@ export class PaywallPage implements OnInit, OnDestroy {
         });
         await alert.present();
       }
-    } catch {
+    } catch (err) {
       await this.showToast('Could not restore purchases. Check your connection.', 'danger');
     } finally {
       this.loading = false;
@@ -193,7 +299,11 @@ export class PaywallPage implements OnInit, OnDestroy {
   }
 
   dismiss() {
-    this.navCtrl.back();
+    if (this.returnUrl) {
+      this.router.navigateByUrl(this.returnUrl);
+    } else {
+      this.navCtrl.back();
+    }
   }
 
   openTerms() {
@@ -223,15 +333,7 @@ export class PaywallPage implements OnInit, OnDestroy {
   }
 
   private async checkAlreadySubscribed() {
-    try {
-      const headers = this.getAuthHeaders();
-      const res: any = await this.http.get(`${this.apiUrl}/subscription/status`, { headers }).toPromise();
-      if (res?.tier && res.tier !== 'free') {
-        this.navCtrl.back();
-      }
-    } catch {
-      // ignore
-    }
+    // Keep paywall visible so user can select/view options
   }
 
   private getAuthHeaders(): HttpHeaders {

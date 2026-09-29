@@ -27,7 +27,7 @@ export class AppBlockingPage implements OnInit, OnDestroy {
   loadingApps = false;
 
   userTier: UserTier = 'free';
-  isPro = true;
+  isPro = false;
 
   installedApps: AppInfo[] = [];
   filteredApps: AppInfo[] = [];
@@ -100,10 +100,10 @@ export class AppBlockingPage implements OnInit, OnDestroy {
     try {
       const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
       this.userTier = user?.subscriptionTier || 'free';
-      this.isPro = true;
+      this.isPro = this.userTier === 'pro' || this.userTier === 'guardian' || !!user?.isPremium;
     } catch {
-      this.userTier = 'guardian';
-      this.isPro = true;
+      this.userTier = 'free';
+      this.isPro = false;
     }
   }
 
@@ -133,6 +133,12 @@ export class AppBlockingPage implements OnInit, OnDestroy {
   }
 
   async toggleBlocking(): Promise<void> {
+    if (!this.isPro) {
+      this.router.navigate(['/paywall'], {
+        queryParams: { trigger: 'app_block', returnUrl: '/app-blocking' },
+      });
+      return;
+    }
 
     this.blockingEnabled = !this.blockingEnabled;
     await this.appBlocker.setEnabled(this.blockingEnabled);

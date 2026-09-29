@@ -5,6 +5,7 @@ import { BehaviorSubject, Observable, tap, catchError, from } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiService } from './api.service';
 import { BreedService } from './breed.service';
+import { RevenueCatService } from './revenue-cat.service';
 
 // Import Capacitor plugins
 // import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -163,6 +164,7 @@ export class AuthService {
   public currentUser$ = this.currentUserSubject.asObservable();
 
   private _breedService: BreedService | null = null;
+  private _revenueCatService: RevenueCatService | null = null;
 
   constructor(
     private http: HttpClient,
@@ -178,6 +180,13 @@ export class AuthService {
       this._breedService = this.injector.get(BreedService);
     }
     return this._breedService;
+  }
+
+  private get revenueCatService(): RevenueCatService {
+    if (!this._revenueCatService) {
+      this._revenueCatService = this.injector.get(RevenueCatService);
+    }
+    return this._revenueCatService;
   }
 
   /*
@@ -274,6 +283,7 @@ export class AuthService {
           notificationPrefs: response.notificationPrefs
         });
         this.syncBreedDataAfterLogin();
+        this.revenueCatService.loginUser(response._id);
       })
     );
   }
@@ -301,6 +311,7 @@ export class AuthService {
             notificationPrefs: response.notificationPrefs
           });
           this.syncBreedDataAfterLogin();
+          this.revenueCatService.loginUser(response._id);
         }
       })
     );
@@ -479,6 +490,7 @@ export class AuthService {
     }
     */
 
+    this.revenueCatService.logoutUser();
     this.apiService.clearToken();
     this.USER_STORAGE_KEYS.forEach(key => safeRemoveItem(key));
     this.breedService.resetCollection();

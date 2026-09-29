@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { RevenueCatService } from './revenue-cat.service';
 import { safeGetItem, safeSetItem } from '../utils/storage';
 
 export type DogState = 'idle' | 'eating' | 'sleeping' | 'happy';
@@ -166,7 +167,10 @@ export class BreedService {
   public collection$ = this.collectionSubject.asObservable();
   private newlyUnlockedBreed: DogBreed | null = null;
 
-  constructor(private apiService: ApiService) {
+  constructor(
+    private apiService: ApiService,
+    private revenueCatService: RevenueCatService
+  ) {
     this.loadCollection();
   }
 
@@ -182,10 +186,16 @@ export class BreedService {
   }
 
   get unlockedBreeds(): DogBreed[] {
+    if (this.revenueCatService.isProSync) {
+      return this.allBreeds;
+    }
     return this.allBreeds.filter(b => this.collection.unlockedBreeds.includes(b.id));
   }
 
   get lockedBreeds(): DogBreed[] {
+    if (this.revenueCatService.isProSync) {
+      return [];
+    }
     return this.allBreeds.filter(b => !this.collection.unlockedBreeds.includes(b.id));
   }
 
@@ -302,6 +312,9 @@ export class BreedService {
   // ============ UNLOCK METHODS ============
 
   isBreedUnlocked(breedId: string): boolean {
+    if (this.revenueCatService.isProSync) {
+      return true;
+    }
     return this.collection.unlockedBreeds.includes(breedId);
   }
 

@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
+import { RevenueCatService } from './revenue-cat.service';
 import { SOUND_GENERATORS, SoundGenerator } from '../sounds/generators';
 
 export interface SoundTrack {
@@ -58,7 +59,7 @@ export class FocusSoundService implements OnDestroy {
   volume$ = this.volumeSubject.asObservable();
   isLoading$ = this.loadingSubject.asObservable();
 
-  constructor() {
+  constructor(private revenueCatService: RevenueCatService) {
     this.loadPreferences();
   }
 
@@ -96,12 +97,18 @@ export class FocusSoundService implements OnDestroy {
     return SOUND_LIBRARY.find(s => s.id === id);
   }
 
-  getSoundLibrary(_userTier: 'free' | 'pro' | 'guardian' = 'free'): (SoundTrack & { locked: boolean })[] {
-    return SOUND_LIBRARY.map(s => ({ ...s, locked: false }));
+  getSoundLibrary(userTier: 'free' | 'pro' | 'guardian' = 'free'): (SoundTrack & { locked: boolean })[] {
+    const isPro = this.revenueCatService.isProSync;
+    return SOUND_LIBRARY.map(s => ({
+      ...s,
+      locked: (s.tier === 'pro' || s.tier === 'guardian') && !isPro
+    }));
   }
 
-  isSoundLocked(_soundId: string, _userTier: 'free' | 'pro' | 'guardian' = 'free'): boolean {
-    return false;
+  isSoundLocked(soundId: string): boolean {
+    const sound = this.getSoundById(soundId);
+    if (!sound || sound.tier === 'free') return false;
+    return !this.revenueCatService.isProSync;
   }
 
   // ── Playback ──
