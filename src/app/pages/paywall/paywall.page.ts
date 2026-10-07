@@ -15,7 +15,6 @@ import { addIcons } from 'ionicons';
 import { close, checkmarkCircle } from 'ionicons/icons';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Capacitor } from '@capacitor/core';
 import { environment } from '../../../environments/environment';
 import { safeSetItem } from '../../utils/storage';
 import { RevenueCatService } from '../../services/revenue-cat.service';
@@ -53,13 +52,9 @@ export class PaywallPage implements OnInit, OnDestroy {
   returnUrl = '/tabs/home';
   headline = HEADLINES.generic;
 
-  billingPeriod: 'monthly' | 'annual' = 'monthly';
   selectedPlan: 'pro' = 'pro';
   trialAvailable = true;
   loading = false;
-
-  /** True when running inside iOS / Android (use RevenueCat IAP) */
-  isNative = Capacitor.isNativePlatform();
 
   proFeatures = [
     'Unlimited focus sessions',
@@ -107,23 +102,10 @@ export class PaywallPage implements OnInit, OnDestroy {
   // ── Actions ──
 
   /**
-   * Primary subscribe action.
-   * Native platforms → RevenueCat's native IAP paywall (Apple / Google IAP).
-   * Web → Razorpay checkout (allowed by Apple guidelines since it's not on device).
+   * Subscribe via RevenueCat's native IAP paywall (Apple IAP).
+   * This is the only payment path — App Store distribution only.
    */
   async onSubscribe() {
-    if (this.isNative) {
-      await this.subscribeViaNativeIAP();
-    } else {
-      await this.subscribeViaRazorpay();
-    }
-  }
-
-  /**
-   * Native IAP flow — uses RevenueCat's managed paywall.
-   * Apple & Google handle billing; RevenueCat webhook tells our backend.
-   */
-  private async subscribeViaNativeIAP() {
     this.loading = true;
     try {
       await this.revenueCatService.presentPaywall();
@@ -143,99 +125,6 @@ export class PaywallPage implements OnInit, OnDestroy {
       console.error('Native IAP error:', err);
       await this.showToast('Could not complete purchase. Please try again.', 'danger');
     } finally {
-      this.loading = false;
-    }
-  }
-
-  /**
-   * Web-only flow — Razorpay subscription checkout.
-   * Only used when the app is running in a browser (not on iOS / Android).
-   */
-  private async subscribeViaRazorpay() {
-    this.loading = true;
-
-    try {
-      const headers = this.getAuthHeaders();
-      const tier = 'pro';
-      const createRes: any = await this.http
-        .post(`${this.apiUrl}/subscription/razorpay/create`, { tier }, { headers })
-        .toPromise();
-
-      if (!createRes?.subscriptionId) {
-        throw new Error('Could not start checkout. Please try again.');
-      }
-
-      const user = this.getLocalUser();
-      const options = {
-        key: createRes.keyId || environment.razorpayKeyId,
-        subscription_id: createRes.subscriptionId,
-        name: 'StayPaws',
-        description: 'StayPaws Pro Monthly Plan',
-        image: 'assets/icon/favicon.png',
-        prefill: {
-          name: user?.username || 'Focus Member',
-          email: user?.email || '',
-        },
-        theme: {
-          color: '#7ED321',
-        },
-        handler: async (response: any) => {
-          console.log('Razorpay Payment Response:', response);
-          try {
-            const verifyRes: any = await this.http
-              .post(
-                `${this.apiUrl}/subscription/verify-razorpay`,
-                {
-                  paymentId: response.razorpay_payment_id,
-                  subscriptionId: response.razorpay_subscription_id || createRes.subscriptionId,
-                  signature: response.razorpay_signature,
-                  tier,
-                },
-                { headers },
-              )
-              .toPromise();
-
-            user.isPremium = true;
-            user.subscriptionTier = verifyRes?.tier || tier;
-            if (verifyRes?.expiry) {
-              user.subscriptionExpiry = verifyRes.expiry;
-            }
-            safeSetItem('focus_user', JSON.stringify(user));
-
-            await this.showToast('Welcome to Pro! 🎉', 'success');
-            this.router.navigateByUrl(this.returnUrl);
-          } catch (verifyErr) {
-            console.error('Razorpay verification failed:', verifyErr);
-            await this.showToast('Payment verification pending. Please refresh.', 'warning');
-          } finally {
-            this.loading = false;
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            this.loading = false;
-          },
-        },
-      };
-
-      if ((window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
-        rzp.open();
-      } else {
-        throw new Error('Razorpay SDK not loaded. Check your internet connection.');
-      }
-    } catch (err: any) {
-      console.error('Subscription Error:', err);
-      const message =
-        err?.error?.message ||
-        err?.message ||
-        'We couldn\'t process your subscription. Please try again.';
-      const alert = await this.alertCtrl.create({
-        header: 'Subscription Failed',
-        message,
-        buttons: ['OK'],
-      });
-      await alert.present();
       this.loading = false;
     }
   }

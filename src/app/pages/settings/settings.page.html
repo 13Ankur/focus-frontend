@@ -180,7 +180,7 @@
           <ion-icon name="chevron-forward" class="setting-arrow"></ion-icon>
         </div>
 
-        <div class="setting-item" (click)="manageSubscription()" role="button" aria-label="Manage Subscription">
+        <div class="setting-item" (click)="manageSubscription()" role="button" aria-label="Manage Subscription" *ngIf="isPro">
           <div class="setting-icon">💎</div>
           <div class="setting-info">
             <span class="setting-label">Manage Subscription</span>

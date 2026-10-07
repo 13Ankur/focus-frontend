@@ -17,7 +17,4 @@ export const environment = {
     ios: 'appl_OeYspijIChGBNykiicvABUKLewU',
     android: 'test_dCdyoioMFzDLnWvQvcyPaxcikGn',  // ← REPLACE with goog_... key when ready
   },
-
-  // Razorpay (public key only — plan IDs live on the server)
-  razorpayKeyId: 'rzp_live_T0E1gmDDGHQVdV',
 };

@@ -27,23 +27,6 @@
       <p class="hero-subtitle">Join thousands of focusers achieving their goals</p>
     </div>
 
-    <!-- Billing Toggle (web only — native IAP pricing is managed by RevenueCat) -->
-    <div class="billing-toggle" *ngIf="!isNative">
-      <button
-        class="toggle-btn"
-        [class.active]="billingPeriod === 'monthly'"
-        (click)="billingPeriod = 'monthly'"
-      >Monthly</button>
-      <button
-        class="toggle-btn"
-        [class.active]="billingPeriod === 'annual'"
-        (click)="billingPeriod = 'annual'"
-      >
-        Annual
-        <span class="save-badge" *ngIf="billingPeriod === 'annual'">Save 33%</span>
-      </button>
-    </div>
-
     <!-- Plan Card -->
     <div class="plan-cards">
 
@@ -52,11 +35,7 @@
         <div class="popular-badge">MOST POPULAR</div>
         <div class="plan-header-row">
           <h3 class="plan-name">Pro</h3>
-          <div class="plan-price" *ngIf="!isNative">
-            <span class="price-amount">{{ billingPeriod === 'monthly' ? '$4.99' : '$39.99' }}</span>
-            <span class="price-period">{{ billingPeriod === 'monthly' ? '/month' : '/year' }}</span>
-          </div>
-          <div class="plan-price" *ngIf="isNative">
+          <div class="plan-price">
             <span class="price-amount">Pro</span>
             <span class="price-period">subscription</span>
           </div>

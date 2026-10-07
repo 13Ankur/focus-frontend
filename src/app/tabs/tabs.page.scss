@@ -1,6 +1,7 @@
 ion-tab-bar {
   --border: none;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+  height: 65px;
 
   // Max width for tablets
   max-width: 600px;
@@ -16,8 +17,8 @@ ion-tab-button {
   --color: #888888;
   --color-selected: #7ED321;
   --padding-top: 8px;
-  --padding-bottom: 8px;
-  min-height: 50px;
+  --padding-bottom: 12px;
+  min-height: 65px;
 
   ion-icon {
     font-size: clamp(22px, 6vw, 28px);

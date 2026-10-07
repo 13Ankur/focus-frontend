@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import {
@@ -34,7 +34,7 @@ import { RevenueCatService } from '../../services/revenue-cat.service';
   templateUrl: './settings.page.html',
   styleUrls: ['./settings.page.scss']
 })
-export class SettingsPage implements OnInit {
+export class SettingsPage implements OnInit, OnDestroy {
   userName: string = 'User';
   userEmail: string = 'user@example.com';
 
@@ -43,6 +43,8 @@ export class SettingsPage implements OnInit {
   defaultDuration: number = 25;
   blockingEnabled: boolean = false;
   blockListCount: number = 0;
+  isPro: boolean = false;
+  private proSubscription: any;
 
   // Notification sub-settings
   streakReminders: boolean = true;
@@ -81,6 +83,9 @@ export class SettingsPage implements OnInit {
         this.userName = user.username || 'User';
         this.userEmail = user.email || 'user@example.com';
       }
+    });
+    this.proSubscription = this.revenueCatService.isPro$.subscribe(isPro => {
+      this.isPro = isPro;
     });
     this.loadSettings();
   }
@@ -545,5 +550,11 @@ export class SettingsPage implements OnInit {
       ]
     });
     await alert.present();
+  }
+
+  ngOnDestroy(): void {
+    if (this.proSubscription) {
+      this.proSubscription.unsubscribe();
+    }
   }
 }

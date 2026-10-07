@@ -12,10 +12,7 @@ import {
 import { addIcons } from 'ionicons';
 import { close, cartOutline } from 'ionicons/icons';
 import { trigger, transition, style, animate } from '@angular/animations';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { Capacitor } from '@capacitor/core';
-import { environment } from '../../../environments/environment';
 import { StatsService } from '../../services/stats.service';
 import { AuthService } from '../../services/auth.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
@@ -111,7 +108,6 @@ export class KibbleStorePage implements OnInit, OnDestroy {
   showCelebration = false;
   celebrationKibble = 0;
 
-  private apiUrl = environment.apiUrl;
   private subscriptions: Subscription[] = [];
 
   constructor(
@@ -119,7 +115,6 @@ export class KibbleStorePage implements OnInit, OnDestroy {
     private navCtrl: NavController,
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
-    private http: HttpClient,
     private statsService: StatsService,
     private authService: AuthService,
     private revenueCatService: RevenueCatService,
@@ -157,69 +152,30 @@ export class KibbleStorePage implements OnInit, OnDestroy {
     this.purchasingPackId = pack.id;
 
     try {
-      if (Capacitor.isNativePlatform()) {
-        // ── Native IAP via RevenueCat ──
-        // The actual kibble crediting happens server-side via the
-        // RevenueCat NON_RENEWING_PURCHASE webhook.
-        const result = await this.revenueCatService.purchaseProduct(pack.storeProductId);
+      // ── Native IAP via RevenueCat ──
+      // The actual kibble crediting happens server-side via the
+      // RevenueCat NON_RENEWING_PURCHASE webhook.
+      const result = await this.revenueCatService.purchaseProduct(pack.storeProductId);
 
-        if (result.cancelled) {
-          // User dismissed the payment sheet — no error needed
-          return;
-        }
-        if (!result.success) {
-          throw new Error('Purchase could not be completed.');
-        }
-
-        // Purchase succeeded — webhook will credit kibble server-side.
-        // Update the local balance optimistically so the UI feels instant.
-        this.kibbleBalance += this.totalKibble(pack);
-        this.authService.updateLocalKibble(this.totalKibble(pack));
-
-        // Show celebration
-        this.celebrationKibble = this.totalKibble(pack);
-        this.showCelebration = true;
-        setTimeout(() => (this.showCelebration = false), 3000);
-
-        await this.showToast(`+${this.totalKibble(pack)} kibble added!`, 'success');
-      } else {
-        // ── Web fallback (no native IAP) ──
-        const transactionId = `${pack.id}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
-
-        const headers = this.getAuthHeaders();
-        const body = {
-          amount: this.totalKibble(pack),
-          source: 'purchase',
-          packId: pack.id,
-          transactionId,
-        };
-
-        const res: any = await this.http
-          .post(`${this.apiUrl}/user/add-kibble`, body, { headers })
-          .toPromise();
-
-        if (!res) throw new Error('Empty response from server');
-
-        this.kibbleBalance = res.totalKibble ?? this.kibbleBalance;
-        this.authService.updateLocalKibble(this.totalKibble(pack));
-
-        // Show celebration
-        this.celebrationKibble = this.totalKibble(pack);
-        this.showCelebration = true;
-        setTimeout(() => (this.showCelebration = false), 3000);
-
-        if (res.newBreedUnlocks?.length) {
-          const breeds = res.newBreedUnlocks.join(', ');
-          const alert = await this.alertCtrl.create({
-            header: '🎉 Breed Unlocked!',
-            message: `You unlocked: ${breeds}! Visit your Kennel to check them out.`,
-            buttons: ['Awesome!'],
-          });
-          await alert.present();
-        }
-
-        await this.showToast(`+${this.totalKibble(pack)} kibble added!`, 'success');
+      if (result.cancelled) {
+        // User dismissed the payment sheet — no error needed
+        return;
       }
+      if (!result.success) {
+        throw new Error('Purchase could not be completed.');
+      }
+
+      // Purchase succeeded — webhook will credit kibble server-side.
+      // Update the local balance optimistically so the UI feels instant.
+      this.kibbleBalance += this.totalKibble(pack);
+      this.authService.updateLocalKibble(this.totalKibble(pack));
+
+      // Show celebration
+      this.celebrationKibble = this.totalKibble(pack);
+      this.showCelebration = true;
+      setTimeout(() => (this.showCelebration = false), 3000);
+
+      await this.showToast(`+${this.totalKibble(pack)} kibble added!`, 'success');
     } catch (err: any) {
       if (err?.userCancelled) return;
 
@@ -243,18 +199,6 @@ export class KibbleStorePage implements OnInit, OnDestroy {
     const user = this.authService.currentUser;
     if (user) {
       this.kibbleBalance = user.kibble || user.totalKibble || 0;
-    }
-  }
-
-  private getAuthHeaders(): HttpHeaders {
-    try {
-      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      return new HttpHeaders({
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user?.token || ''}`,
-      });
-    } catch {
-      return new HttpHeaders({ 'Content-Type': 'application/json' });
     }
   }
 
