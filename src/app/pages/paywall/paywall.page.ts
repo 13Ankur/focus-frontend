@@ -10,6 +10,7 @@ import {
   ToastController,
   AlertController,
   NavController,
+  Platform,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { close, checkmarkCircle } from 'ionicons/icons';
@@ -18,6 +19,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { safeSetItem } from '../../utils/storage';
 import { RevenueCatService } from '../../services/revenue-cat.service';
+import { RazorpayService } from '../../services/razorpay.service';
 
 type Trigger = 'session_limit' | 'timer_lock' | 'breed_lock' | 'sound_lock' | 'pomodoro_lock' | 'app_block' | 'generic';
 
@@ -57,6 +59,9 @@ export class PaywallPage implements OnInit, OnDestroy {
   trialAvailable = false;
   loading = false;
 
+  /** True when running on Android — switches payment to Razorpay */
+  isAndroid = false;
+
   proFeatures = [
     'Unlimited focus sessions',
     'Custom & long focus timers (15–120 min)',
@@ -77,9 +82,12 @@ export class PaywallPage implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
     private http: HttpClient,
-    private revenueCatService: RevenueCatService
+    private revenueCatService: RevenueCatService,
+    private razorpayService: RazorpayService,
+    private platform: Platform,
   ) {
     addIcons({ close, checkmarkCircle });
+    this.isAndroid = this.platform.is('android');
   }
 
   ngOnInit() {
@@ -102,17 +110,23 @@ export class PaywallPage implements OnInit, OnDestroy {
   // ── Actions ──
 
   /**
-   * Subscribe via RevenueCat's native IAP paywall (Apple IAP).
-   * This is the only payment path — App Store distribution only.
+   * Subscribe — routes to Razorpay (Android) or RevenueCat (iOS).
    */
   async onSubscribe() {
+    if (this.isAndroid) {
+      await this.onSubscribeAndroid();
+    } else {
+      await this.onSubscribeIos();
+    }
+  }
+
+  /** iOS: RevenueCat native IAP paywall */
+  private async onSubscribeIos() {
     this.loading = true;
     try {
       await this.revenueCatService.presentPaywall();
 
-      // After paywall dismissal, check if they are now pro
       if (this.revenueCatService.isProSync) {
-        // Sync local cache so the rest of the app picks it up
         const user = this.getLocalUser();
         user.isPremium = true;
         user.subscriptionTier = 'pro';
@@ -124,6 +138,37 @@ export class PaywallPage implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Native IAP error:', err);
       await this.showToast('Could not complete purchase. Please try again.', 'danger');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  /** Android: Razorpay Standard Checkout */
+  private async onSubscribeAndroid() {
+    this.loading = true;
+    try {
+      const localUser = this.getLocalUser();
+      const success = await this.razorpayService.startCheckout({
+        name: localUser.username || localUser.name || '',
+        email: localUser.email || '',
+        token: localUser.token || '',
+      });
+
+      if (success) {
+        // Update local cache
+        localUser.isPremium = true;
+        localUser.subscriptionTier = 'pro';
+        safeSetItem('focus_user', JSON.stringify(localUser));
+
+        await this.showToast('Welcome to Pro! 🎉', 'success');
+        this.router.navigateByUrl(this.returnUrl);
+      } else {
+        await this.showToast('Payment cancelled or failed. Please try again.', 'warning');
+      }
+    } catch (err: any) {
+      console.error('Razorpay error:', err);
+      const msg = err?.error?.message || 'Could not complete payment. Please try again.';
+      await this.showToast(msg, 'danger');
     } finally {
       this.loading = false;
     }

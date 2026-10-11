@@ -54,7 +54,8 @@
           [disabled]="loading"
         >
           <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-          <span *ngIf="!loading">Subscribe to Pro</span>
+          <span *ngIf="!loading && !isAndroid">Subscribe to Pro</span>
+          <span *ngIf="!loading && isAndroid">Pay with Razorpay</span>
         </button>
       </div>
     </div>
@@ -77,7 +78,7 @@
 
     <!-- Footer -->
     <div class="paywall-footer">
-      <button class="footer-link" (click)="onRestore()">Restore Purchases</button>
+      <button class="footer-link" *ngIf="!isAndroid" (click)="onRestore()">Restore Purchases</button>
       <div class="footer-legal">
         <a (click)="openTerms()">Terms of Service</a>
         <span class="dot">·</span>
