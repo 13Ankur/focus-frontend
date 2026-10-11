@@ -1411,6 +1411,16 @@
     color: #999;
     font-size: 16px;
   }
+
+  .pro-badge {
+    font-size: 9px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #FF9800, #F57C00);
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+  }
 }
 
 .sound-unlock-cta {

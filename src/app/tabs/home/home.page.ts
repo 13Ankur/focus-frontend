@@ -110,13 +110,13 @@ export class HomePage implements OnInit, OnDestroy {
   // ── Timer state ──
   isTimerRunning = false;
   remainingSeconds = 0;
-  totalSeconds = 1500;
+  totalSeconds = 900;
   isProcessing = false;
   currentPhase: TimerPhase = 'work';
 
   // ── Duration ──
   durationOptions: DurationOption[] = [];
-  selectedDuration = 25;
+  selectedDuration = 15;
   showCustomPicker = false;
   customDuration = 30;
 
@@ -519,6 +519,13 @@ export class HomePage implements OnInit, OnDestroy {
   // ── Pomodoro ──
 
   onPomodoroToggle(enabled: boolean): void {
+    if (this.isTimerRunning || this.isProcessing) return;
+    if (enabled && !this.isPro) {
+      this.soundService.play('tap');
+      setTimeout(() => { this.pomodoroEnabled = false; }, 0);
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'pomodoro_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
     this.pomodoroEnabled = enabled;
     if (enabled) {
       this.applyPomodoroConfig();
@@ -813,6 +820,11 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   openSoundPicker(): void {
+    if (!this.isPro) {
+      this.soundService.play('tap');
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'sound_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
     if (this.isTimerRunning) {
       this.showMiniSoundControl = !this.showMiniSoundControl;
       return;

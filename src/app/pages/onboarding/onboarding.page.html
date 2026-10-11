@@ -267,42 +267,6 @@
       </div>
     </div>
 
-    <!-- ═══════ STEP 7: Trial Offer ═══════ -->
-    <div class="step step-7" *ngIf="currentStep === 7" @stepAnimation>
-      <div class="step-content centered">
-        <div class="celebration-burst" @fadeIn>
-          <span class="burst-emoji">🎉</span>
-        </div>
-
-        <h1 class="step-title">Welcome Gift: 7 Days of Pro FREE</h1>
-
-        <div class="trial-features">
-          <div class="trial-feature" *ngFor="let f of [
-            'Unlimited focus sessions',
-            'All timer durations',
-            'Focus sounds & ambience',
-            'All breed unlocks',
-            'Ad-free experience'
-          ]">
-            <span class="feature-check">✓</span>
-            <span class="feature-text">{{ f }}</span>
-          </div>
-        </div>
-
-        <p class="trial-fine-print">
-          No credit card required. Trial reverts to Free automatically.
-        </p>
-      </div>
-
-      <div class="bottom-actions">
-        <button class="primary-btn trial-btn" [disabled]="trialLoading" (click)="startTrial()">
-          <ion-spinner name="crescent" *ngIf="trialLoading"></ion-spinner>
-          <span *ngIf="!trialLoading">Start Free Trial</span>
-        </button>
-        <button class="skip-link" (click)="skipTrial()">No thanks, start with Free</button>
-      </div>
-    </div>
-
     <!-- Legal (all steps) -->
     <div class="legal-links" *ngIf="currentStep === 1">
       <a (click)="openTerms()">Terms</a>

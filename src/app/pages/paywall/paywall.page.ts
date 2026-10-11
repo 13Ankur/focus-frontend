@@ -19,13 +19,14 @@ import { environment } from '../../../environments/environment';
 import { safeSetItem } from '../../utils/storage';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 
-type Trigger = 'session_limit' | 'timer_lock' | 'breed_lock' | 'sound_lock' | 'app_block' | 'generic';
+type Trigger = 'session_limit' | 'timer_lock' | 'breed_lock' | 'sound_lock' | 'pomodoro_lock' | 'app_block' | 'generic';
 
 const HEADLINES: Record<Trigger, string> = {
   session_limit: '🐾 Keep {breed} Happy & Focused!',
   timer_lock:    '⏱ Unlock Longer Focus Sessions',
   breed_lock:    '🐕 Unlock All Dog Breeds',
   sound_lock:    '🎵 Focus Better with Ambient Sounds',
+  pomodoro_lock: '🍅 Unlock Pomodoro Focus Mode',
   app_block:     '🔒 Block Distracting Apps',
   generic:       '🚀 Supercharge Your Focus',
 };
@@ -53,17 +54,17 @@ export class PaywallPage implements OnInit, OnDestroy {
   headline = HEADLINES.generic;
 
   selectedPlan: 'pro' = 'pro';
-  trialAvailable = true;
+  trialAvailable = false;
   loading = false;
 
   proFeatures = [
     'Unlimited focus sessions',
-    'Custom & long focus timer (5–120 min)',
+    'Custom & long focus timers (15–120 min)',
     'All dog breeds unlocked',
     'Focus sounds & ambient audio',
+    '🍅 Pomodoro focus mode',
     'App blocking during sessions',
     'Full analytics & insights',
-    'Ad-free experience',
     'Weekly streak shield',
   ];
 
@@ -91,7 +92,6 @@ export class PaywallPage implements OnInit, OnDestroy {
       this.headline = template.replace('{breed}', this.breedName);
     });
 
-    this.checkTrialStatus();
     this.checkAlreadySubscribed();
   }
 

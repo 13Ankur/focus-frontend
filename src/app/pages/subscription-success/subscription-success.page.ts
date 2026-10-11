@@ -28,9 +28,9 @@ export class SubscriptionSuccessPage implements OnInit {
     'Custom & long focus timers',
     'All dog breeds unlocked',
     'Focus sounds & ambient audio',
+    '🍅 Pomodoro focus mode',
     'App blocking during sessions',
     'Full analytics & insights',
-    'Ad-free experience',
     'Weekly streak shield',
   ];
 

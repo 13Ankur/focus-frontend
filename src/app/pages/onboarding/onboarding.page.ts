@@ -13,7 +13,7 @@ import { Capacitor } from '@capacitor/core';
 import { BreedService, DogBreed } from '../../services/breed.service';
 import { environment } from '../../../environments/environment';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 const PREFS_STEP_KEY = 'paws_onboarding_step';
 const DEMO_TIMER_SECONDS = 10;
 
@@ -113,7 +113,6 @@ export class OnboardingPage implements OnInit, OnDestroy {
     this.allBreeds = this.breedService.allBreeds;
     await this.restoreStep();
     this.fetchMealsCount();
-    this.checkTrialStatus();
   }
 
   ngOnDestroy(): void {
@@ -305,12 +304,12 @@ export class OnboardingPage implements OnInit, OnDestroy {
         }
       }
     } catch { /* permission dialog may have been dismissed */ }
-    this.nextStep();
+    this.completeOnboarding();
   }
 
   skipNotifications(): void {
     localStorage.setItem('paws_notifications_asked', new Date().toISOString());
-    this.nextStep();
+    this.completeOnboarding();
   }
 
   // ── Step 7: Trial offer ──

@@ -202,7 +202,9 @@
         <button class="sound-select-btn" (click)="openSoundPicker()" aria-label="Select focus sound">
           <span class="sound-current-icon">{{ currentSoundIcon }}</span>
           <span class="sound-current-name">Sound: {{ currentSoundName }}</span>
-          <ion-icon name="chevron-forward" class="sound-chevron"></ion-icon>
+          <span class="pro-badge" *ngIf="!isPro">PRO</span>
+          <ion-icon name="chevron-forward" class="sound-chevron" *ngIf="isPro"></ion-icon>
+          <ion-icon name="lock-closed" class="sound-chevron" *ngIf="!isPro"></ion-icon>
         </button>
       </div>
 
@@ -229,6 +231,7 @@
         <div class="pomodoro-toggle-row">
           <div class="pomodoro-label-group">
             <span class="pomodoro-label">🍅 Pomodoro Mode</span>
+            <span class="pro-badge" *ngIf="!isPro">PRO</span>
           </div>
           <ion-toggle [checked]="pomodoroEnabled" (ionChange)="onPomodoroToggle($any($event).detail.checked)"
             [disabled]="isTimerRunning" mode="ios" role="switch" [attr.aria-checked]="pomodoroEnabled"

@@ -50,15 +50,12 @@
 
         <button
           class="subscribe-btn pro-btn"
-          (click)="trialAvailable ? onStartTrial() : onSubscribe()"
+          (click)="onSubscribe()"
           [disabled]="loading"
         >
           <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-          <span *ngIf="!loading">
-            {{ trialAvailable ? 'Start 7-Day Free Trial' : 'Subscribe to Pro' }}
-          </span>
+          <span *ngIf="!loading">Subscribe to Pro</span>
         </button>
-        <p class="trial-note" *ngIf="trialAvailable">No charge for 7 days. Cancel anytime.</p>
       </div>
     </div>
 

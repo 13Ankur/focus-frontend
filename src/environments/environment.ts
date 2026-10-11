@@ -2,7 +2,7 @@ export const environment = {
   production: false,
   apiUrl: 'https://staypawsapi.zavvi.co.in',
   // apiUrl: 'http://localhost:5001',
-  focusDurationMinutes: 25,
+  focusDurationMinutes: 15,
   kibblePerSession: 25,
 
   googleWebClientId: '1004463918618-ksrbdruue45a5ca8edusqpdhlfn6c768.apps.googleusercontent.com',

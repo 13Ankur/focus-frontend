@@ -14,17 +14,17 @@ export interface SoundTrack {
 
 const SOUND_LIBRARY: SoundTrack[] = [
   { id: 'silence', name: 'Silence', icon: '🤫', category: 'silence', tier: 'free' },
-  { id: 'rain', name: 'Gentle Rain', icon: '🌧', category: 'nature', tier: 'free' },
-  { id: 'forest', name: 'Forest Birds', icon: '🌲', category: 'nature', tier: 'free' },
-  { id: 'ocean', name: 'Ocean Waves', icon: '🌊', category: 'nature', tier: 'free' },
-  { id: 'cafe', name: 'Coffee Shop', icon: '☕', category: 'ambient', tier: 'free' },
-  { id: 'fireplace', name: 'Fireplace', icon: '🔥', category: 'ambient', tier: 'free' },
-  { id: 'library', name: 'Library Hum', icon: '📚', category: 'ambient', tier: 'free' },
-  { id: 'lofi', name: 'Lo-Fi Beats', icon: '🎵', category: 'music', tier: 'free' },
-  { id: 'white_noise', name: 'White Noise', icon: '⚪', category: 'noise', tier: 'free' },
-  { id: 'brown_noise', name: 'Brown Noise', icon: '🟤', category: 'noise', tier: 'free' },
-  { id: 'binaural', name: 'Focus Binaural', icon: '🧠', category: 'noise', tier: 'free' },
-  { id: 'thunderstorm', name: 'Thunderstorm', icon: '⛈', category: 'nature', tier: 'free' },
+  { id: 'rain', name: 'Gentle Rain', icon: '🌧', category: 'nature', tier: 'pro' },
+  { id: 'forest', name: 'Forest Birds', icon: '🌲', category: 'nature', tier: 'pro' },
+  { id: 'ocean', name: 'Ocean Waves', icon: '🌊', category: 'nature', tier: 'pro' },
+  { id: 'cafe', name: 'Coffee Shop', icon: '☕', category: 'ambient', tier: 'pro' },
+  { id: 'fireplace', name: 'Fireplace', icon: '🔥', category: 'ambient', tier: 'pro' },
+  { id: 'library', name: 'Library Hum', icon: '📚', category: 'ambient', tier: 'pro' },
+  { id: 'lofi', name: 'Lo-Fi Beats', icon: '🎵', category: 'music', tier: 'pro' },
+  { id: 'white_noise', name: 'White Noise', icon: '⚪', category: 'noise', tier: 'pro' },
+  { id: 'brown_noise', name: 'Brown Noise', icon: '🟤', category: 'noise', tier: 'pro' },
+  { id: 'binaural', name: 'Focus Binaural', icon: '🧠', category: 'noise', tier: 'pro' },
+  { id: 'thunderstorm', name: 'Thunderstorm', icon: '⛈', category: 'nature', tier: 'pro' },
 ];
 
 const PREFS_KEY = 'paws_focus_sound';
@@ -120,6 +120,12 @@ export class FocusSoundService implements OnDestroy {
       this.currentSoundSubject.next('silence');
       this.mixedSoundsSubject.next([]);
       this.savePreferences();
+      return;
+    }
+
+    if (!this.revenueCatService.isProSync) {
+      console.warn('FocusSoundService: Pro subscription required for ambient sounds');
+      this.currentSoundSubject.next('silence');
       return;
     }
 
@@ -308,7 +314,11 @@ export class FocusSoundService implements OnDestroy {
     try {
       const { value: soundVal } = await Preferences.get({ key: PREFS_KEY });
       if (soundVal) {
-        this.currentSoundSubject.next(soundVal);
+        if (soundVal !== 'silence' && !this.revenueCatService.isProSync) {
+          this.currentSoundSubject.next('silence');
+        } else {
+          this.currentSoundSubject.next(soundVal);
+        }
       }
 
       const { value: volVal } = await Preferences.get({ key: PREFS_VOLUME_KEY });

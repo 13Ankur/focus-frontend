@@ -1,7 +1,7 @@
 export const environment = {
   production: true,
   apiUrl: 'https://staypawsapi.zavvi.co.in',
-  focusDurationMinutes: 25,
+  focusDurationMinutes: 15,
   kibblePerSession: 25,
 
   googleWebClientId: '1004463918618-ksrbdruue45a5ca8edusqpdhlfn6c768.apps.googleusercontent.com',
