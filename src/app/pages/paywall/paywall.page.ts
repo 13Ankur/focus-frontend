@@ -39,11 +39,13 @@ const HEADLINES: Record<Trigger, string> = {
   styleUrls: ['./paywall.page.scss'],
   standalone: true,
   imports: [CommonModule, IonContent, IonIcon, IonSpinner],
+  // Opacity-only enter animation — translateY transforms create
+  // duplicate/ghost paint layers on Android WebView.
   animations: [
     trigger('slideUp', [
       transition(':enter', [
-        style({ opacity: 0, transform: 'translateY(30px)' }),
-        animate('400ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
+        style({ opacity: 0 }),
+        animate('280ms ease-out', style({ opacity: 1 })),
       ]),
     ]),
   ],

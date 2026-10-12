@@ -1,6 +1,7 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://staypawsapi.zavvi.co.in',
+  // apiUrl: 'https://staypawsapi.zavvi.co.in',
+  apiUrl: 'https://focus-backend-yc0t.onrender.com',
   focusDurationMinutes: 15,
   kibblePerSession: 25,
 
@@ -8,7 +9,7 @@ export const environment = {
   googleIosClientId: '1004463918618-94eqedp5s5mivv9t0vrc92t4klokl2bo.apps.googleusercontent.com',
   googleAndroidClientId: '1004463918618-ksrbdruue45a5ca8edusqpdhlfn6c768.apps.googleusercontent.com',
 
-  appleClientId: 'com.staypaws.app',
+  appleClientId: 'com.focusapp.buddy',
   appleRedirectUri: 'https://staypaws.zavvi.co.in/auth/apple/callback',
 
   // RevenueCat

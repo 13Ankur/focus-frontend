@@ -1,7 +1,7 @@
 export const environment = {
   production: false,
-  apiUrl: 'https://staypawsapi.zavvi.co.in',
-  // apiUrl: 'http://localhost:5001',
+  // apiUrl: 'https://staypawsapi.zavvi.co.in',
+  apiUrl: 'https://focus-backend-yc0t.onrender.com',
   focusDurationMinutes: 15,
   kibblePerSession: 25,
 

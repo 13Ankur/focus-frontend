@@ -1,4 +1,5 @@
-<ion-content class="paywall-content" [fullscreen]="true" [scrollY]="true">
+<!-- fullscreen=false avoids Android status-bar / previous-page bleed -->
+<ion-content class="paywall-content" [fullscreen]="false" [scrollY]="true" [forceOverscroll]="false">
   <div class="paywall-container" @slideUp>
 
     <!-- Header -->
