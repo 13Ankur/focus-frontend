@@ -29,13 +29,17 @@ export class RevenueCatService {
       return;
     }
 
+    // Android uses Razorpay for payments — RevenueCat is iOS only
+    const platform = Capacitor.getPlatform();
+    if (platform !== 'ios') {
+      console.log('RevenueCat: Android uses Razorpay, skipping RevenueCat initialization.');
+      return;
+    }
+
     try {
       await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
-      
-      const platform = Capacitor.getPlatform();
-      const apiKey = platform === 'ios' 
-        ? environment.revenueCatApiKey.ios 
-        : environment.revenueCatApiKey.android;
+
+      const apiKey = environment.revenueCatApiKey.ios;
 
       await Purchases.configure({ apiKey });
       this.isConfigured = true;

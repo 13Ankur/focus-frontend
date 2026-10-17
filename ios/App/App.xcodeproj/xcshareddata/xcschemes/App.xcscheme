@@ -49,9 +49,6 @@
             ReferencedContainer = "container:App.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
-      <StoreKitConfigurationFileReference
-         identifier = "../../../../../../../Library/Developer/Xcode/DerivedData/App-fjjyaryzwhdxguelwamfoxttrsig/SourcePackages/checkouts/purchases-ios-spm/Examples/rc-maestro/rc-maestro/Resources/StoreKit/StoreKitConfiguration.storekit">
-      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"

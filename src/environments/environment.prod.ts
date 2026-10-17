@@ -12,10 +12,8 @@ export const environment = {
   appleClientId: 'com.focusapp.buddy',
   appleRedirectUri: 'https://staypaws.zavvi.co.in/auth/apple/callback',
 
-  // RevenueCat
-  // ⚠️ TODO: Replace Android test key with production key when Google Play app is set up
+  // RevenueCat (iOS only — Android uses Razorpay)
   revenueCatApiKey: {
     ios: 'appl_OeYspijIChGBNykiicvABUKLewU',
-    android: 'test_dCdyoioMFzDLnWvQvcyPaxcikGn',  // ← REPLACE with goog_... key when ready
   },
 };

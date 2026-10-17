@@ -12,9 +12,8 @@ export const environment = {
   appleClientId: 'com.focusapp.buddy',
   appleRedirectUri: 'https://staypaws.zavvi.co.in/auth/apple/callback',
 
-  // RevenueCat
+  // RevenueCat (iOS only — Android uses Razorpay)
   revenueCatApiKey: {
     ios: 'appl_OeYspijIChGBNykiicvABUKLewU',
-    android: 'test_dCdyoioMFzDLnWvQvcyPaxcikGn',
   },
 };
