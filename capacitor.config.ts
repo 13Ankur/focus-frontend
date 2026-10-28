@@ -7,6 +7,7 @@ const config: CapacitorConfig = {
   server: {
     androidScheme: 'http',
     allowNavigation: [
+      'stayapi.zavvi.co.in',
       'staypawsapi.zavvi.co.in',
       'api.revenuecat.com',
     ],
