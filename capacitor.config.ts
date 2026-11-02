@@ -29,7 +29,8 @@ const config: CapacitorConfig = {
       launchFadeOutDuration: 500,
       backgroundColor: '#F8F8F5',
       androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
+      // FIT_CENTER keeps the dog + StayPaw name fully visible on tall phones.
+      androidScaleType: 'FIT_CENTER',
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,

@@ -16,7 +16,11 @@
     </style>
 
 
+    <!-- Cream background only — Capacitor SplashScreen draws @drawable/splash with FIT_CENTER
+         so the dog and StayPaw name stay fully visible on tall screens. -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
-        <item name="android:background">@drawable/splash</item>
+        <item name="android:background">@color/splash_background</item>
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
     </style>
 </resources>
