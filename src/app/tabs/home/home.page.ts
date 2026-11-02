@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -49,7 +49,13 @@ import { RevenueCatService } from '../../services/revenue-cat.service';
 import { AssetLoaderService } from '../../services/asset-loader.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
-import { accountIsPro, normalizeTier } from '../../utils/subscription-access';
+import {
+  accountIsPro,
+  normalizeTier,
+  readAccountIsPro,
+  subscriptionFromStatus,
+  writeSubscriptionFields,
+} from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
@@ -202,6 +208,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   private apiUrl = environment.apiUrl;
   private subscriptions: Subscription[] = [];
+  private boundAccountId: string | null = null;
 
   constructor(
     private timerService: TimerService,
@@ -224,6 +231,8 @@ export class HomePage implements OnInit, OnDestroy {
     private modalController: ModalController,
     private alertController: AlertController,
     private toastController: ToastController,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {
     addIcons({ settingsOutline, info: informationCircleOutline, informationCircleOutline, chevronForward, closeOutline, play, pause, lockClosed, timerOutline, musicalNotes, musicalNote, volumeHigh, volumeMute, shieldCheckmark });
   }
@@ -242,15 +251,24 @@ export class HomePage implements OnInit, OnDestroy {
       this.subscriptions.push(proSub);
     }
 
-    this.authService.currentUser$.subscribe(user => {
-      if (user) {
-        this.userName = user.username || 'User';
+    const userSub = this.authService.currentUser$.subscribe(user => {
+      const accountId = user?._id || user?.id || null;
+      if (user) this.userName = user.username || 'User';
+      // Ionic keeps this tab alive across logout/login — reset Pro UI when the account changes.
+      if (accountId !== this.boundAccountId) {
+        this.boundAccountId = accountId;
+        this.resetAccountUi(user);
       }
     });
+    this.subscriptions.push(userSub);
+
+    const epochSub = this.authService.accountEpoch$.subscribe(() => {
+      this.resetAccountUi(this.authService.currentUser);
+    });
+    this.subscriptions.push(epochSub);
 
     this.checkSessionStatus();
-    this.buildDurationOptions();
-    this.timerService.setDuration(this.selectedDuration);
+    this.resetAccountUi(this.authService.currentUser);
     this.loadDailyGoal();
 
     const statsSub = this.statsService.stats$.subscribe(stats => {
@@ -339,10 +357,10 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   ionViewWillEnter(): void {
+    this.resetAccountUi(this.authService.currentUser);
     this.activeBreed = this.breedService.activeBreed;
     this.focusSoundService.warmCurrent();
     this.dogBarkService.preload(this.activeBreed?.id);
-    this.buildDurationOptions();
 
     const today = this.statsService.getTodayStats();
     this.todayMinutes = today.focusMinutes;
@@ -357,14 +375,32 @@ export class HomePage implements OnInit, OnDestroy {
     void this.refreshHomeContent();
   }
 
+  /** Drop the previous account's Pro timers/sounds immediately (Ionic reuses this page). */
+  private resetAccountUi(user: { username?: string; _id?: string; id?: string } | null): void {
+    this.zone.run(() => {
+      if (user?.username) this.userName = user.username;
+      this.activeBreed = this.breedService.activeBreed;
+      this.isPro = readAccountIsPro();
+      this.userTier = this.isPro ? (normalizeTier(JSON.parse(safeGetItem('focus_user') || '{}')) as UserTier) : 'free';
+      this.focusSoundService.setProAccess(this.isPro);
+      this.buildDurationOptions();
+      this.applySavedDuration();
+      if (!this.isPro) this.resetPomodoroToggle();
+      this.refreshSoundLibrary();
+      this.cdr.detectChanges();
+    });
+  }
+
   /** Show a loader while stats, tier, rooms, and buddy image catch up. */
   private async refreshHomeContent(): Promise<void> {
+    // Always refresh tier after account switch, even if a timer singleton is still "running".
+    const token = ++this.homeLoadToken;
     if (this.isTimerRunning) {
+      await this.loadUserTier();
       this.isHomeLoading = false;
+      this.cdr.detectChanges();
       return;
     }
-
-    const token = ++this.homeLoadToken;
     // Avoid a spinner flash when the tab is already warm and responses are cached.
     let showStarted = this.isHomeLoading;
     const showTimer = window.setTimeout(() => {
@@ -522,12 +558,24 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ── Duration selection ──
 
+  trackDuration(_index: number, opt: DurationOption): string {
+    return `${opt.value}-${opt.locked ? 'L' : 'U'}`;
+  }
+
   private buildDurationOptions(): void {
+    // Always re-read the account — a stale this.isPro flag was leaving every timer open.
+    this.isPro = readAccountIsPro();
     const allowed = this.isPro ? PRO_DURATIONS : FREE_DURATIONS;
-    this.durationOptions = PRO_DURATIONS.map(v => ({ 
-      value: v, 
-      locked: !allowed.includes(v) 
+    // New array reference so Ionic's cached view cannot keep the previous Pro buttons.
+    this.durationOptions = PRO_DURATIONS.map(v => ({
+      value: v,
+      locked: !allowed.includes(v),
     }));
+    if (!this.isPro && !allowed.includes(this.selectedDuration)) {
+      this.selectedDuration = FREE_DURATIONS[0];
+      this.usingCustomDuration = false;
+      this.timerService.setDuration(this.selectedDuration);
+    }
   }
 
   selectDuration(option: DurationOption): void {
@@ -1134,32 +1182,25 @@ export class HomePage implements OnInit, OnDestroy {
         this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
       );
 
-      if (res?.tier) {
-        const snapshot = {
-          token: this.authService.token || 'session',
-          subscriptionTier: res.tier,
-          isPremium: !!res.isPremium,
-          subscriptionExpiry: res.expiry,
-          trialEndDate: res.trial?.end,
-        };
+      if (res && res.tier != null) {
+        const snapshot = subscriptionFromStatus(res, this.authService.token);
         const isPro = accountIsPro(snapshot);
         const tier = normalizeTier(snapshot);
-        this.applyTier(tier, isPro);
 
         try {
-          const user = JSON.parse(safeGetItem('focus_user') || '{}');
-          user.subscriptionTier = tier;
-          user.isPremium = isPro;
-          if (res.expiry) user.subscriptionExpiry = res.expiry;
-          else delete user.subscriptionExpiry;
-          if (res.trial?.end) user.trialEndDate = res.trial.end;
+          const user = writeSubscriptionFields(
+            JSON.parse(safeGetItem('focus_user') || '{}'),
+            snapshot,
+          );
+          if (res.trial?.used != null) user.trialUsed = !!res.trial.used;
           safeSetItem('focus_user', JSON.stringify(user));
         } catch { /* ignore local cache write errors */ }
 
+        this.applyTier(tier, isPro);
         return;
       }
     } catch {
-      // Fall through to local / RevenueCat
+      // Fall through to the account saved on this device.
     }
 
     try {
@@ -1172,15 +1213,20 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   private applyTier(tier: UserTier, isPro: boolean): void {
-    this.userTier = tier;
-    this.isPro = isPro;
-    this.focusSoundService.setProAccess(isPro);
-    this.buildDurationOptions();
-    this.applySavedDuration();
-    if (!isPro) {
-      this.resetPomodoroToggle();
-    }
-    this.refreshSoundLibrary();
+    // Never trust a bare true from callers — leftover Pro flags unlock every timer.
+    const safePro = !!isPro && readAccountIsPro();
+    this.zone.run(() => {
+      this.userTier = safePro ? tier : 'free';
+      this.isPro = safePro;
+      this.focusSoundService.setProAccess(safePro);
+      this.buildDurationOptions();
+      this.applySavedDuration();
+      if (!safePro) {
+        this.resetPomodoroToggle();
+      }
+      this.refreshSoundLibrary();
+      this.cdr.detectChanges();
+    });
   }
 
   /** Use the duration the user saved, unless that length is locked for their tier. */

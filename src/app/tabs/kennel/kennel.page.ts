@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -24,7 +24,13 @@ import { AdService } from '../../services/ad.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
-import { accountIsPro, normalizeTier, readAccountIsPro } from '../../utils/subscription-access';
+import {
+  accountIsPro,
+  normalizeTier,
+  readAccountIsPro,
+  subscriptionFromStatus,
+  writeSubscriptionFields,
+} from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 
@@ -159,7 +165,9 @@ export class KennelPage implements OnInit, OnDestroy {
     private http: HttpClient,
     private router: Router,
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {
     addIcons({ arrowForward, lockClosed, checkmarkCircle, swapHorizontal, shirtOutline, closeCircle });
   }
@@ -167,10 +175,21 @@ export class KennelPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadData();
 
+    const epochSub = this.authService.accountEpoch$.subscribe(() => {
+      this.zone.run(() => {
+        this.applyAccountTier(this.localIsPro());
+        this.loadData();
+        this.cdr.detectChanges();
+      });
+      void this.refreshTier();
+    });
+    this.subscriptions.push(epochSub);
+
     const collectionSub = this.breedService.collection$.subscribe(collection => {
       this.collection = collection;
       this.activeBreed = this.breedService.activeBreed;
       this.totalKibble = collection.totalKibble;
+      this.cdr.detectChanges();
     });
     this.subscriptions.push(collectionSub);
 
@@ -484,9 +503,11 @@ export class KennelPage implements OnInit, OnDestroy {
 
   // Pro on Android comes from the account, not RevenueCat.
   private applyAccountTier(isPro: boolean): void {
-    this.isPro = isPro;
-    this.isGuardian = isPro;
-    this.userTier = isPro ? 'pro' : 'free';
+    const safePro = !!isPro && this.localIsPro();
+    this.isPro = safePro;
+    this.isGuardian = safePro;
+    this.userTier = safePro ? 'pro' : 'free';
+    this.cdr.detectChanges();
   }
 
   private localIsPro(): boolean {
@@ -503,21 +524,11 @@ export class KennelPage implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(
         this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
       );
-      const snapshot = {
-        token: stored?.token || 'session',
-        subscriptionTier: res?.tier,
-        isPremium: !!res?.isPremium,
-        subscriptionExpiry: res?.expiry,
-        trialEndDate: res?.trial?.end,
-      };
+      const snapshot = subscriptionFromStatus(res, stored?.token);
       const isPro = accountIsPro(snapshot);
       this.applyAccountTier(isPro);
-      stored.subscriptionTier = normalizeTier(snapshot);
-      stored.isPremium = isPro;
-      if (res?.expiry) stored.subscriptionExpiry = res.expiry;
-      else delete stored.subscriptionExpiry;
-      if (res?.trial?.end) stored.trialEndDate = res.trial.end;
-      safeSetItem('focus_user', JSON.stringify(stored));
+      const next = writeSubscriptionFields(stored, snapshot);
+      safeSetItem('focus_user', JSON.stringify(next));
     } catch {
       // Keep the tier already read from this device.
     }

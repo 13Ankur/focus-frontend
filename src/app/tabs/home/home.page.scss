@@ -926,21 +926,24 @@
   }
 
   &.locked {
-    opacity: 0.8;
-    border-color: #ffd8a8;
-    background: #fff9f2;
+    opacity: 0.55;
+    border-color: #e0e0e0;
+    background: #f5f5f5;
+    box-shadow: none;
 
-    .duration-time {
-      color: #777;
+    .duration-time,
+    .duration-unit {
+      color: #9a9a9a;
     }
   }
 
   .duration-lock-icon {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    font-size: 11px;
+    top: 3px;
+    right: 3px;
+    font-size: 12px;
     color: #f57c00;
+    z-index: 1;
   }
 
   .duration-time {

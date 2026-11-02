@@ -1,8 +1,8 @@
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/storage';
-import { accountIsPro, normalizeTier } from '../utils/subscription-access';
-import { BehaviorSubject, Observable, tap, catchError, from } from 'rxjs';
+import { accountIsPro, normalizeTier, subscriptionFromStatus, writeSubscriptionFields } from '../utils/subscription-access';
+import { BehaviorSubject, Observable, tap, catchError, from, switchMap, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiService } from './api.service';
 import { BreedService } from './breed.service';
@@ -165,6 +165,10 @@ export class AuthService {
   private apiUrl = environment.apiUrl;
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  /** Bumps on login/logout so cached Ionic tabs can drop the previous account's UI. */
+  private accountEpochSubject = new BehaviorSubject(0);
+  public accountEpoch$ = this.accountEpochSubject.asObservable();
+  private lastAccountId: string | null = null;
 
   private _breedService: BreedService | null = null;
   private _revenueCatService: RevenueCatService | null = null;
@@ -228,7 +232,13 @@ export class AuthService {
     user.kibble = user.totalKibble;
     safeSetItem('focus_user', JSON.stringify(user));
     this.rememberOnboarding(user);
+    const accountId = user._id || user.id || null;
+    const switched = accountId !== this.lastAccountId;
+    this.lastAccountId = accountId;
     this.currentUserSubject.next(user);
+    if (switched) {
+      this.accountEpochSubject.next(this.accountEpochSubject.value + 1);
+    }
 
     if (user.token) {
       this.apiService.setToken(user.token);
@@ -293,9 +303,10 @@ export class AuthService {
       email,
       password
     }).pipe(
-      tap(response => {
+      switchMap(response => {
         this.storeUser(this.userFromAuthResponse(response, 'email'));
-        void this.afterLogin(response._id, response.token);
+        // Wait for breed + subscription sync so home never paints the previous Pro UI.
+        return from(this.afterLogin(response._id, response.token)).pipe(map(() => response));
       })
     );
   }
@@ -363,23 +374,10 @@ export class AuthService {
     try {
       const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
       const res: any = await this.http.get(`${this.apiUrl}/subscription/status`, { headers }).toPromise();
-      const snapshot = {
-        token,
-        isPremium: !!res?.isPremium,
-        subscriptionTier: res?.tier,
-        subscriptionExpiry: res?.expiry,
-        trialEndDate: res?.trial?.end || res?.trial?.endDate,
-      };
+      const snapshot = subscriptionFromStatus(res, token);
       const isPro = accountIsPro(snapshot);
-      const user: any = {
-        ...this.currentUser,
-        isPremium: isPro,
-        subscriptionTier: normalizeTier(snapshot),
-      };
-      if (res?.expiry) user.subscriptionExpiry = res.expiry;
-      else delete user.subscriptionExpiry;
+      const user = writeSubscriptionFields({ ...this.currentUser }, snapshot);
       if (res?.trial?.used != null) user.trialUsed = !!res.trial.used;
-      if (snapshot.trialEndDate) user.trialEndDate = snapshot.trialEndDate;
       this.storeUser(user);
       this.focusSoundService.setProAccess(isPro);
     } catch {
@@ -388,16 +386,16 @@ export class AuthService {
   }
 
   applySubscription(result: { expiry?: string | null; trial?: boolean }): void {
-    if (!this.currentUser) return;
+    if (!this.currentUser || !result.expiry) return;
     const user: any = {
       ...this.currentUser,
       isPremium: true,
       subscriptionTier: 'pro',
+      subscriptionExpiry: result.expiry,
     };
-    if (result.expiry) user.subscriptionExpiry = result.expiry;
     if (result.trial) {
       user.trialUsed = true;
-      if (result.expiry) user.trialEndDate = result.expiry;
+      user.trialEndDate = result.expiry;
     }
     this.storeUser(user);
   }
@@ -414,11 +412,10 @@ export class AuthService {
       userId,
       otp
     }).pipe(
-      tap(response => {
-        if (response.token) {
-          this.storeUser(this.userFromAuthResponse({ ...response, emailVerified: true }, 'email'));
-          void this.afterLogin(response._id, response.token);
-        }
+      switchMap(response => {
+        if (!response.token) return from(Promise.resolve(response));
+        this.storeUser(this.userFromAuthResponse({ ...response, emailVerified: true }, 'email'));
+        return from(this.afterLogin(response._id, response.token)).pipe(map(() => response));
       })
     );
   }
@@ -621,7 +618,9 @@ export class AuthService {
     this.USER_STORAGE_KEYS.forEach(key => safeRemoveItem(key));
     this.breedService.resetCollection();
     this.focusSoundService.setProAccess(false);
+    this.lastAccountId = null;
     this.currentUserSubject.next(null);
+    this.accountEpochSubject.next(this.accountEpochSubject.value + 1);
     // StatsService ↔ AuthService circular import — resolve lazily after logout.
     void import('./stats.service').then(({ StatsService }) => {
       if (this.currentUserSubject.value) return; // a new login already won the race

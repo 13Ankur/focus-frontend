@@ -176,7 +176,7 @@
         </button>
       </div>
       <div class="duration-buttons">
-        <button *ngFor="let opt of durationOptions" class="duration-btn" [class.locked]="opt.locked"
+        <button *ngFor="let opt of durationOptions; trackBy: trackDuration" class="duration-btn" [class.locked]="opt.locked"
           [class.selected]="!usingCustomDuration && selectedDuration === opt.value" (click)="selectDuration(opt)">
           <ion-icon name="lock-closed" class="duration-lock-icon" *ngIf="opt.locked"></ion-icon>
           <span class="duration-time">{{ opt.value }}</span>
