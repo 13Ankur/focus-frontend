@@ -5,7 +5,7 @@
     <div class="profile-header">
       <div class="user-info">
         <div class="avatar-wrapper" [ngClass]="tierBadgeClass">
-          <img src="assets/images/user-avatar.svg" alt="User avatar" class="user-avatar" width="56" height="56">
+          <img src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/user-avatar.svg" alt="User avatar" class="user-avatar" width="56" height="56">
           <div class="level-badge">
             <span>{{ userLevel }}</span>
           </div>
@@ -19,13 +19,6 @@
       <button class="settings-btn" (click)="goToSettings()" aria-label="Go to settings">
         <ion-icon name="settings-outline"></ion-icon>
       </button>
-    </div>
-
-    <!-- Global Impact Banner -->
-    <div class="global-impact-banner" (click)="showGlobalImpact()" role="button" aria-label="View global impact">
-      <span class="impact-icon">🌍</span>
-      <span class="impact-text">{{ globalMeals | number }} meals donated globally</span>
-      <ion-icon name="arrow-forward" class="impact-arrow"></ion-icon>
     </div>
 
     <!-- Daily Goal Progress -->
@@ -89,10 +82,6 @@
         <div class="mini-stat">
           <span class="mini-value">{{ displayStats.kibble }}</span>
           <span class="mini-label">Kibble</span>
-        </div>
-        <div class="mini-stat">
-          <span class="mini-value">{{ displayStats.meals }}</span>
-          <span class="mini-label">Meals</span>
         </div>
         <div class="mini-stat">
           <span class="mini-value">{{ displayStats.avgPerDay }}</span>
@@ -184,11 +173,6 @@
           <div class="stat-icon">✅</div>
           <div class="stat-value">{{ totalSessions }}</div>
           <div class="stat-label">Sessions</div>
-        </div>
-        <div class="stat-card highlight">
-          <div class="stat-icon">🍖</div>
-          <div class="stat-value">{{ totalMeals }}</div>
-          <div class="stat-label">Meals Donated</div>
         </div>
         <div class="stat-card">
           <div class="stat-icon">🦴</div>
@@ -302,6 +286,7 @@
         <div class="collection-info">
           <span class="collection-title">Achievements</span>
           <span class="collection-progress">{{ achievementCount }}/{{ totalAchievements }} unlocked</span>
+          <span class="claim-count" *ngIf="unclaimedAchievements > 0">{{ unclaimedAchievements }} ready to claim</span>
         </div>
         <div class="collection-bar">
           <div class="collection-fill" [style.width.%]="(achievementCount / totalAchievements) * 100"></div>

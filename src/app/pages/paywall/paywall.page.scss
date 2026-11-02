@@ -267,12 +267,17 @@
 }
 
 .plan-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   text-align: right;
 }
 
 .price-amount {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
+  line-height: 1.2;
   color: var(--app-text, #2C2C2C);
 }
 

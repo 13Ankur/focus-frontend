@@ -60,8 +60,13 @@ export class PaywallPage implements OnInit, OnDestroy {
   selectedPlan: 'pro' = 'pro';
   trialAvailable = false;
   loading = false;
+  readonly trialDays = 7;
+  /** Live Razorpay Pro plan is monthly USD 500 ($5.00). */
+  readonly priceLabel = '$5';
+  readonly pricePeriod = 'month';
 
-  /** True when running on Android — switches payment to Razorpay */
+  /** Android and web use Razorpay. iOS stays on the App Store. */
+  usesRazorpay = false;
   isAndroid = false;
 
   proFeatures = [
@@ -90,6 +95,7 @@ export class PaywallPage implements OnInit, OnDestroy {
   ) {
     addIcons({ close, checkmarkCircle });
     this.isAndroid = this.platform.is('android');
+    this.usesRazorpay = !this.platform.is('ios');
   }
 
   ngOnInit() {
@@ -103,10 +109,13 @@ export class PaywallPage implements OnInit, OnDestroy {
     });
 
     this.checkAlreadySubscribed();
+    this.checkTrialStatus();
   }
 
   ionViewWillEnter() {
     this.checkAlreadySubscribed();
+    this.checkTrialStatus();
+    void this.finishPendingPayment();
   }
 
   // ── Actions ──
@@ -115,7 +124,7 @@ export class PaywallPage implements OnInit, OnDestroy {
    * Subscribe — routes to Razorpay (Android) or RevenueCat (iOS).
    */
   async onSubscribe() {
-    if (this.isAndroid) {
+    if (this.usesRazorpay) {
       await this.onSubscribeAndroid();
     } else {
       await this.onSubscribeIos();
@@ -150,27 +159,37 @@ export class PaywallPage implements OnInit, OnDestroy {
     this.loading = true;
     try {
       const localUser = this.getLocalUser();
-      const success = await this.razorpayService.startCheckout({
+      const token = localUser.token || '';
+      if (this.razorpayService.tokenExpiresSoon(token)) {
+        await this.showToast('Please log in again before paying, so Pro can be activated.', 'warning');
+        this.router.navigate(['/auth'], { queryParams: { mode: 'login', reason: 'expired' } });
+        return;
+      }
+      const result = await this.razorpayService.startCheckout({
         name: localUser.username || localUser.name || '',
         email: localUser.email || '',
-        token: localUser.token || '',
+        token,
       });
 
-      if (success) {
-        // Update local cache
-        localUser.isPremium = true;
-        localUser.subscriptionTier = 'pro';
-        safeSetItem('focus_user', JSON.stringify(localUser));
+      if (result.success) {
+        this.storePro(localUser, result);
 
-        await this.showToast('Welcome to Pro! 🎉', 'success');
+        await this.showToast(
+          result.trial
+            ? 'Your 7-day free trial has started. You will be charged after the trial.'
+            : 'Welcome to Pro! 🎉',
+          'success',
+        );
         this.router.navigateByUrl(this.returnUrl);
       } else {
         await this.showToast('Payment cancelled or failed. Please try again.', 'warning');
       }
     } catch (err: any) {
-      console.error('Razorpay error:', err);
-      const msg = err?.error?.message || 'Could not complete payment. Please try again.';
-      await this.showToast(msg, 'danger');
+      console.warn('Razorpay checkout did not finish', err?.status || err?.error?.message || err?.message);
+      const msg = err?.paymentReceived
+        ? 'Your payment was received. Log in again and Pro will be unlocked.'
+        : (err?.error?.message || 'Could not complete payment. Please try again.');
+      await this.showToast(msg, err?.paymentReceived ? 'warning' : 'danger');
     } finally {
       this.loading = false;
     }
@@ -270,6 +289,26 @@ export class PaywallPage implements OnInit, OnDestroy {
 
   private async checkAlreadySubscribed() {
     // Keep paywall visible so user can select/view options
+  }
+
+  private async finishPendingPayment(): Promise<void> {
+    const user = this.getLocalUser();
+    const result = await this.razorpayService.recoverPending(user?.token);
+    if (!result?.success) return;
+    this.storePro(user, result);
+    await this.showToast('Your Pro payment is now active.', 'success');
+    this.router.navigateByUrl(this.returnUrl);
+  }
+
+  private storePro(user: any, result: { trial?: boolean; expiry?: string | null }): void {
+    user.isPremium = true;
+    user.subscriptionTier = 'pro';
+    if (result.expiry) user.subscriptionExpiry = result.expiry;
+    if (result.trial) {
+      user.trialUsed = true;
+      if (result.expiry) user.trialEndDate = result.expiry;
+    }
+    safeSetItem('focus_user', JSON.stringify(user));
   }
 
   private getAuthHeaders(): HttpHeaders {

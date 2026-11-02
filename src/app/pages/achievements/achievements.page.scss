@@ -33,6 +33,31 @@
   }
 }
 
+.ach-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.pro-pill {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: linear-gradient(135deg, #FF9800, #F57C00);
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+.pro-lock-label {
+  color: #E65100;
+  font-weight: 700;
+}
+
 .back-btn {
   width: 44px;
   height: 44px;

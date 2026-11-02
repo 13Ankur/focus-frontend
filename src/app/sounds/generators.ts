@@ -71,58 +71,93 @@ export const createBrownNoise: GeneratorFn = (ctx) => {
   return { outputNode: output, stop: () => { try { src.stop(); } catch {} } };
 };
 
+function playNoiseDrop(
+  ctx: AudioContext,
+  output: AudioNode,
+  seconds: number,
+  freq: number,
+  q: number,
+  volume: number,
+): void {
+  const len = Math.max(1, Math.floor(ctx.sampleRate * seconds));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) {
+    data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (len * 0.22));
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass';
+  filter.frequency.value = freq;
+  filter.Q.value = q;
+  const gain = ctx.createGain();
+  gain.gain.value = volume;
+  src.connect(filter);
+  filter.connect(gain);
+  gain.connect(output);
+  src.start();
+}
+
+function playTone(
+  ctx: AudioContext,
+  output: AudioNode,
+  startFreq: number,
+  endFreq: number,
+  seconds: number,
+  volume: number,
+  type: OscillatorType = 'sine',
+): void {
+  const osc = ctx.createOscillator();
+  osc.type = type;
+  const gain = ctx.createGain();
+  const now = ctx.currentTime;
+  osc.frequency.setValueAtTime(startFreq, now);
+  osc.frequency.exponentialRampToValueAtTime(Math.max(40, endFreq), now + seconds);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(volume, now + Math.min(0.03, seconds * 0.25));
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
+  osc.connect(gain);
+  gain.connect(output);
+  osc.start(now);
+  osc.stop(now + seconds + 0.02);
+}
+
 // ── Gentle Rain ──
 
 export const createRain: GeneratorFn = (ctx) => {
   const output = ctx.createGain();
-  output.gain.value = 0.45;
+  output.gain.value = 0.7;
 
-  // Base: bandpass-filtered white noise for steady patter
-  const noiseBuf = createNoiseBuffer(ctx, 4, 'white');
-  const noiseSrc = startNoiseSource(ctx, noiseBuf);
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 3500;
-  bp.Q.value = 0.7;
-  noiseSrc.connect(bp);
+  const sheet = startNoiseSource(ctx, createNoiseBuffer(ctx, 4, 'white'));
+  const highpass = ctx.createBiquadFilter();
+  highpass.type = 'highpass';
+  highpass.frequency.value = 1800;
+  const lowpass = ctx.createBiquadFilter();
+  lowpass.type = 'lowpass';
+  lowpass.frequency.value = 8000;
+  const sheetGain = ctx.createGain();
+  sheetGain.gain.value = 0.16;
+  sheet.connect(highpass);
+  highpass.connect(lowpass);
+  lowpass.connect(sheetGain);
+  sheetGain.connect(output);
 
-  // Gentle high-shelf for brightness
-  const hi = ctx.createBiquadFilter();
-  hi.type = 'highshelf';
-  hi.frequency.value = 6000;
-  hi.gain.value = -4;
-  bp.connect(hi);
-  hi.connect(output);
-
-  // Droplet layer: another noise through a sharper filter
-  const dropBuf = createNoiseBuffer(ctx, 4, 'white');
-  const dropSrc = startNoiseSource(ctx, dropBuf);
-  const dropBp = ctx.createBiquadFilter();
-  dropBp.type = 'bandpass';
-  dropBp.frequency.value = 7000;
-  dropBp.Q.value = 3;
-  const dropGain = ctx.createGain();
-  dropGain.gain.value = 0.15;
-  dropSrc.connect(dropBp);
-  dropBp.connect(dropGain);
-
-  // Modulate droplets with slow LFO for variation
-  const dropLfo = ctx.createOscillator();
-  dropLfo.type = 'sine';
-  dropLfo.frequency.value = 0.3;
-  const dropLfoGain = ctx.createGain();
-  dropLfoGain.gain.value = 0.08;
-  dropLfo.connect(dropLfoGain);
-  dropLfoGain.connect(dropGain.gain);
-  dropLfo.start();
-  dropGain.connect(output);
+  let stopped = false;
+  const timer = setInterval(() => {
+    if (stopped) return;
+    playNoiseDrop(ctx, output, 0.015 + Math.random() * 0.03, 2800 + Math.random() * 4500, 3 + Math.random() * 5, 0.12 + Math.random() * 0.2);
+    if (Math.random() > 0.55) {
+      playNoiseDrop(ctx, output, 0.04 + Math.random() * 0.05, 900 + Math.random() * 800, 1.2, 0.08 + Math.random() * 0.08);
+    }
+  }, 32);
 
   return {
     outputNode: output,
     stop: () => {
-      try { noiseSrc.stop(); } catch {}
-      try { dropSrc.stop(); } catch {}
-      try { dropLfo.stop(); } catch {}
+      stopped = true;
+      clearInterval(timer);
+      try { sheet.stop(); } catch { /* already stopped */ }
     },
   };
 };
@@ -131,74 +166,54 @@ export const createRain: GeneratorFn = (ctx) => {
 
 export const createOcean: GeneratorFn = (ctx) => {
   const output = ctx.createGain();
-  output.gain.value = 0.5;
+  output.gain.value = 0.85;
 
-  const noiseBuf = createNoiseBuffer(ctx, 6, 'brown');
-  const noiseSrc = startNoiseSource(ctx, noiseBuf);
+  const surf = startNoiseSource(ctx, createNoiseBuffer(ctx, 8, 'brown'));
+  const surfFilter = ctx.createBiquadFilter();
+  surfFilter.type = 'lowpass';
+  surfFilter.frequency.value = 500;
+  const surfGain = ctx.createGain();
+  surfGain.gain.value = 0.05;
+  surf.connect(surfFilter);
+  surfFilter.connect(surfGain);
+  surfGain.connect(output);
 
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.value = 600;
-  lp.Q.value = 0.5;
-  noiseSrc.connect(lp);
-
-  // LFO modulates volume for wave surges
-  const waveGain = ctx.createGain();
-  waveGain.gain.value = 0.5;
-  lp.connect(waveGain);
-
-  const lfo = ctx.createOscillator();
-  lfo.type = 'sine';
-  lfo.frequency.value = 0.08;
-  const lfoGain = ctx.createGain();
-  lfoGain.gain.value = 0.4;
-  lfo.connect(lfoGain);
-  lfoGain.connect(waveGain.gain);
-  lfo.start();
-
-  // Second wave layer slightly offset
-  const noiseBuf2 = createNoiseBuffer(ctx, 6, 'brown');
-  const noiseSrc2 = startNoiseSource(ctx, noiseBuf2);
-  const lp2 = ctx.createBiquadFilter();
-  lp2.type = 'lowpass';
-  lp2.frequency.value = 400;
-  noiseSrc2.connect(lp2);
-  const waveGain2 = ctx.createGain();
-  waveGain2.gain.value = 0.3;
-  lp2.connect(waveGain2);
-
-  const lfo2 = ctx.createOscillator();
-  lfo2.type = 'sine';
-  lfo2.frequency.value = 0.05;
-  const lfoGain2 = ctx.createGain();
-  lfoGain2.gain.value = 0.25;
-  lfo2.connect(lfoGain2);
-  lfoGain2.connect(waveGain2.gain);
-  lfo2.start();
-
-  // Gentle foam hiss
-  const foamBuf = createNoiseBuffer(ctx, 4, 'white');
-  const foamSrc = startNoiseSource(ctx, foamBuf);
-  const foamHp = ctx.createBiquadFilter();
-  foamHp.type = 'highpass';
-  foamHp.frequency.value = 3000;
+  const foam = startNoiseSource(ctx, createNoiseBuffer(ctx, 4, 'white'));
+  const foamFilter = ctx.createBiquadFilter();
+  foamFilter.type = 'highpass';
+  foamFilter.frequency.value = 2500;
   const foamGain = ctx.createGain();
-  foamGain.gain.value = 0.06;
-  foamSrc.connect(foamHp);
-  foamHp.connect(foamGain);
-
-  waveGain.connect(output);
-  waveGain2.connect(output);
+  foamGain.gain.value = 0.01;
+  foam.connect(foamFilter);
+  foamFilter.connect(foamGain);
   foamGain.connect(output);
+
+  let stopped = false;
+  const waveMs = 7000;
+  const wash = () => {
+    if (stopped || !ctx || ctx.state === 'closed') return;
+    const now = ctx.currentTime;
+    surfGain.gain.cancelScheduledValues(now);
+    foamGain.gain.cancelScheduledValues(now);
+    surfGain.gain.setValueAtTime(0.04, now);
+    surfGain.gain.linearRampToValueAtTime(0.55, now + 2.4);
+    surfGain.gain.linearRampToValueAtTime(0.7, now + 3.1);
+    surfGain.gain.linearRampToValueAtTime(0.08, now + 6.4);
+    foamGain.gain.setValueAtTime(0.01, now);
+    foamGain.gain.linearRampToValueAtTime(0.02, now + 2.2);
+    foamGain.gain.linearRampToValueAtTime(0.22, now + 3.2);
+    foamGain.gain.linearRampToValueAtTime(0.01, now + 5.2);
+  };
+  wash();
+  const timer = setInterval(wash, waveMs);
 
   return {
     outputNode: output,
     stop: () => {
-      try { noiseSrc.stop(); } catch {}
-      try { noiseSrc2.stop(); } catch {}
-      try { foamSrc.stop(); } catch {}
-      try { lfo.stop(); } catch {}
-      try { lfo2.stop(); } catch {}
+      stopped = true;
+      clearInterval(timer);
+      try { surf.stop(); } catch { /* already stopped */ }
+      try { foam.stop(); } catch { /* already stopped */ }
     },
   };
 };
@@ -207,93 +222,54 @@ export const createOcean: GeneratorFn = (ctx) => {
 
 export const createForest: GeneratorFn = (ctx) => {
   const output = ctx.createGain();
-  output.gain.value = 0.4;
+  output.gain.value = 0.8;
 
-  // Background: quiet pink noise for wind through leaves
-  const pinkBuf = createNoiseBuffer(ctx, 4, 'pink');
-  const pinkSrc = startNoiseSource(ctx, pinkBuf);
-  const windGain = ctx.createGain();
-  windGain.gain.value = 0.3;
-  const windLp = ctx.createBiquadFilter();
-  windLp.type = 'lowpass';
-  windLp.frequency.value = 2000;
-  pinkSrc.connect(windLp);
-  windLp.connect(windGain);
-  windGain.connect(output);
+  const leaves = startNoiseSource(ctx, createNoiseBuffer(ctx, 4, 'pink'));
+  const leafFilter = ctx.createBiquadFilter();
+  leafFilter.type = 'highpass';
+  leafFilter.frequency.value = 1500;
+  const leafGain = ctx.createGain();
+  leafGain.gain.value = 0.04;
+  leaves.connect(leafFilter);
+  leafFilter.connect(leafGain);
+  leafGain.connect(output);
 
-  // Wind modulation
-  const windLfo = ctx.createOscillator();
-  windLfo.type = 'sine';
-  windLfo.frequency.value = 0.15;
-  const windLfoGain = ctx.createGain();
-  windLfoGain.gain.value = 0.12;
-  windLfo.connect(windLfoGain);
-  windLfoGain.connect(windGain.gain);
-  windLfo.start();
-
-  // Bird chirps via scheduled oscillator sweeps
-  const chirpOscs: OscillatorNode[] = [];
-  let chirpTimer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
 
-  const scheduleChirp = () => {
+  const song = () => {
     if (stopped) return;
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    const baseFreq = 2000 + Math.random() * 3000;
-    osc.frequency.value = baseFreq;
-
-    const chirpGain = ctx.createGain();
-    chirpGain.gain.value = 0;
-    osc.connect(chirpGain);
-    chirpGain.connect(output);
-
-    const now = ctx.currentTime;
-    const dur = 0.08 + Math.random() * 0.12;
-    chirpGain.gain.setValueAtTime(0, now);
-    chirpGain.gain.linearRampToValueAtTime(0.15 + Math.random() * 0.1, now + dur * 0.3);
-    chirpGain.gain.linearRampToValueAtTime(0, now + dur);
-
-    osc.frequency.setValueAtTime(baseFreq, now);
-    osc.frequency.linearRampToValueAtTime(baseFreq * (1.1 + Math.random() * 0.4), now + dur * 0.5);
-    osc.frequency.linearRampToValueAtTime(baseFreq * 0.9, now + dur);
-
-    osc.start(now);
-    osc.stop(now + dur + 0.05);
-    chirpOscs.push(osc);
-
-    // Sometimes do a double chirp
-    if (Math.random() > 0.5) {
-      const osc2 = ctx.createOscillator();
-      osc2.type = 'sine';
-      const f2 = baseFreq * (0.9 + Math.random() * 0.3);
-      osc2.frequency.value = f2;
-      const g2 = ctx.createGain();
-      g2.gain.value = 0;
-      osc2.connect(g2);
-      g2.connect(output);
-      const t2 = now + dur + 0.05;
-      g2.gain.setValueAtTime(0, t2);
-      g2.gain.linearRampToValueAtTime(0.12, t2 + dur * 0.3);
-      g2.gain.linearRampToValueAtTime(0, t2 + dur);
-      osc2.start(t2);
-      osc2.stop(t2 + dur + 0.05);
-      chirpOscs.push(osc2);
+    const roll = Math.random();
+    if (roll < 0.34) {
+      const base = 2400 + Math.random() * 400;
+      [0, 0.18, 0.36].forEach((delay, i) => {
+        setTimeout(() => {
+          if (!stopped) playTone(ctx, output, base - i * 280, base - i * 340, 0.16, 0.16);
+        }, delay * 1000);
+      });
+    } else if (roll < 0.67) {
+      const base = 3800 + Math.random() * 700;
+      for (let i = 0; i < 8; i++) {
+        setTimeout(() => {
+          if (!stopped) playTone(ctx, output, base, base * 1.08, 0.06, 0.1);
+        }, i * 70);
+      }
+    } else {
+      playTone(ctx, output, 1400 + Math.random() * 200, 1100, 0.28, 0.14);
+      setTimeout(() => {
+        if (!stopped) playTone(ctx, output, 1800, 2200, 0.18, 0.12);
+      }, 320);
     }
   };
 
-  chirpTimer = setInterval(() => {
-    if (!stopped && Math.random() > 0.3) scheduleChirp();
-  }, 800 + Math.random() * 1500);
+  song();
+  const timer = setInterval(song, 1600 + Math.random() * 900);
 
   return {
     outputNode: output,
     stop: () => {
       stopped = true;
-      if (chirpTimer) clearInterval(chirpTimer);
-      try { pinkSrc.stop(); } catch {}
-      try { windLfo.stop(); } catch {}
-      chirpOscs.forEach(o => { try { o.stop(); } catch {} });
+      clearInterval(timer);
+      try { leaves.stop(); } catch { /* already stopped */ }
     },
   };
 };
@@ -302,63 +278,54 @@ export const createForest: GeneratorFn = (ctx) => {
 
 export const createThunderstorm: GeneratorFn = (ctx) => {
   const output = ctx.createGain();
-  output.gain.value = 0.5;
+  output.gain.value = 0.75;
 
-  // Heavy rain base
-  const rainBuf = createNoiseBuffer(ctx, 4, 'white');
-  const rainSrc = startNoiseSource(ctx, rainBuf);
-  const bp = ctx.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 2800;
-  bp.Q.value = 0.5;
+  const rain = startNoiseSource(ctx, createNoiseBuffer(ctx, 4, 'white'));
+  const rainFilter = ctx.createBiquadFilter();
+  rainFilter.type = 'highpass';
+  rainFilter.frequency.value = 900;
   const rainGain = ctx.createGain();
-  rainGain.gain.value = 0.5;
-  rainSrc.connect(bp);
-  bp.connect(rainGain);
+  rainGain.gain.value = 0.28;
+  rain.connect(rainFilter);
+  rainFilter.connect(rainGain);
   rainGain.connect(output);
 
-  // Thunder rumbles at random intervals
-  let thunderTimer: ReturnType<typeof setInterval> | null = null;
   let stopped = false;
-  const thunderSources: AudioBufferSourceNode[] = [];
-
-  const scheduleThunder = () => {
+  const drops = setInterval(() => {
     if (stopped) return;
-    const thunderBuf = createNoiseBuffer(ctx, 3, 'brown');
+    playNoiseDrop(ctx, output, 0.02 + Math.random() * 0.03, 2000 + Math.random() * 3000, 2, 0.16);
+  }, 22);
+
+  const thunder = () => {
+    if (stopped) return;
     const src = ctx.createBufferSource();
-    src.buffer = thunderBuf;
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 60 + Math.random() * 40;
-    lp.Q.value = 0.7;
-    const tGain = ctx.createGain();
-    tGain.gain.value = 0;
-    src.connect(lp);
-    lp.connect(tGain);
-    tGain.connect(output);
-
+    src.buffer = createNoiseBuffer(ctx, 2.5, 'brown');
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 90;
+    const gain = ctx.createGain();
+    src.connect(filter);
+    filter.connect(gain);
+    gain.connect(output);
     const now = ctx.currentTime;
-    const dur = 1.5 + Math.random() * 2;
-    tGain.gain.setValueAtTime(0, now);
-    tGain.gain.linearRampToValueAtTime(0.6 + Math.random() * 0.3, now + 0.1);
-    tGain.gain.linearRampToValueAtTime(0.3, now + dur * 0.4);
-    tGain.gain.linearRampToValueAtTime(0, now + dur);
+    const dur = 2 + Math.random() * 1.5;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.9, now + 0.08);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
     src.start(now);
-    src.stop(now + dur + 0.1);
-    thunderSources.push(src);
+    src.stop(now + dur);
   };
-
-  thunderTimer = setInterval(() => {
-    if (!stopped && Math.random() > 0.6) scheduleThunder();
-  }, 4000 + Math.random() * 6000);
+  const thunderTimer = setInterval(() => {
+    if (!stopped && Math.random() > 0.35) thunder();
+  }, 5000);
 
   return {
     outputNode: output,
     stop: () => {
       stopped = true;
-      if (thunderTimer) clearInterval(thunderTimer);
-      try { rainSrc.stop(); } catch {}
-      thunderSources.forEach(s => { try { s.stop(); } catch {} });
+      clearInterval(drops);
+      clearInterval(thunderTimer);
+      try { rain.stop(); } catch { /* already stopped */ }
     },
   };
 };
@@ -381,6 +348,24 @@ export const createCafe: GeneratorFn = (ctx) => {
   murmurSrc.connect(murmurBp);
   murmurBp.connect(murmurGain);
   murmurGain.connect(output);
+
+  const voices = startNoiseSource(ctx, createNoiseBuffer(ctx, 4, 'pink'));
+  const voiceFilter = ctx.createBiquadFilter();
+  voiceFilter.type = 'bandpass';
+  voiceFilter.frequency.value = 1400;
+  voiceFilter.Q.value = 2.5;
+  const voiceGain = ctx.createGain();
+  voiceGain.gain.value = 0.12;
+  voices.connect(voiceFilter);
+  voiceFilter.connect(voiceGain);
+  voiceGain.connect(output);
+  const voiceLfo = ctx.createOscillator();
+  voiceLfo.frequency.value = 3.5;
+  const voiceLfoGain = ctx.createGain();
+  voiceLfoGain.gain.value = 500;
+  voiceLfo.connect(voiceLfoGain);
+  voiceLfoGain.connect(voiceFilter.frequency);
+  voiceLfo.start();
 
   // Slow volume modulation for conversational cadence
   const cadenceLfo = ctx.createOscillator();
@@ -437,6 +422,8 @@ export const createCafe: GeneratorFn = (ctx) => {
       stopped = true;
       if (clinkTimer) clearInterval(clinkTimer);
       try { murmurSrc.stop(); } catch {}
+      try { voices.stop(); } catch {}
+      try { voiceLfo.stop(); } catch {}
       try { humSrc.stop(); } catch {}
       try { cadenceLfo.stop(); } catch {}
       clinkOscs.forEach(o => { try { o.stop(); } catch {} });
@@ -457,7 +444,7 @@ export const createFireplace: GeneratorFn = (ctx) => {
   baseLp.type = 'lowpass';
   baseLp.frequency.value = 300;
   const baseGain = ctx.createGain();
-  baseGain.gain.value = 0.4;
+  baseGain.gain.value = 0.22;
   baseSrc.connect(baseLp);
   baseLp.connect(baseGain);
   baseGain.connect(output);
@@ -491,7 +478,7 @@ export const createFireplace: GeneratorFn = (ctx) => {
     hp.type = 'highpass';
     hp.frequency.value = 2000 + Math.random() * 3000;
     const g = ctx.createGain();
-    g.gain.value = 0.15 + Math.random() * 0.15;
+    g.gain.value = 0.35 + Math.random() * 0.4;
     src.connect(hp);
     hp.connect(g);
     g.connect(output);
@@ -506,7 +493,7 @@ export const createFireplace: GeneratorFn = (ctx) => {
         setTimeout(() => scheduleCrackle(), Math.random() * 200);
       }
     }
-  }, 300 + Math.random() * 500);
+  }, 140 + Math.random() * 180);
 
   return {
     outputNode: output,
@@ -558,9 +545,17 @@ export const createLibrary: GeneratorFn = (ctx) => {
   acLp.connect(acGain);
   acGain.connect(output);
 
+  let stopped = false;
+  const pages = setInterval(() => {
+    if (stopped || Math.random() > 0.45) return;
+    playNoiseDrop(ctx, output, 0.08 + Math.random() * 0.12, 1800 + Math.random() * 1500, 0.7, 0.08);
+  }, 4000);
+
   return {
     outputNode: output,
     stop: () => {
+      stopped = true;
+      clearInterval(pages);
       try { hum.stop(); } catch {}
       try { hum2.stop(); } catch {}
       try { acSrc.stop(); } catch {}

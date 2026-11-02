@@ -1,121 +1,50 @@
 import { Injectable } from '@angular/core';
 import { safeGetItem } from '../utils/storage';
+import { assetUrl } from '../utils/assets';
+import { AssetLoaderService } from './asset-loader.service';
 
-interface BreedBarkConfig {
-  baseFrequency: number;
-  endFrequency: number;
-  duration: number;
-  noiseAmount: number;
-  oscillatorType: OscillatorType;
-  pattern: 'single' | 'double' | 'howl' | 'yap' | 'snort';
-  barkTexts: string[];
-}
-
-const BREED_BARK_CONFIGS: Record<string, BreedBarkConfig> = {
-  golden_retriever: {
-    baseFrequency: 320,
-    endFrequency: 250,
-    duration: 0.25,
-    noiseAmount: 0.3,
-    oscillatorType: 'sawtooth',
-    pattern: 'single',
-    barkTexts: ['Woof!', 'Bark!', 'Arf!'],
-  },
-  husky: {
-    baseFrequency: 280,
-    endFrequency: 450,
-    duration: 0.8,
-    noiseAmount: 0.15,
-    oscillatorType: 'sine',
-    pattern: 'howl',
-    barkTexts: ['Awoooo!', 'Aroo!', 'Wooo!'],
-  },
-  shiba_inu: {
-    baseFrequency: 550,
-    endFrequency: 400,
-    duration: 0.15,
-    noiseAmount: 0.35,
-    oscillatorType: 'square',
-    pattern: 'yap',
-    barkTexts: ['Yip!', 'Bark!', 'Arf arf!'],
-  },
-  cavapoo: {
-    baseFrequency: 480,
-    endFrequency: 380,
-    duration: 0.12,
-    noiseAmount: 0.25,
-    oscillatorType: 'sawtooth',
-    pattern: 'yap',
-    barkTexts: ['Yap!', 'Arf!', 'Ruff!'],
-  },
-  french_bulldog: {
-    baseFrequency: 200,
-    endFrequency: 160,
-    duration: 0.3,
-    noiseAmount: 0.5,
-    oscillatorType: 'sawtooth',
-    pattern: 'snort',
-    barkTexts: ['*snort*', 'Borf!', 'Gruff!'],
-  },
-  labrador: {
-    baseFrequency: 240,
-    endFrequency: 180,
-    duration: 0.3,
-    noiseAmount: 0.35,
-    oscillatorType: 'sawtooth',
-    pattern: 'single',
-    barkTexts: ['WOOF!', 'Bark!', 'Boof!'],
-  },
-  dachshund: {
-    baseFrequency: 420,
-    endFrequency: 340,
-    duration: 0.18,
-    noiseAmount: 0.4,
-    oscillatorType: 'square',
-    pattern: 'double',
-    barkTexts: ['BARK!', 'Arf arf!', 'Yap!'],
-  },
-  australian_shepherd: {
-    baseFrequency: 350,
-    endFrequency: 280,
-    duration: 0.2,
-    noiseAmount: 0.3,
-    oscillatorType: 'sawtooth',
-    pattern: 'double',
-    barkTexts: ['Woof woof!', 'Bark!', 'Arf!'],
-  },
-  maltese: {
-    baseFrequency: 600,
-    endFrequency: 500,
-    duration: 0.1,
-    noiseAmount: 0.2,
-    oscillatorType: 'square',
-    pattern: 'yap',
-    barkTexts: ['Yip yip!', 'Arf!', 'Yap!'],
-  },
+const BARK_FILES: Record<string, string> = {
+  golden_retriever: assetUrl('sounds/barks/golden_retriever.mp3'),
+  husky: assetUrl('sounds/barks/husky.mp3'),
+  shiba_inu: assetUrl('sounds/barks/shiba_inu.mp3'),
+  cavapoo: assetUrl('sounds/barks/cavapoo.mp3'),
+  french_bulldog: assetUrl('sounds/barks/french_bulldog.mp3'),
+  labrador: assetUrl('sounds/barks/labrador.mp3'),
+  dachshund: assetUrl('sounds/barks/dachshund.mp3'),
+  australian_shepherd: assetUrl('sounds/barks/australian_shepherd.mp3'),
+  maltese: assetUrl('sounds/barks/maltese.mp3'),
 };
 
-const DEFAULT_CONFIG: BreedBarkConfig = {
-  baseFrequency: 350,
-  endFrequency: 280,
-  duration: 0.2,
-  noiseAmount: 0.3,
-  oscillatorType: 'sawtooth',
-  pattern: 'single',
-  barkTexts: ['Woof!', 'Bark!', 'Arf!'],
+const BARK_TEXTS: Record<string, string[]> = {
+  golden_retriever: ['Woof!', 'Bark!', 'Arf!'],
+  husky: ['Awoooo!', 'Aroo!', 'Wooo!'],
+  shiba_inu: ['Yip!', 'Bark!', 'Arf arf!'],
+  cavapoo: ['Yap!', 'Arf!', 'Ruff!'],
+  french_bulldog: ['*snort*', 'Borf!', 'Gruff!'],
+  labrador: ['WOOF!', 'Bark!', 'Boof!'],
+  dachshund: ['BARK!', 'Arf arf!', 'Yap!'],
+  australian_shepherd: ['Woof woof!', 'Bark!', 'Arf!'],
+  maltese: ['Yip yip!', 'Arf!', 'Yap!'],
 };
 
-const DEBOUNCE_MS = 400;
+const DEFAULT_TEXTS = ['Woof!', 'Bark!', 'Arf!'];
+const DEBOUNCE_MS = 350;
 
 @Injectable({
   providedIn: 'root',
 })
 export class DogBarkService {
+  constructor(private assetLoader: AssetLoaderService) {}
+
   private audioContext: AudioContext | null = null;
   private lastPlayTime = 0;
+  private lastBreedId = '';
+  private currentSource: AudioBufferSourceNode | null = null;
+  private buffers = new Map<string, AudioBuffer>();
+  private playGeneration = 0;
 
-  private getConfig(breedId: string): BreedBarkConfig {
-    return BREED_BARK_CONFIGS[breedId] || DEFAULT_CONFIG;
+  private textsFor(breedId: string): string[] {
+    return BARK_TEXTS[breedId] || DEFAULT_TEXTS;
   }
 
   private isMuted(): boolean {
@@ -123,15 +52,12 @@ export class DogBarkService {
   }
 
   private initAudioContext(): AudioContext | null {
-    if (!this.audioContext) {
+    if (!this.audioContext || this.audioContext.state === 'closed') {
       try {
         this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       } catch {
         return null;
       }
-    }
-    if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
     }
     return this.audioContext;
   }
@@ -140,214 +66,82 @@ export class DogBarkService {
     if (this.isMuted()) return null;
 
     const now = Date.now();
-    if (now - this.lastPlayTime < DEBOUNCE_MS) return null;
+    if (breedId === this.lastBreedId && now - this.lastPlayTime < DEBOUNCE_MS) return null;
     this.lastPlayTime = now;
+    this.lastBreedId = breedId;
 
-    const ctx = this.initAudioContext();
-    if (!ctx) return null;
-
-    const config = this.getConfig(breedId);
-    const pitchVariation = 1 + (Math.random() - 0.5) * 0.1;
-
-    switch (config.pattern) {
-      case 'howl':
-        this.playHowl(ctx, config, pitchVariation);
-        break;
-      case 'double':
-        this.playSingleBark(ctx, config, pitchVariation);
-        setTimeout(() => this.playSingleBark(ctx, config, pitchVariation * 0.95), config.duration * 1000 + 80);
-        break;
-      case 'yap':
-        this.playYap(ctx, config, pitchVariation);
-        break;
-      case 'snort':
-        this.playSnort(ctx, config, pitchVariation);
-        break;
-      default:
-        this.playSingleBark(ctx, config, pitchVariation);
-        break;
-    }
-
+    void this.playFile(breedId);
     return this.getRandomBarkText(breedId);
   }
 
   getRandomBarkText(breedId: string): string {
-    const config = this.getConfig(breedId);
-    return config.barkTexts[Math.floor(Math.random() * config.barkTexts.length)];
+    const texts = this.textsFor(breedId);
+    return texts[Math.floor(Math.random() * texts.length)];
   }
 
   getBarkTexts(breedId: string): string[] {
-    return this.getConfig(breedId).barkTexts;
+    return this.textsFor(breedId);
   }
 
-  private playSingleBark(ctx: AudioContext, config: BreedBarkConfig, pitchMod: number): void {
-    const now = ctx.currentTime;
-    const dur = config.duration;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = config.oscillatorType;
-    osc.frequency.setValueAtTime(config.baseFrequency * pitchMod, now);
-    osc.frequency.exponentialRampToValueAtTime(config.endFrequency * pitchMod, now + dur);
-
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(2000, now);
-    filter.frequency.exponentialRampToValueAtTime(800, now + dur);
-    filter.Q.value = 2;
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.35, now + 0.01);
-    gain.gain.setValueAtTime(0.35, now + dur * 0.3);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + dur);
-
-    if (config.noiseAmount > 0) {
-      this.addNoiseBurst(ctx, now, dur * 0.8, config.noiseAmount * 0.35);
+  private async playFile(breedId: string): Promise<void> {
+    const generation = ++this.playGeneration;
+    const ctx = this.initAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch {
+        return;
+      }
     }
-  }
+    if (generation !== this.playGeneration) return;
 
-  private playHowl(ctx: AudioContext, config: BreedBarkConfig, pitchMod: number): void {
-    const now = ctx.currentTime;
-    const dur = config.duration;
+    const fileBreed = BARK_FILES[breedId] ? breedId : 'golden_retriever';
+    let buffer: AudioBuffer;
+    try {
+      buffer = await this.loadBuffer(ctx, fileBreed);
+    } catch {
+      return;
+    }
+    if (generation !== this.playGeneration || ctx.state === 'closed') return;
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(config.baseFrequency * pitchMod, now);
-    osc.frequency.linearRampToValueAtTime(config.endFrequency * pitchMod, now + dur * 0.4);
-    osc.frequency.linearRampToValueAtTime(config.endFrequency * pitchMod * 1.1, now + dur * 0.7);
-    osc.frequency.exponentialRampToValueAtTime(config.baseFrequency * pitchMod * 0.8, now + dur);
-
-    filter.type = 'bandpass';
-    filter.frequency.value = 400;
-    filter.Q.value = 1;
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.25, now + dur * 0.1);
-    gain.gain.setValueAtTime(0.3, now + dur * 0.3);
-    gain.gain.linearRampToValueAtTime(0.35, now + dur * 0.6);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + dur);
-
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = 'sine';
-    osc2.frequency.setValueAtTime(config.baseFrequency * pitchMod * 1.5, now);
-    osc2.frequency.linearRampToValueAtTime(config.endFrequency * pitchMod * 1.5, now + dur * 0.4);
-    osc2.frequency.exponentialRampToValueAtTime(config.baseFrequency * pitchMod * 1.2, now + dur);
-
-    gain2.gain.setValueAtTime(0, now);
-    gain2.gain.linearRampToValueAtTime(0.08, now + dur * 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now);
-    osc2.stop(now + dur);
-  }
-
-  private playYap(ctx: AudioContext, config: BreedBarkConfig, pitchMod: number): void {
-    const now = ctx.currentTime;
-    const dur = config.duration;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = config.oscillatorType;
-    osc.frequency.setValueAtTime(config.baseFrequency * pitchMod * 1.2, now);
-    osc.frequency.exponentialRampToValueAtTime(config.endFrequency * pitchMod, now + dur);
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.3, now + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + dur);
-
-    this.addNoiseBurst(ctx, now, dur * 0.5, config.noiseAmount * 0.25);
-  }
-
-  private playSnort(ctx: AudioContext, config: BreedBarkConfig, pitchMod: number): void {
-    const now = ctx.currentTime;
-    const dur = config.duration;
-
-    this.addNoiseBurst(ctx, now, dur * 0.6, 0.3);
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(config.baseFrequency * pitchMod * 0.8, now + dur * 0.3);
-    osc.frequency.exponentialRampToValueAtTime(config.endFrequency * pitchMod, now + dur);
-
-    filter.type = 'lowpass';
-    filter.frequency.value = 600;
-    filter.Q.value = 5;
-
-    gain.gain.setValueAtTime(0, now);
-    gain.gain.linearRampToValueAtTime(0.15, now + dur * 0.4);
-    gain.gain.setValueAtTime(0.3, now + dur * 0.5);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now + dur * 0.3);
-    osc.stop(now + dur);
-  }
-
-  private addNoiseBurst(ctx: AudioContext, startTime: number, duration: number, volume: number): void {
-    const bufferSize = Math.ceil(ctx.sampleRate * duration);
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * volume;
+    if (this.currentSource) {
+      try { this.currentSource.stop(); } catch { /* already stopped */ }
+      this.currentSource = null;
     }
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = 1200;
-    filter.Q.value = 0.7;
-
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(volume, startTime + 0.005);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
-    source.connect(filter);
-    filter.connect(gain);
+    gain.gain.value = 0.95;
+    source.connect(gain);
     gain.connect(ctx.destination);
-    source.start(startTime);
-    source.stop(startTime + duration);
+    source.onended = () => {
+      if (this.currentSource === source) this.currentSource = null;
+    };
+    source.start();
+    this.currentSource = source;
   }
 
-  dispose(): void {
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
+  preload(breedId?: string): void {
+    const id = breedId && BARK_FILES[breedId] ? breedId : 'golden_retriever';
+    const url = new URL(BARK_FILES[id], document.baseURI).toString();
+    void this.assetLoader.loadArrayBuffer(url).catch(() => { /* the bark retries when tapped */ });
+  }
+
+  private async loadBuffer(ctx: AudioContext, breedId: string): Promise<AudioBuffer> {
+    const cached = this.buffers.get(breedId);
+    if (cached) return cached;
+
+    const url = new URL(BARK_FILES[breedId], document.baseURI).toString();
+    try {
+      const data = await this.assetLoader.loadArrayBuffer(url);
+      const buffer = await ctx.decodeAudioData(data.slice(0));
+      this.buffers.set(breedId, buffer);
+      return buffer;
+    } catch (error) {
+      this.assetLoader.forget(url);
+      throw error;
     }
   }
 }

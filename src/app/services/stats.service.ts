@@ -1,6 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, Injector } from '@angular/core';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 
 export interface DailyStats {
   date: string;
@@ -33,7 +34,6 @@ const DEFAULT_STATS: UserStats = {
 
 const LOCAL_STORAGE_KEY = 'paws_focus_stats';
 const KIBBLE_PER_MEAL = 25;
-const GLOBAL_COMMUNITY_MEALS = 247583;
 
 @Injectable({
   providedIn: 'root'
@@ -45,7 +45,10 @@ export class StatsService {
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
 
-  constructor(private apiService: ApiService) {
+  constructor(
+    private apiService: ApiService,
+    private injector: Injector,
+  ) {
     this.loadStats();
   }
 
@@ -77,10 +80,6 @@ export class StatsService {
 
   get longestStreak(): number {
     return this.stats.longestStreak;
-  }
-
-  get globalMeals(): number {
-    return GLOBAL_COMMUNITY_MEALS + this.stats.totalMealsProvided;
   }
 
   // ============ LOAD STATS ============
@@ -129,19 +128,20 @@ export class StatsService {
           totalKibble: response.allTime?.totalKibble || 0,
           totalFocusMinutes: response.allTime?.totalFocusMinutes || 0,
           completedSessions: response.allTime?.completedSessions || 0,
-          currentStreak: response.allTime?.currentStreak || 0,
+          currentStreak: this.streakFromResponse(response),
           longestStreak: response.allTime?.longestStreak || 0,
           lastSessionDate: response.allTime?.lastSessionDate || null,
           dailyHistory: response.chartData?.map((d: any) => ({
             date: d.date,
             focusMinutes: d.minutes,
             sessionsCompleted: d.sessions || 0,
-            kibbleEarned: 0
+            kibbleEarned: d.kibble || 0
           })) || []
         };
         
         this.statsSubject.next(stats);
         this.saveToLocalStorage();
+        this.rememberBalance(stats.totalKibble);
       }
     } catch (error) {
       console.error('Error syncing stats with server:', error);
@@ -264,9 +264,7 @@ export class StatsService {
     // Calculate streak
     let newStreak = currentStats.currentStreak;
     if (currentStats.lastSessionDate) {
-      const lastDate = new Date(currentStats.lastSessionDate);
-      const todayDate = new Date(today);
-      const diffDays = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = this.daysBetween(currentStats.lastSessionDate, today);
       
       if (diffDays === 0) {
         // Same day
@@ -300,6 +298,7 @@ export class StatsService {
 
     this.statsSubject.next(updatedStats);
     this.saveToLocalStorage();
+    this.rememberBalance(newTotalKibble);
 
     // Sync with server if authenticated
     if (this.apiService.isAuthenticated()) {
@@ -321,6 +320,7 @@ export class StatsService {
           };
           this.statsSubject.next(serverStats);
           this.saveToLocalStorage();
+          this.rememberBalance(serverStats.totalKibble);
         }
         
         return response;
@@ -334,20 +334,70 @@ export class StatsService {
   }
 
   addKibble(amount: number): void {
-    if (amount <= 0) return;
-    
-    const currentStats = this.stats;
-    const newTotalKibble = currentStats.totalKibble + amount;
-    const newTotalMeals = Math.floor(newTotalKibble / KIBBLE_PER_MEAL);
+    if (!amount) return;
+    this.setTotalKibble(this.stats.totalKibble + amount);
+  }
 
+  rememberStreak(current: number, longest?: number): void {
+    const currentStreak = Math.max(0, Math.round(Number(current) || 0));
+    const longestStreak = Math.max(currentStreak, Math.round(Number(longest ?? this.stats.longestStreak) || 0));
+    if (currentStreak === this.stats.currentStreak && longestStreak === this.stats.longestStreak) return;
+    this.statsSubject.next({
+      ...this.stats,
+      currentStreak,
+      longestStreak,
+    });
+    this.saveToLocalStorage();
+  }
+
+  setTotalKibble(total: number): void {
+    const totalKibble = Math.max(0, Math.round(Number(total) || 0));
+    const totalMealsProvided = Math.floor(totalKibble / KIBBLE_PER_MEAL);
+    if (totalKibble !== this.stats.totalKibble || totalMealsProvided !== this.stats.totalMealsProvided) {
+      this.statsSubject.next({
+        ...this.stats,
+        totalKibble,
+        totalMealsProvided,
+      });
+      this.saveToLocalStorage();
+    }
+    this.rememberBalance(totalKibble);
+  }
+
+  applyFocusResult(input: {
+    focusMinutes: number;
+    kibbleEarned: number;
+    totalKibble: number;
+    completedSessions?: number;
+    totalMealsProvided?: number;
+    currentStreak?: number;
+    longestStreak?: number;
+  }): void {
+    const today = this.getDateString(new Date());
+    const totalKibble = Math.max(0, Math.round(input.totalKibble));
     const updatedStats: UserStats = {
-      ...currentStats,
-      totalKibble: newTotalKibble,
-      totalMealsProvided: newTotalMeals
+      ...this.stats,
+      totalKibble,
+      totalMealsProvided: input.totalMealsProvided ?? Math.floor(totalKibble / KIBBLE_PER_MEAL),
+      totalFocusMinutes: this.stats.totalFocusMinutes + input.focusMinutes,
+      completedSessions: input.completedSessions ?? this.stats.completedSessions + 1,
+      currentStreak: input.currentStreak ?? this.stats.currentStreak,
+      longestStreak: input.longestStreak ?? this.stats.longestStreak,
+      lastSessionDate: today,
+      dailyHistory: this.updateDailyHistory(
+        this.stats.dailyHistory,
+        today,
+        input.focusMinutes,
+        input.kibbleEarned,
+      ),
     };
-
     this.statsSubject.next(updatedStats);
     this.saveToLocalStorage();
+    this.rememberBalance(totalKibble);
+  }
+
+  private rememberBalance(total: number): void {
+    this.injector.get(AuthService).setLocalKibble(total);
   }
 
   // ============ MEAL PROGRESS ============
@@ -364,7 +414,42 @@ export class StatsService {
   // ============ HELPER METHODS ============
 
   private getDateString(date: Date): string {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private daysBetween(earlier: string, later: string): number {
+    const [y1, m1, d1] = earlier.split('-').map(Number);
+    const [y2, m2, d2] = later.split('-').map(Number);
+    return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
+  }
+
+  private addDays(dateStr: string, days: number): string {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+  }
+
+  streakFromResponse(response: any): number {
+    const reported = Number(response?.allTime?.currentStreak ?? 0);
+    const calendar = Array.isArray(response?.streakCalendar) ? response.streakCalendar : [];
+    if (!calendar.length) return reported;
+    const active = new Set(
+      calendar
+        .filter((day: any) => (day?.sessions || 0) > 0)
+        .map((day: any) => day.date)
+    );
+    const today = calendar[calendar.length - 1]?.date;
+    if (!today) return reported;
+    const yesterday = this.addDays(today, -1);
+    let cursor = active.has(today) ? today : active.has(yesterday) ? yesterday : '';
+    let counted = 0;
+    while (cursor && active.has(cursor)) {
+      counted += 1;
+      cursor = this.addDays(cursor, -1);
+    }
+    return Math.max(reported, counted);
   }
 
   private getStatsForDays(days: number): DailyStats[] {

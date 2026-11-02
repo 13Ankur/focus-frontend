@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { IonContent, IonIcon, IonSpinner, ToastController } from '@ionic/angular/standalone';
+import { IonContent, IonIcon, ToastController } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { arrowForward, arrowBack, checkmarkCircle, lockClosed, notificationsOutline } from 'ionicons/icons';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -11,6 +11,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
 import { BreedService, DogBreed } from '../../services/breed.service';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { environment } from '../../../environments/environment';
 
 const TOTAL_STEPS = 6;
@@ -27,7 +28,7 @@ interface FocusCategory {
 @Component({
   selector: 'app-onboarding',
   standalone: true,
-  imports: [CommonModule, IonContent, IonIcon, IonSpinner],
+  imports: [CommonModule, IonContent, IonIcon, AppAssetDirective],
   templateUrl: './onboarding.page.html',
   styleUrls: ['./onboarding.page.scss'],
   animations: [
@@ -59,10 +60,6 @@ export class OnboardingPage implements OnInit, OnDestroy {
   currentStep = 1;
   isNavigating = false;
   totalSteps = TOTAL_STEPS;
-
-  // Step 2 — mission counter
-  mealsDonated = 247583;
-  mealsLoading = false;
 
   // Step 3 — mini demo
   demoTimerRunning = false;
@@ -112,7 +109,6 @@ export class OnboardingPage implements OnInit, OnDestroy {
 
     this.allBreeds = this.breedService.allBreeds;
     await this.restoreStep();
-    this.fetchMealsCount();
   }
 
   ngOnDestroy(): void {
@@ -192,23 +188,6 @@ export class OnboardingPage implements OnInit, OnDestroy {
         }
       }
     } catch { /* start from 1 */ }
-  }
-
-  // ── Step 2: Mission ──
-
-  private fetchMealsCount(): void {
-    this.mealsLoading = true;
-    this.http.get<any>(`${this.apiUrl}/stats/global`).subscribe({
-      next: (res) => {
-        if (res?.totalMeals) this.mealsDonated = res.totalMeals;
-        this.mealsLoading = false;
-      },
-      error: () => { this.mealsLoading = false; },
-    });
-  }
-
-  get formattedMeals(): string {
-    return this.mealsDonated.toLocaleString();
   }
 
   // ── Step 3: Mini demo timer ──

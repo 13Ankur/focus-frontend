@@ -53,7 +53,7 @@ export class GuardianAngelPage {
     if (navigator.share) {
       navigator.share({
         title: 'Paws Focus Guardian Angel',
-        text: 'Become a Guardian Angel and help feed 100 shelter dogs every month! 🐕💚',
+        text: 'Become a Guardian Angel on StayPaws! 🐕',
         url: 'https://pawsfocus.app/guardian'
       }).catch(() => {
         console.log('Share cancelled');

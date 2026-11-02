@@ -18,10 +18,12 @@ import {
 import { AuthService } from '../../services/auth.service';
 import { StatsService } from '../../services/stats.service';
 import { BreedService } from '../../services/breed.service';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { SoundService } from '../../services/sound.service';
 import { AppBlockerService } from '../../services/app-blocker.service';
 import { NotificationService, NotificationPreferences } from '../../services/notification.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
+import { assetUrl } from '../../utils/assets';
 
 @Component({
   selector: 'app-settings',
@@ -29,7 +31,8 @@ import { RevenueCatService } from '../../services/revenue-cat.service';
   imports: [
     CommonModule,
     IonContent,
-    IonIcon
+    IonIcon,
+    AppAssetDirective,
   ],
   templateUrl: './settings.page.html',
   styleUrls: ['./settings.page.scss']
@@ -40,7 +43,8 @@ export class SettingsPage implements OnInit, OnDestroy {
 
   notificationsEnabled: boolean = true;
   soundEnabled: boolean = true;
-  defaultDuration: number = 25;
+  defaultDuration: number = 15;
+  private storedDuration = 15;
   blockingEnabled: boolean = false;
   blockListCount: number = 0;
   isPro: boolean = false;
@@ -59,7 +63,7 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   get buddyImage(): string {
-    return this.breedService.activeBreed?.image || 'assets/images/golden_retriever.png';
+    return this.breedService.activeBreed?.image || assetUrl('images/golden_retriever.png');
   }
 
   constructor(
@@ -84,8 +88,9 @@ export class SettingsPage implements OnInit, OnDestroy {
         this.userEmail = user.email || 'user@example.com';
       }
     });
-    this.proSubscription = this.revenueCatService.isPro$.subscribe(isPro => {
-      this.isPro = isPro;
+    this.proSubscription = this.revenueCatService.isPro$.subscribe(() => {
+      this.refreshPro();
+      this.applyDurationForTier();
     });
     this.loadSettings();
   }
@@ -105,11 +110,11 @@ export class SettingsPage implements OnInit, OnDestroy {
       if (user.settings) {
         this.notificationsEnabled = user.settings.notificationsEnabled;
         this.soundEnabled = user.settings.soundEnabled;
-        this.defaultDuration = user.settings.defaultTimerDuration;
+        this.storedDuration = user.settings.defaultTimerDuration || 15;
       } else {
         this.notificationsEnabled = localStorage.getItem('notifications') !== 'false';
         this.soundEnabled = localStorage.getItem('sound') !== 'false';
-        this.defaultDuration = parseInt(localStorage.getItem('default_duration') || '25', 10);
+        this.storedDuration = parseInt(localStorage.getItem('default_duration') || '15', 10);
       }
 
       if (user.notificationPrefs) {
@@ -123,6 +128,38 @@ export class SettingsPage implements OnInit, OnDestroy {
 
     this.blockingEnabled = this.appBlocker.isEnabled;
     this.blockListCount = this.appBlocker.blockListCount;
+    this.refreshPro();
+    this.applyDurationForTier();
+  }
+
+  private refreshPro(): void {
+    this.isPro = this.revenueCatService.isProSync || this.localIsPro();
+  }
+
+  private localIsPro(): boolean {
+    try {
+      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier;
+      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
+      if (!isPro) return false;
+      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
+      const now = new Date();
+      if (trialEnd && trialEnd > now) return true;
+      if (expiry && expiry <= now) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private isDurationAllowed(minutes: number): boolean {
+    if (this.isPro) return minutes >= 5 && minutes <= 120 && minutes % 5 === 0;
+    return minutes === 15;
+  }
+
+  private applyDurationForTier(): void {
+    this.defaultDuration = this.isDurationAllowed(this.storedDuration) ? this.storedDuration : 15;
   }
 
   getBuddyIcon(): string {
@@ -285,34 +322,36 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   async changeDefaultDuration(): Promise<void> {
+    const choices = [15, 25, 45, 60, 90, 120];
     const actionSheet = await this.actionSheetController.create({
       header: 'Default Focus Duration',
       buttons: [
-        {
-          text: '15 minutes',
-          handler: () => this.setDuration(15)
-        },
-        {
-          text: '25 minutes',
-          handler: () => this.setDuration(25)
-        },
-        {
-          text: '60 minutes',
-          handler: () => this.setDuration(60)
-        },
+        ...choices.map(minutes => ({
+          text: minutes === 15 || this.isPro ? `${minutes} minutes` : `${minutes} minutes · Pro`,
+          handler: () => this.chooseDuration(minutes),
+        })),
         {
           text: 'Cancel',
-          role: 'cancel'
-        }
-      ]
+          role: 'cancel' as const,
+        },
+      ],
     });
     await actionSheet.present();
   }
 
+  private chooseDuration(minutes: number): void {
+    if (!this.isDurationAllowed(minutes)) {
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'timer_lock', returnUrl: '/settings' } });
+      return;
+    }
+    this.setDuration(minutes);
+  }
+
   private setDuration(minutes: number): void {
+    this.storedDuration = minutes;
     this.defaultDuration = minutes;
     localStorage.setItem('default_duration', minutes.toString());
-    this.authService.updateSettings({ defaultTimerDuration: minutes }).subscribe();
+    this.authService.updateSettings({ defaultTimerDuration: minutes }).subscribe({ error: () => {} });
   }
 
   async openHelp(): Promise<void> {

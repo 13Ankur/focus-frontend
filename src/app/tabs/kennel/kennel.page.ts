@@ -24,6 +24,8 @@ import { AdService } from '../../services/ad.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
+import { assetUrl } from '../../utils/assets';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 
 type InteractionType = 'pet' | 'play' | 'treat' | null;
 type UserTier = 'free' | 'pro' | 'guardian';
@@ -59,7 +61,8 @@ const GUARDIAN_BREED_IDS: string[] = ['dachshund', 'australian_shepherd', 'malte
   imports: [
     CommonModule,
     IonContent,
-    IonIcon
+    IonIcon,
+    AppAssetDirective,
   ],
   templateUrl: './kennel.page.html',
   styleUrls: ['./kennel.page.scss']
@@ -188,12 +191,11 @@ export class KennelPage implements OnInit, OnDestroy {
     });
     this.subscriptions.push(timerSub);
 
-    const proSub = this.revenueCatService.isPro$.subscribe(isPro => {
-      this.isPro = isPro;
-      this.isGuardian = isPro; // For now, treating Pro as Guardian for simplicity
-      this.userTier = isPro ? 'pro' : 'free';
+    const proSub = this.revenueCatService.isPro$.subscribe(rcPro => {
+      this.applyAccountTier(rcPro || this.localIsPro());
     });
     this.subscriptions.push(proSub);
+    void this.refreshTier();
 
     this.updateSpeechBubble();
   }
@@ -205,6 +207,8 @@ export class KennelPage implements OnInit, OnDestroy {
   }
 
   ionViewWillEnter(): void {
+    this.dogBarkService.preload(this.breedService.activeBreed?.id);
+    void this.refreshTier();
     this.loadData();
     this.activeBreed = this.breedService.activeBreed;
     this.refreshAdTreatAvailability();
@@ -389,7 +393,9 @@ export class KennelPage implements OnInit, OnDestroy {
       if (res?.success) {
         item.owned = true;
         item.canBuy = false;
-        this.kibbleBalance = res.kibbleBalance ?? (this.kibbleBalance - item.cost);
+        const balance = res.kibbleBalance ?? (this.kibbleBalance - item.cost);
+        this.statsService.setTotalKibble(balance);
+        this.kibbleBalance = this.statsService.totalKibble;
         this.soundService.play('unlock');
         await this.triggerHaptic('success');
 
@@ -474,6 +480,53 @@ export class KennelPage implements OnInit, OnDestroy {
     return labels[slot];
   }
 
+  // Pro on Android comes from the account, not RevenueCat.
+  private applyAccountTier(isPro: boolean): void {
+    this.isPro = isPro;
+    this.isGuardian = isPro;
+    this.userTier = isPro ? 'pro' : 'free';
+  }
+
+  private localIsPro(): boolean {
+    if (this.revenueCatService.isProSync) return true;
+    try {
+      const user = JSON.parse(safeGetItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier;
+      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
+      if (!isPro) return false;
+      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
+      const now = new Date();
+      if (trialEnd && trialEnd > now) return true;
+      if (expiry && expiry <= now) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async refreshTier(): Promise<void> {
+    this.applyAccountTier(this.localIsPro());
+    try {
+      const stored = JSON.parse(safeGetItem('focus_user') || '{}');
+      const headers = new HttpHeaders({
+        Authorization: `Bearer ${stored?.token || ''}`,
+      });
+      const res: any = await firstValueFrom(
+        this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
+      );
+      const tier = res?.tier as UserTier | undefined;
+      const isPro = tier === 'pro' || tier === 'guardian' || !!res?.isPremium;
+      this.applyAccountTier(isPro);
+      stored.subscriptionTier = tier || (isPro ? 'pro' : 'free');
+      stored.isPremium = isPro;
+      if (res?.expiry) stored.subscriptionExpiry = res.expiry;
+      safeSetItem('focus_user', JSON.stringify(stored));
+    } catch {
+      // Keep the tier already read from this device.
+    }
+  }
+
   // ── Guardian Breeds ──
 
   isGuardianBreed(breed: DogBreed): boolean {
@@ -538,9 +591,8 @@ export class KennelPage implements OnInit, OnDestroy {
     this.activeBreed = this.breedService.activeBreed;
     this.collection = this.breedService.collection;
 
-    const user: any = this.authService.currentUser;
-    this.kibbleBalance = user?.kibble || user?.totalKibble || 0;
-    this.completedSessions = user?.completedSessions || this.completedSessions;
+    this.kibbleBalance = this.statsService.totalKibble;
+    this.completedSessions = this.statsService.completedSessions || this.completedSessions;
 
     // Load local first for speed
     const savedHappiness = safeGetItem('buddy_happiness');
@@ -570,6 +622,8 @@ export class KennelPage implements OnInit, OnDestroy {
     }
 
     this.decayStats();
+    await this.statsService.syncWithServer();
+    this.kibbleBalance = this.statsService.totalKibble;
     this.breedService.updateKibble(this.kibbleBalance);
   }
 
@@ -682,7 +736,7 @@ export class KennelPage implements OnInit, OnDestroy {
   }
 
   get unlockedCount(): number {
-    return this.collection?.unlockedBreeds.length || 1;
+    return this.breedService.unlockedBreeds.length || 1;
   }
 
   get totalBreeds(): number {
@@ -698,7 +752,7 @@ export class KennelPage implements OnInit, OnDestroy {
   }
 
   get activeBreedImage(): string {
-    if (!this.activeBreed) return 'assets/images/golden_retriever.png';
+    if (!this.activeBreed) return assetUrl('images/golden_retriever.png');
     return this.breedService.getBreedImage(this.activeBreed, this.currentDogState);
   }
 
@@ -728,7 +782,7 @@ export class KennelPage implements OnInit, OnDestroy {
   onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
     if (img && !img.src.includes('golden_retriever.png')) {
-      img.src = 'assets/images/golden_retriever.png';
+      img.src = assetUrl('images/golden_retriever.png');
     }
   }
 
@@ -975,8 +1029,9 @@ export class KennelPage implements OnInit, OnDestroy {
     this.triggerDogReaction('chomp');
     this.addFloatingFeedback(['🦴', '😋', '💕', '✨']);
 
-    this.kibbleBalance -= 10;
-    this.authService.updateLocalKibble(-10);
+    const balanceBeforeTreat = this.statsService.totalKibble;
+    this.statsService.setTotalKibble(balanceBeforeTreat - 10);
+    this.kibbleBalance = this.statsService.totalKibble;
     this.incrementDailyTreatCount();
 
     const fullnessGain = Math.min(20, 100 - this.fullness);
@@ -991,12 +1046,13 @@ export class KennelPage implements OnInit, OnDestroy {
         if (res.fullness != null) this.fullness = res.fullness;
         if (res.happiness != null) this.happiness = res.happiness;
         if (res.totalKibble != null) {
-          this.kibbleBalance = res.totalKibble;
-          // Stats service also needs to know
-          this.statsService.addKibble(-10);
+          this.statsService.setTotalKibble(res.totalKibble);
+          this.kibbleBalance = this.statsService.totalKibble;
         }
       },
       error: (err) => {
+        this.statsService.setTotalKibble(balanceBeforeTreat);
+        this.kibbleBalance = this.statsService.totalKibble;
         console.error('Error syncing feed interaction:', err);
         const msg = err?.error?.message || 'Could not sync treat.';
         this.showToast(msg, 'warning');

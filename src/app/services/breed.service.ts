@@ -3,6 +3,7 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
 import { RevenueCatService } from './revenue-cat.service';
 import { safeGetItem, safeSetItem } from '../utils/storage';
+import { assetUrl } from '../utils/assets';
 
 export type DogState = 'idle' | 'eating' | 'sleeping' | 'happy';
 
@@ -49,8 +50,8 @@ export interface BreedCollection {
  */
 
 const FALLBACK_IMAGES = {
-  default: 'assets/images/golden_retriever.png',
-  sleeping: 'assets/images/golden_retriever_sleeping.png'
+  default: assetUrl('images/golden_retriever.png'),
+  sleeping: assetUrl('images/golden_retriever_sleeping.png')
 };
 
 // Night hours when dog should be sleeping (10 PM - 6 AM)
@@ -58,6 +59,15 @@ const SLEEP_START_HOUR = 22; // 10 PM
 const SLEEP_END_HOUR = 6;    // 6 AM
 
 const LOCAL_STORAGE_KEY = 'breed_collection';
+const STARTER_BREEDS = ['golden_retriever', 'husky'];
+
+function withStarterBreeds(ids: string[] | undefined): string[] {
+  const list = Array.isArray(ids) ? [...ids] : [];
+  for (const id of STARTER_BREEDS) {
+    if (!list.includes(id)) list.push(id);
+  }
+  return list;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -69,9 +79,9 @@ export class BreedService {
       id: 'golden_retriever',
       name: 'Golden Retriever',
       description: 'Friendly & loyal companion',
-      image: 'assets/images/golden_retriever.png',
-      eatingImage: 'assets/images/golden_retriever.png',
-      sleepingImage: 'assets/images/golden_retriever_sleeping.png',
+      image: assetUrl('images/golden_retriever.png'),
+      eatingImage: assetUrl('images/golden_retriever.png'),
+      sleepingImage: assetUrl('images/golden_retriever_sleeping.png'),
       unlockRequirement: 0,
       order: 1
     },
@@ -79,19 +89,19 @@ export class BreedService {
       id: 'husky',
       name: 'Husky',
       description: 'Energetic & adventurous',
-      image: 'assets/images/husky.png',
-      eatingImage: 'assets/images/husky.png',
-      sleepingImage: 'assets/images/husky_sleeping.png',
-      unlockRequirement: 150,
+      image: assetUrl('images/husky.png'),
+      eatingImage: assetUrl('images/husky.png'),
+      sleepingImage: assetUrl('images/husky_sleeping.png'),
+      unlockRequirement: 0,
       order: 2
     },
     {
       id: 'shiba_inu',
       name: 'Shiba Inu',
       description: 'Charming & spirited',
-      image: 'assets/images/shiba_inu.png',
-      eatingImage: 'assets/images/shiba_inu.png',
-      sleepingImage: 'assets/images/shiba_inu_sleeping.png',
+      image: assetUrl('images/shiba_inu.png'),
+      eatingImage: assetUrl('images/shiba_inu.png'),
+      sleepingImage: assetUrl('images/shiba_inu_sleeping.png'),
       unlockRequirement: 350,
       order: 3
     },
@@ -99,9 +109,9 @@ export class BreedService {
       id: 'cavapoo',
       name: 'Cavapoo',
       description: 'Sweet & cuddly',
-      image: 'assets/images/cavapoo.png',
-      eatingImage: 'assets/images/cavapoo.png',
-      sleepingImage: 'assets/images/cavapoo_sleeping.png',
+      image: assetUrl('images/cavapoo.png'),
+      eatingImage: assetUrl('images/cavapoo.png'),
+      sleepingImage: assetUrl('images/cavapoo_sleeping.png'),
       unlockRequirement: 700,
       order: 4
     },
@@ -109,9 +119,9 @@ export class BreedService {
       id: 'french_bulldog',
       name: 'French Bulldog',
       description: 'Playful & affectionate',
-      image: 'assets/images/french_bulldog.png',
-      eatingImage: 'assets/images/french_bulldog.png',
-      sleepingImage: 'assets/images/french_bulldog_sleeping.png',
+      image: assetUrl('images/french_bulldog.png'),
+      eatingImage: assetUrl('images/french_bulldog.png'),
+      sleepingImage: assetUrl('images/french_bulldog_sleeping.png'),
       unlockRequirement: 1000,
       order: 5
     },
@@ -119,9 +129,9 @@ export class BreedService {
       id: 'labrador',
       name: 'Labrador Retriever',
       description: 'Gentle & outgoing',
-      image: 'assets/images/labrador.png',
-      eatingImage: 'assets/images/labrador.png',
-      sleepingImage: 'assets/images/labrador_sleeping.png',
+      image: assetUrl('images/labrador.png'),
+      eatingImage: assetUrl('images/labrador.png'),
+      sleepingImage: assetUrl('images/labrador_sleeping.png'),
       unlockRequirement: 1400,
       order: 6
     },
@@ -129,9 +139,9 @@ export class BreedService {
       id: 'dachshund',
       name: 'Dachshund',
       description: 'Clever & curious',
-      image: 'assets/images/dachshund.png',
-      eatingImage: 'assets/images/dachshund.png',
-      sleepingImage: 'assets/images/dachshund_sleeping.png',
+      image: assetUrl('images/dachshund.png'),
+      eatingImage: assetUrl('images/dachshund.png'),
+      sleepingImage: assetUrl('images/dachshund_sleeping.png'),
       unlockRequirement: 1800,
       order: 7
     },
@@ -139,9 +149,9 @@ export class BreedService {
       id: 'australian_shepherd',
       name: 'Australian Shepherd',
       description: 'Smart & work-oriented',
-      image: 'assets/images/australian_shepherd.png',
-      eatingImage: 'assets/images/australian_shepherd.png',
-      sleepingImage: 'assets/images/australian_shepherd_sleeping.png',
+      image: assetUrl('images/australian_shepherd.png'),
+      eatingImage: assetUrl('images/australian_shepherd.png'),
+      sleepingImage: assetUrl('images/australian_shepherd_sleeping.png'),
       unlockRequirement: 2400,
       order: 8
     },
@@ -149,16 +159,16 @@ export class BreedService {
       id: 'maltese',
       name: 'Maltese',
       description: 'Gentle & fearless',
-      image: 'assets/images/maltese.png',
-      eatingImage: 'assets/images/maltese.png',
-      sleepingImage: 'assets/images/maltese_sleeping.png',
+      image: assetUrl('images/maltese.png'),
+      eatingImage: assetUrl('images/maltese.png'),
+      sleepingImage: assetUrl('images/maltese_sleeping.png'),
       unlockRequirement: 3200,
       order: 9
     }
   ];
 
   private collectionSubject = new BehaviorSubject<BreedCollection>({
-    unlockedBreeds: ['golden_retriever'],
+    unlockedBreeds: ['golden_retriever', 'husky'],
     activeBreed: 'golden_retriever',
     totalKibble: 0,
     completedSessions: 0,
@@ -186,14 +196,14 @@ export class BreedService {
   }
 
   get unlockedBreeds(): DogBreed[] {
-    if (this.revenueCatService.isProSync) {
+    if (this.hasProAccess()) {
       return this.allBreeds;
     }
     return this.allBreeds.filter(b => this.collection.unlockedBreeds.includes(b.id));
   }
 
   get lockedBreeds(): DogBreed[] {
-    if (this.revenueCatService.isProSync) {
+    if (this.hasProAccess()) {
       return [];
     }
     return this.allBreeds.filter(b => !this.collection.unlockedBreeds.includes(b.id));
@@ -220,16 +230,16 @@ export class BreedService {
     switch (state) {
       case 'eating':
         // Use the SAME breed image - eating is indicated through animations
-        return breed.image || FALLBACK_IMAGES.default;
+        return assetUrl(breed.image || FALLBACK_IMAGES.default);
       case 'sleeping':
         // Use breed-specific sleeping image
-        return breed.sleepingImage || FALLBACK_IMAGES.sleeping;
+        return assetUrl(breed.sleepingImage || FALLBACK_IMAGES.sleeping);
       case 'happy':
         // Happy uses the same image as idle, but with animations
-        return breed.image || FALLBACK_IMAGES.default;
+        return assetUrl(breed.image || FALLBACK_IMAGES.default);
       case 'idle':
       default:
-        return breed.image || FALLBACK_IMAGES.default;
+        return assetUrl(breed.image || FALLBACK_IMAGES.default);
     }
   }
 
@@ -312,10 +322,28 @@ export class BreedService {
   // ============ UNLOCK METHODS ============
 
   isBreedUnlocked(breedId: string): boolean {
-    if (this.revenueCatService.isProSync) {
+    if (this.hasProAccess()) {
       return true;
     }
     return this.collection.unlockedBreeds.includes(breedId);
+  }
+
+  private hasProAccess(): boolean {
+    if (this.revenueCatService.isProSync) return true;
+    try {
+      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier;
+      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
+      if (!isPro) return false;
+      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
+      const now = new Date();
+      if (trialEnd && trialEnd > now) return true;
+      if (expiry && expiry <= now) return false;
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   getUnlockProgress(breedId: string): number {
@@ -464,7 +492,7 @@ export class BreedService {
       if (saved) {
         const parsed = JSON.parse(saved);
         this.collectionSubject.next({
-          unlockedBreeds: parsed.unlockedBreeds || ['golden_retriever'],
+          unlockedBreeds: withStarterBreeds(parsed.unlockedBreeds),
           activeBreed: parsed.activeBreed || 'golden_retriever',
           totalKibble: parsed.totalKibble || 0,
           completedSessions: parsed.completedSessions || 0,
@@ -485,7 +513,7 @@ export class BreedService {
 
       if (response) {
         this.collectionSubject.next({
-          unlockedBreeds: response.unlockedBreeds || ['golden_retriever'],
+          unlockedBreeds: withStarterBreeds(response.unlockedBreeds),
           activeBreed: response.activeBreed || 'golden_retriever',
           totalKibble: response.totalKibble || 0,
           completedSessions: response.completedSessions || this.collection.completedSessions || 0,
@@ -505,7 +533,7 @@ export class BreedService {
 
   resetCollection(): void {
     this.collectionSubject.next({
-      unlockedBreeds: ['golden_retriever'],
+      unlockedBreeds: ['golden_retriever', 'husky'],
       activeBreed: 'golden_retriever',
       totalKibble: 0,
       completedSessions: 0,

@@ -31,7 +31,8 @@
         <!-- Dog Image -->
         <div class="breed-image-wrapper">
           <img 
-            [src]="breed.image" 
+            appAsset
+            [appAsset]="breed.image" 
             [alt]="breed.name"
             class="breed-image"
             [class.grayscale]="!isBreedUnlocked(breed)"

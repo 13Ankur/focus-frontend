@@ -1,6 +1,7 @@
 <div class="dog-container" [class.active]="isActive" [class.eating]="isActive" [class.hungry]="!isActive">
   <img 
-    [src]="imageSrc" 
+    appAsset
+    [appAsset]="imageSrc" 
     [alt]="altText"
     class="dog-image"
     [class.eating]="isActive"

@@ -28,7 +28,7 @@
         <div class="hero-dog-wrapper">
           <div class="dog-glow"></div>
           <img
-            src="assets/images/golden_retriever.png"
+            src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/golden_retriever.png"
             alt="Golden Retriever puppy"
             class="hero-dog animate-wag"
           >
@@ -56,7 +56,7 @@
         <div class="mission-visual">
           <div class="bowl-icon">🍽</div>
           <img
-            src="assets/images/golden_retriever.png"
+            src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/golden_retriever.png"
             alt="Dog with food bowl"
             class="mission-dog"
           >
@@ -102,7 +102,7 @@
             </svg>
             <div class="demo-ring-inner">
               <img
-                src="assets/images/golden_retriever.png"
+                src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/golden_retriever.png"
                 alt="Buddy"
                 class="demo-dog"
                 [class.eating]="demoTimerRunning"
@@ -211,7 +211,8 @@
             </div>
             <div class="breed-img-wrap">
               <img
-                [src]="breed.image"
+                appAsset
+                [appAsset]="breed.image"
                 [alt]="breed.name"
                 class="breed-img"
                 [class.grayscale]="!isBreedFree(breed)"
@@ -237,7 +238,7 @@
         <div class="notif-visual">
           <div class="notif-bowl">🥣</div>
           <img
-            src="assets/images/golden_retriever.png"
+            src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/golden_retriever.png"
             alt="Hungry dog"
             class="notif-dog"
           >

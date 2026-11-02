@@ -4,6 +4,8 @@ import { ModalController } from '@ionic/angular/standalone';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 
 import { SoundService } from '../../services/sound.service';
+import { assetUrl } from '../../utils/assets';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 
 interface Tip {
   icon: string;
@@ -23,13 +25,13 @@ const ALL_TIPS: Tip[] = [
 @Component({
   selector: 'app-failed-modal',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, AppAssetDirective],
   templateUrl: './failed-modal.component.html',
   styleUrls: ['./failed-modal.component.scss'],
 })
 export class FailedModalComponent implements OnInit {
   @Input() breedName = 'Your buddy';
-  @Input() breedImage = 'assets/images/golden_retriever.png';
+  @Input() breedImage = assetUrl('images/golden_retriever.png');
   @Input() minutesCompleted = 0;
   @Input() partialKibble = 0;
   @Input() originalDuration = 25;

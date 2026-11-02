@@ -65,6 +65,14 @@ export class SoundService {
     this.masterVolume = Math.max(0, Math.min(1, volume));
   }
 
+  /** Call from a tap so later sounds can play after an await. */
+  unlock(): void {
+    const ctx = this.initAudioContext();
+    if (ctx?.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  }
+
   /**
    * Initialize audio context (must be called after user interaction)
    */
@@ -91,10 +99,21 @@ export class SoundService {
    */
   play(type: SoundType): void {
     if (!this.isEnabled) return;
-    
+
     const ctx = this.initAudioContext();
     if (!ctx) return;
 
+    const start = () => this.playNow(ctx, type);
+    if (ctx.state === 'running') {
+      start();
+      return;
+    }
+    ctx.resume().then(() => {
+      if (ctx.state === 'running') start();
+    }).catch(() => {});
+  }
+
+  private playNow(ctx: AudioContext, type: SoundType): void {
     switch (type) {
       case 'start':
         this.playStartSound(ctx);

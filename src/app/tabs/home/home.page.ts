@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -48,6 +48,8 @@ import { ApiService } from '../../services/api.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
+import { assetUrl } from '../../utils/assets';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
 import { KibbleInfoModalComponent } from '../../components/kibble-info-modal/kibble-info-modal.component';
 import { FailedModalComponent } from '../../components/failed-modal/failed-modal.component';
@@ -78,7 +80,7 @@ const DEFAULT_DAILY_GOAL = 60;
     IonIcon,
     IonSpinner,
     IonToggle,
-
+    AppAssetDirective,
   ],
   templateUrl: './home.page.html',
   styleUrls: ['./home.page.scss'],
@@ -105,6 +107,8 @@ const DEFAULT_DAILY_GOAL = 60;
 })
 export class HomePage implements OnInit, OnDestroy {
 
+  @ViewChild(IonToggle) pomodoroToggle?: IonToggle;
+
   private pendingTimeouts: ReturnType<typeof setTimeout>[] = [];
 
   // ── Timer state ──
@@ -118,6 +122,7 @@ export class HomePage implements OnInit, OnDestroy {
   durationOptions: DurationOption[] = [];
   selectedDuration = 15;
   showCustomPicker = false;
+  usingCustomDuration = false;
   customDuration = 30;
 
   // ── User tier ──
@@ -161,6 +166,7 @@ export class HomePage implements OnInit, OnDestroy {
   currentSoundIcon = '🤫';
   soundVolume = 0.6;
   soundLibrary: (SoundTrack & { locked: boolean })[] = [];
+  readonly soundCategories: SoundTrack['category'][] = ['silence', 'nature', 'ambient', 'noise', 'music'];
 
   // ── Achievements ──
   pendingAchievements: { id: string; name: string; icon: string; kibble: number }[] = [];
@@ -334,6 +340,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   ionViewWillEnter(): void {
     this.activeBreed = this.breedService.activeBreed;
+    this.focusSoundService.warmCurrent();
+    this.dogBarkService.preload(this.activeBreed?.id);
+    void this.statsService.syncWithServer();
+    void this.refreshAchievementBadge();
     this.loadUserTier();
     this.buildDurationOptions();
 
@@ -420,12 +430,12 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   get activeBreedImage(): string {
-    if (!this.activeBreed) return 'assets/images/golden_retriever.png';
+    if (!this.activeBreed) return assetUrl('images/golden_retriever.png');
     return this.activeBreed.image;
   }
 
   get currentDogImage(): string {
-    if (!this.activeBreed) return 'assets/images/golden_retriever.png';
+    if (!this.activeBreed) return assetUrl('images/golden_retriever.png');
     // When timer is running and not on break, show eating image
     if (this.isTimerRunning && !this.isOnBreak) {
       return this.activeBreed.eatingImage || this.activeBreed.image;
@@ -490,8 +500,10 @@ export class HomePage implements OnInit, OnDestroy {
 
     this.soundService.play('tap');
     this.selectedDuration = option.value;
+    this.usingCustomDuration = false;
     this.showCustomPicker = false;
     this.timerService.setDuration(option.value);
+    this.persistDuration(option.value);
 
     if (this.pomodoroEnabled && this.timerService.pomodoroConfig) {
       this.applyPomodoroConfig();
@@ -508,9 +520,15 @@ export class HomePage implements OnInit, OnDestroy {
   }
 
   applyCustomDuration(): void {
+    if (!this.isPro) {
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'timer_lock', returnUrl: '/tabs/home' } });
+      return;
+    }
     this.selectedDuration = this.customDuration;
+    this.usingCustomDuration = !PRO_DURATIONS.includes(this.customDuration);
     this.timerService.setDuration(this.customDuration);
     this.showCustomPicker = false;
+    this.persistDuration(this.customDuration);
     this.soundService.play('tap');
 
     if (this.pomodoroEnabled) this.applyPomodoroConfig();
@@ -518,11 +536,15 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ── Pomodoro ──
 
-  onPomodoroToggle(enabled: boolean): void {
-    if (this.isTimerRunning || this.isProcessing) return;
+  onPomodoroToggle(event: CustomEvent): void {
+    const enabled = !!event.detail.checked;
+    if (this.isTimerRunning || this.isProcessing) {
+      this.resetPomodoroToggle();
+      return;
+    }
     if (enabled && !this.isPro) {
+      this.resetPomodoroToggle();
       this.soundService.play('tap');
-      setTimeout(() => { this.pomodoroEnabled = false; }, 0);
       this.router.navigate(['/paywall'], { queryParams: { trigger: 'pomodoro_lock', returnUrl: '/tabs/home' } });
       return;
     }
@@ -532,6 +554,18 @@ export class HomePage implements OnInit, OnDestroy {
     } else {
       this.timerService.disablePomodoro();
     }
+  }
+
+  /** The switch paints itself on before we can refuse it. Force it back off. */
+  private resetPomodoroToggle(): void {
+    this.pomodoroEnabled = false;
+    this.timerService.disablePomodoro();
+    const turnOff = () => {
+      if (this.pomodoroToggle) this.pomodoroToggle.checked = false;
+    };
+    turnOff();
+    setTimeout(turnOff, 0);
+    setTimeout(turnOff, 80);
   }
 
   applyPomodoroConfig(): void {
@@ -559,6 +593,8 @@ export class HomePage implements OnInit, OnDestroy {
     if (this.isProcessing) return;
 
     this.isProcessing = true;
+    this.focusSoundService.prepareAudio();
+    this.soundService.unlock();
     try {
       const res: any = await firstValueFrom(this.apiService.startFocusSession(this.selectedDuration));
 
@@ -689,6 +725,7 @@ export class HomePage implements OnInit, OnDestroy {
       await this.appBlocker.stopBlocking();
       this.blockingActive = false;
     }
+    this.barkSessionComplete();
     const kibble = this.kibbleToEarn;
     const token = this.timerService.sessionToken;
     let streakIncreased = false;
@@ -700,11 +737,24 @@ export class HomePage implements OnInit, OnDestroy {
         sessionToken: token || '',
       }));
 
-      const earned = res?.kibbleEarned || kibble;
-      this.statsService.recordCompletedSession(earned, this.selectedDuration);
-      this.authService.updateLocalKibble(earned);
+      const earned = res?.kibbleEarned ?? kibble;
+      const previousStreak = this.currentStreak;
+      if (res?.totalKibble != null) {
+        this.statsService.applyFocusResult({
+          focusMinutes: this.selectedDuration,
+          kibbleEarned: earned,
+          totalKibble: res.totalKibble,
+          completedSessions: res.completedSessions,
+          totalMealsProvided: res.totalMealsProvided,
+          currentStreak: res.streak?.current,
+          longestStreak: res.streak?.longest,
+        });
+      } else {
+        this.statsService.recordCompletedSession(earned, this.selectedDuration);
+        this.authService.updateLocalKibble(earned);
+      }
 
-      if (res?.streak?.current > this.currentStreak) {
+      if ((res?.streak?.current || 0) > previousStreak) {
         streakIncreased = true;
         this.currentStreak = res.streak.current;
       }
@@ -713,10 +763,10 @@ export class HomePage implements OnInit, OnDestroy {
         this.pendingAchievements = res.newAchievements;
         this.newAchievementCount += res.newAchievements.length;
       }
+      void this.refreshAchievementBadge();
     } catch (err: any) {
       console.error('Session complete error:', err);
       this.statsService.recordCompletedSession(kibble, this.selectedDuration);
-      this.authService.updateLocalKibble(kibble);
     }
 
     this.widgetService.setSessionActive(false);
@@ -732,6 +782,7 @@ export class HomePage implements OnInit, OnDestroy {
     await this.focusSoundService.stopSound();
     await this.appBlocker.stopBlocking();
     this.blockingActive = false;
+    this.barkSessionComplete();
     this.widgetService.setSessionActive(false);
     this.widgetService.updateWidgetData();
     this.notificationService.onSessionCompleted(this.currentStreak);
@@ -819,12 +870,11 @@ export class HomePage implements OnInit, OnDestroy {
     this.soundLibrary = this.focusSoundService.getSoundLibrary(this.userTier);
   }
 
+  soundsIn(category: SoundTrack['category']): (SoundTrack & { locked: boolean })[] {
+    return this.soundLibrary.filter(sound => sound.category === category);
+  }
+
   openSoundPicker(): void {
-    if (!this.isPro) {
-      this.soundService.play('tap');
-      this.router.navigate(['/paywall'], { queryParams: { trigger: 'sound_lock', returnUrl: '/tabs/home' } });
-      return;
-    }
     if (this.isTimerRunning) {
       this.showMiniSoundControl = !this.showMiniSoundControl;
       return;
@@ -873,8 +923,10 @@ export class HomePage implements OnInit, OnDestroy {
 
     if (this.soundPreviewingId === soundId) {
       this.soundPreviewingId = null;
+      this.focusSoundService.stopPreview();
       return;
     }
+    this.focusSoundService.stopPreview();
     this.soundPreviewingId = soundId;
     await this.focusSoundService.previewSound(soundId, 3000);
     this.pendingTimeouts.push(setTimeout(() => {
@@ -971,6 +1023,19 @@ export class HomePage implements OnInit, OnDestroy {
     this.pendingAchievements = [];
   }
 
+  private async refreshAchievementBadge(): Promise<void> {
+    try {
+      const headers = this.getAuthHeaders();
+      const res: any = await firstValueFrom(this.http.get(`${this.apiUrl}/achievements`, { headers }));
+      const list = Array.isArray(res?.achievements) ? res.achievements : [];
+      this.newAchievementCount = list.filter((a: any) =>
+        a?.unlocked && !a?.claimed && !a?.proLocked
+      ).length;
+    } catch {
+      // Keep the count already on screen.
+    }
+  }
+
   goToAchievements(): void {
     this.router.navigate(['/achievements']);
   }
@@ -1030,8 +1095,47 @@ export class HomePage implements OnInit, OnDestroy {
   private applyTier(tier: UserTier, isPro: boolean): void {
     this.userTier = tier;
     this.isPro = isPro;
+    this.focusSoundService.setProAccess(isPro);
     this.buildDurationOptions();
+    this.applySavedDuration();
+    if (!isPro) {
+      this.resetPomodoroToggle();
+    }
     this.refreshSoundLibrary();
+  }
+
+  /** Use the duration the user saved, unless that length is locked for their tier. */
+  private applySavedDuration(): void {
+    if (this.isTimerRunning || this.isProcessing || this.showCustomPicker) return;
+
+    const saved = this.readSavedDuration();
+    const minutes = saved !== null && this.isDurationAllowed(saved) ? saved : FREE_DURATIONS[0];
+    this.selectedDuration = minutes;
+    this.customDuration = minutes;
+    this.usingCustomDuration = !PRO_DURATIONS.includes(minutes);
+    this.timerService.setDuration(minutes);
+  }
+
+  private readSavedDuration(): number | null {
+    const raw = safeGetItem('default_duration');
+    if (raw) {
+      const parsed = parseInt(raw, 10);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    const fromUser = this.authService.currentUser?.settings?.defaultTimerDuration;
+    return typeof fromUser === 'number' && fromUser > 0 ? fromUser : null;
+  }
+
+  private isDurationAllowed(minutes: number): boolean {
+    if (this.isPro) {
+      return minutes >= CUSTOM_MIN && minutes <= CUSTOM_MAX && minutes % CUSTOM_STEP === 0;
+    }
+    return FREE_DURATIONS.includes(minutes);
+  }
+
+  private persistDuration(minutes: number): void {
+    safeSetItem('default_duration', String(minutes));
+    this.authService.updateSettings({ defaultTimerDuration: minutes }).subscribe({ error: () => {} });
   }
 
   private loadDailyGoal(): void {
@@ -1072,7 +1176,10 @@ export class HomePage implements OnInit, OnDestroy {
 
   onDogTapped(): void {
     if (this.isTimerRunning) return;
+    this.barkSessionComplete();
+  }
 
+  private barkSessionComplete(): void {
     const breedId = this.activeBreed?.id || 'golden_retriever';
     const barkText = this.dogBarkService.playBark(breedId);
     if (!barkText) return;
@@ -1081,7 +1188,7 @@ export class HomePage implements OnInit, OnDestroy {
     this.barkBubbleText = barkText;
 
     this.pendingTimeouts.push(setTimeout(() => { this.dogTapped = false; }, 300));
-    this.pendingTimeouts.push(setTimeout(() => { this.barkBubbleText = ''; }, 1500));
+    this.pendingTimeouts.push(setTimeout(() => { this.barkBubbleText = ''; }, 1800));
   }
 
   onImageError(event: Event): void {
@@ -1091,11 +1198,11 @@ export class HomePage implements OnInit, OnDestroy {
     if (src.includes('eating.png')) return;
     if (src.includes('_sleeping.png')) {
       const breedId = this.activeBreed?.id || 'golden_retriever';
-      img.src = `assets/images/${breedId}.png`;
+      img.src = assetUrl(`images/${breedId}.png`);
       return;
     }
     if (!src.includes('golden_retriever.png')) {
-      img.src = 'assets/images/golden_retriever.png';
+      img.src = assetUrl('images/golden_retriever.png');
     }
   }
 

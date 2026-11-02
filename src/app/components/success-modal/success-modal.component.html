@@ -28,15 +28,12 @@
           <span class="particle p3">✨</span>
           <span class="particle p4">💛</span>
         </div>
-        <img [src]="breedImage" [alt]="breedName" class="celebration-dog">
+        <img appAsset [appAsset]="breedImage" [alt]="breedName" class="celebration-dog">
       </div>
 
       <!-- Headline -->
       <div class="headline-section" *ngIf="showHeadline">
         <h1 class="headline">{{ headline }} <span class="headline-emoji">{{ headlineEmoji }}</span></h1>
-        <p class="headline-sub">{{ focusMinutes }} minutes of focus = {{ mealsJustProvided }} meal{{ mealsJustProvided >
-          1
-          ? 's' : '' }} donated!</p>
       </div>
 
       <!-- Stats Counters -->
@@ -45,12 +42,6 @@
           <span class="stat-value">+{{ displayKibble }}</span>
           <span class="stat-icon">🦴</span>
           <span class="stat-label">Kibble</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat-item meal-stat">
-          <span class="stat-value">+{{ displayMeals }}</span>
-          <span class="stat-icon">🍽</span>
-          <span class="stat-label">Meal{{ displayMeals > 1 ? 's' : '' }}</span>
         </div>
         <div class="stat-divider" *ngIf="streakIncreased"></div>
         <div class="stat-item streak-stat" *ngIf="streakIncreased">

@@ -32,9 +32,11 @@
     </div>
 
     <!-- Achievement Grid -->
-    <div class="achievement-grid" *ngIf="!loading">
+    <ng-container *ngIf="!loading">
+    <h2 class="ach-section-title">Achievements</h2>
+    <div class="achievement-grid">
       <div
-        *ngFor="let a of achievements"
+        *ngFor="let a of freeAchievements"
         class="achievement-card"
         [class.unlocked]="a.unlocked && a.claimed"
         [class.unclaimed]="a.unlocked && !a.claimed"
@@ -78,6 +80,43 @@
         <span class="ach-claimed-label" *ngIf="a.claimed">Claimed ✓</span>
       </div>
     </div>
+
+    <h2 class="ach-section-title">Pro achievements <span class="pro-pill">PRO</span></h2>
+    <div class="achievement-grid">
+      <div
+        *ngFor="let a of proAchievements"
+        class="achievement-card"
+        [class.unlocked]="a.unlocked && a.claimed && !isProLocked(a)"
+        [class.unclaimed]="a.unlocked && !a.claimed && !isProLocked(a)"
+        [class.locked]="!a.unlocked || isProLocked(a)"
+        (click)="claimAchievement(a)"
+      >
+        <div class="ach-icon-wrap" [class.glow]="a.unlocked && !a.claimed && !isProLocked(a)">
+          <span class="ach-icon" [class.grayscale]="!a.unlocked || isProLocked(a)">{{ a.icon }}</span>
+          <ion-icon name="checkmark-circle" class="claimed-check" *ngIf="a.claimed && !isProLocked(a)"></ion-icon>
+        </div>
+        <span class="ach-name">{{ a.name }}</span>
+        <span class="ach-desc">{{ a.desc }}</span>
+        <button
+          class="claim-btn"
+          *ngIf="a.unlocked && !a.claimed && !isProLocked(a)"
+          [disabled]="claiming === a.id"
+        >
+          <span *ngIf="claiming !== a.id">Claim {{ a.kibble }} 🦴</span>
+          <ion-spinner name="crescent" *ngIf="claiming === a.id"></ion-spinner>
+        </button>
+        <div class="ach-progress" *ngIf="isPro && !a.unlocked && a.progress">
+          <div class="ach-progress-bar">
+            <div class="ach-progress-fill" [style.width.%]="a.progress.percent"></div>
+          </div>
+          <span class="ach-progress-text">{{ a.progress.current }} / {{ a.progress.target }}</span>
+        </div>
+        <span class="ach-reward" *ngIf="!isProLocked(a) && !a.unlocked && !a.progress">{{ a.kibble }} 🦴</span>
+        <span class="ach-reward pro-lock-label" *ngIf="isProLocked(a)">Pro only</span>
+        <span class="ach-claimed-label" *ngIf="a.claimed && !isProLocked(a)">Claimed ✓</span>
+      </div>
+    </div>
+    </ng-container>
 
     <!-- Empty State -->
     <div class="empty-state" *ngIf="!loading && achievements.length === 0">

@@ -1,6 +1,7 @@
 export const environment = {
   production: false,
   apiUrl: 'https://stayapi.zavvi.co.in',
+  assetBaseUrl: 'https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev',
   focusDurationMinutes: 15,
   kibblePerSession: 25,
 

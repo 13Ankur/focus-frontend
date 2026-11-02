@@ -50,26 +50,61 @@
           {{ getEquippedIcon('background') }}
         </div>
 
-        <!-- Dog + wearable accessories wrapper -->
-        <div class="dog-wrapper">
-          <!-- Equipped hat -->
-          <div class="equipped-hat" *ngIf="equippedAccessories['hat']">
-            {{ getEquippedIcon('hat') }}
-          </div>
+        <!-- Dog portrait. Wearables stay inside this frame. -->
+        <div class="dog-wrapper" [class.sleeping]="isSleeping"
+          [class.reaction-jump]="dogReaction === 'jump'" [class.reaction-wiggle]="dogReaction === 'wiggle'"
+          [class.reaction-chomp]="dogReaction === 'chomp'">
+          <img appAsset [appAsset]="activeBreedImage" [alt]="activeBreed.name" class="buddy-image"
+            [class.happy]="currentDogState === 'happy'" (error)="onImageError($event)" (click)="onBuddyTapped()"
+            role="button" tabindex="0" aria-label="Tap to hear your buddy bark">
 
-          <img [src]="activeBreedImage" [alt]="activeBreed.name" class="buddy-image" width="120" height="120"
-            [class.sleeping]="isSleeping" [class.happy]="currentDogState === 'happy'"
-            [class.reaction-jump]="dogReaction === 'jump'" [class.reaction-wiggle]="dogReaction === 'wiggle'"
-            [class.reaction-chomp]="dogReaction === 'chomp'" (error)="onImageError($event)" (click)="onBuddyTapped()"
-            role="button" tabindex="0" aria-label="Tap to hear your buddy bark"
-            style="cursor: pointer; -webkit-tap-highlight-color: transparent;">
+          <svg *ngIf="equippedAccessories['hat'] === 'graduation_cap'" class="wearable hat" viewBox="-90 -46 180 108" aria-hidden="true">
+            <path d="M0 -40 L82 0 L0 30 L-82 0 Z" fill="#212121"/>
+            <path d="M-28 6 L-28 34 Q0 50 28 34 L28 6" fill="#212121"/>
+            <path d="M68 -2 L68 36" stroke="#F6C445" stroke-width="5"/>
+            <circle cx="68" cy="40" r="7" fill="#F6C445"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['hat'] === 'party_hat'" class="wearable hat" viewBox="-48 -70 96 108" aria-hidden="true">
+            <path d="M0 -64 L40 22 L-40 22 Z" fill="#E53935" stroke="#B71C1C" stroke-width="2"/>
+            <path d="M-20 -8 L22 4" stroke="#FDD835" stroke-width="5"/>
+            <path d="M-14 12 L24 18" stroke="#42A5F5" stroke-width="5"/>
+            <circle cx="0" cy="-64" r="7" fill="#FDD835"/>
+            <rect x="-42" y="20" width="84" height="12" rx="4" fill="#FDD835"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['hat'] === 'crown'" class="wearable hat" viewBox="-78 -52 156 90" aria-hidden="true">
+            <path d="M-70 22 L-54 -30 L-26 6 L0 -48 L26 6 L54 -30 L70 22 Z" fill="#F6C445" stroke="#C99212" stroke-width="3" stroke-linejoin="round"/>
+            <rect x="-72" y="20" width="144" height="16" rx="4" fill="#F6C445" stroke="#C99212" stroke-width="3"/>
+            <circle cx="-54" cy="-30" r="7" fill="#E53935"/>
+            <circle cx="0" cy="-48" r="8" fill="#43A047"/>
+            <circle cx="54" cy="-30" r="7" fill="#1E88E5"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['hat'] === 'santa_hat'" class="wearable hat" viewBox="-62 -70 130 110" aria-hidden="true">
+            <path d="M-50 22 Q-16 -18 12 -58 Q42 -8 58 12 Q28 4 8 22 Z" fill="#E53935"/>
+            <circle cx="60" cy="10" r="14" fill="#FFFFFF"/>
+            <rect x="-54" y="16" width="78" height="16" rx="8" fill="#FFFFFF"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['hat'] === 'sunglasses'" class="wearable glasses" viewBox="-108 -28 216 56" aria-hidden="true">
+            <rect x="-96" y="-20" width="78" height="40" rx="12" fill="#263238"/>
+            <rect x="18" y="-20" width="78" height="40" rx="12" fill="#263238"/>
+            <rect x="-18" y="-6" width="36" height="8" rx="3" fill="#263238"/>
+            <path d="M-96 -4 L-108 -18" stroke="#263238" stroke-width="6" fill="none" stroke-linecap="round"/>
+            <path d="M96 -4 L108 -18" stroke="#263238" stroke-width="6" fill="none" stroke-linecap="round"/>
+          </svg>
 
-          <!-- Equipped collar -->
-          <div class="equipped-collar" *ngIf="equippedAccessories['collar']">
-            {{ getEquippedIcon('collar') }}
-          </div>
+          <svg *ngIf="equippedAccessories['collar'] === 'basic_collar'" class="wearable collar" viewBox="-70 -12 140 36" aria-hidden="true">
+            <path d="M-64 0 Q0 16 64 0" fill="none" stroke="#8D6E63" stroke-width="12" stroke-linecap="round"/>
+            <circle cx="0" cy="14" r="7" fill="#F6C445"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['collar'] === 'fancy_collar'" class="wearable collar" viewBox="-72 -10 144 42" aria-hidden="true">
+            <path d="M-66 0 Q0 16 66 0" fill="none" stroke="#5E35B1" stroke-width="12" stroke-linecap="round"/>
+            <path d="M-12 10 L0 26 L12 10 Z" fill="#7E57C2"/>
+            <circle cx="0" cy="8" r="7" fill="#E1F5FE" stroke="#29B6F6" stroke-width="2"/>
+          </svg>
+          <svg *ngIf="equippedAccessories['collar'] === 'gold_collar'" class="wearable collar" viewBox="-72 -12 144 40" aria-hidden="true">
+            <path d="M-66 0 Q0 16 66 0" fill="none" stroke="#F6C445" stroke-width="13" stroke-linecap="round"/>
+            <circle cx="0" cy="14" r="9" fill="#FFE082" stroke="#C99212" stroke-width="2"/>
+          </svg>
 
-          <!-- Equipped special effect -->
           <div class="equipped-special" *ngIf="equippedAccessories['special']"
             [class.golden-aura]="equippedAccessories['special'] === 'golden_aura'"
             [class.sparkle-effect]="equippedAccessories['special'] === 'sparkle_effect'">
@@ -212,12 +247,12 @@
           role="button" [attr.aria-label]="'Select breed ' + breed.name">
           <!-- Breed Image -->
           <div class="breed-image-container">
-            <img [src]="breed.image" [alt]="breed.name" class="breed-image" width="54" height="54"
-              [class.grayscale]="!isBreedUnlocked(breed) || (isGuardianBreed(breed) && !isGuardian)"
+            <img appAsset [appAsset]="breed.image" [alt]="breed.name" class="breed-image" width="54" height="54"
+              [class.grayscale]="!isBreedUnlocked(breed)"
               (error)="onImageError($event)">
 
             <!-- Lock Overlay -->
-            <div class="lock-overlay" *ngIf="!isBreedUnlocked(breed) && !isGuardianBreed(breed)">
+            <div class="lock-overlay" *ngIf="!isBreedUnlocked(breed)">
               <ion-icon name="lock-closed"></ion-icon>
             </div>
 
@@ -245,7 +280,7 @@
 
             <!-- Unlocked Badge -->
             <span class="unlocked-badge"
-              *ngIf="isBreedUnlocked(breed) && !isBreedActive(breed) && !(isGuardianBreed(breed) && !isGuardian)">
+              *ngIf="isBreedUnlocked(breed) && !isBreedActive(breed)">
               Tap to select
             </span>
 

@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { IonContent, ModalController, IonIcon, IonButton } from '@ionic/angular/standalone';
+import { ModalController, IonIcon, IonButton } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { closeCircle } from 'ionicons/icons';
 
 @Component({
     selector: 'app-kibble-info-modal',
     standalone: true,
-    imports: [CommonModule, IonContent, IonIcon, IonButton],
+    imports: [CommonModule, IonIcon, IonButton],
     template: `
     <div class="modal-wrapper">
       <div class="modal-header">

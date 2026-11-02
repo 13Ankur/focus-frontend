@@ -11,7 +11,7 @@
 
     <!-- Profile Section -->
     <div class="profile-section">
-      <img src="assets/images/user-avatar.svg" alt="Profile" class="profile-avatar" width="64" height="64">
+      <img src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/user-avatar.svg" alt="Profile" class="profile-avatar" width="64" height="64">
       <div class="profile-info">
         <h2 class="profile-name">{{ userName }}</h2>
         <p class="profile-email">{{ userEmail }}</p>
@@ -27,7 +27,7 @@
       <div class="settings-card">
         <div class="setting-item" (click)="changeBuddy()" role="button" aria-label="Change buddy">
           <div class="setting-icon buddy">
-            <img [src]="getBuddyIcon()" alt="Buddy" width="40" height="40">
+            <img appAsset [appAsset]="getBuddyIcon()" alt="Buddy" width="40" height="40">
           </div>
           <div class="setting-info">
             <span class="setting-label">Current Buddy</span>

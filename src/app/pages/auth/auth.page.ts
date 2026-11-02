@@ -84,6 +84,9 @@ export class AuthPage implements OnInit, OnDestroy {
       } else if (params['mode'] === 'signup') {
         this.isLoginMode = false;
       }
+      if (params['reason'] === 'expired') {
+        this.errorMessage = 'Your session expired. Log in again to keep your progress and any payment.';
+      }
     });
 
     // If already logged in, redirect to appropriate page

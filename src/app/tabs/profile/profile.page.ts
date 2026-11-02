@@ -4,13 +4,11 @@ import { Router } from '@angular/router';
 import {
   IonContent,
   IonIcon,
-  AlertController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   settingsOutline,
-  arrowForward,
   flameOutline,
   timeOutline,
   trophyOutline,
@@ -105,18 +103,15 @@ export class ProfilePage implements OnInit, OnDestroy {
     focusTime: '0 min',
     sessions: 0,
     kibble: 0,
-    meals: 0,
     avgPerDay: '0 min',
   };
 
   totalFocusTime = '0 min';
   totalFocusMinutes = 0;
-  totalMeals = 0;
   totalKibble = 0;
   currentStreak = 0;
   longestStreak = 0;
   totalSessions = 0;
-  globalMeals = 0;
 
   weeklyData: DayActivity[] = [];
   maxMinutes = 1;
@@ -125,6 +120,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   unlockedBreeds = 1;
   totalBreeds = 9;
   achievementCount = 0;
+  unclaimedAchievements = 0;
   totalAchievements = 22;
 
   // Daily goal progress
@@ -158,11 +154,10 @@ export class ProfilePage implements OnInit, OnDestroy {
     private adService: AdService,
     private http: HttpClient,
     private router: Router,
-    private alertController: AlertController,
     private toastController: ToastController,
   ) {
     addIcons({
-      settingsOutline, arrowForward, flameOutline, timeOutline,
+      settingsOutline, flameOutline, timeOutline,
       trophyOutline, calendarOutline, lockClosed, shieldCheckmark,
     });
   }
@@ -244,12 +239,10 @@ export class ProfilePage implements OnInit, OnDestroy {
 
     this.totalFocusTime = this.statsService.formattedTotalFocusTime;
     this.totalFocusMinutes = stats.totalFocusMinutes;
-    this.totalMeals = stats.totalMealsProvided;
     this.totalKibble = stats.totalKibble;
     this.currentStreak = stats.currentStreak;
     this.longestStreak = stats.longestStreak;
     this.totalSessions = stats.completedSessions;
-    this.globalMeals = this.statsService.globalMeals;
 
     this.calculateLevel();
 
@@ -281,12 +274,15 @@ export class ProfilePage implements OnInit, OnDestroy {
       this.applyLocalTier();
 
       if (res.allTime) {
-        this.currentStreak = res.allTime.currentStreak ?? this.currentStreak;
+        if (res.allTime.totalKibble != null) {
+          this.statsService.setTotalKibble(res.allTime.totalKibble);
+        }
+        this.currentStreak = this.statsService.streakFromResponse(res);
         this.longestStreak = res.allTime.longestStreak ?? this.longestStreak;
-        this.totalKibble = res.allTime.totalKibble ?? this.totalKibble;
+        this.statsService.rememberStreak(this.currentStreak, this.longestStreak);
+        this.totalKibble = this.statsService.totalKibble;
         this.totalFocusMinutes = res.allTime.totalFocusMinutes ?? this.totalFocusMinutes;
         this.totalFocusTime = this.statsService.formatFocusTime(this.totalFocusMinutes);
-        this.totalMeals = res.allTime.totalMealsProvided ?? this.totalMeals;
         this.totalSessions = res.allTime.completedSessions ?? this.totalSessions;
         this.calculateLevel();
       }
@@ -358,8 +354,10 @@ export class ProfilePage implements OnInit, OnDestroy {
         .get(`${this.apiUrl}/achievements`, { headers })
         .toPromise();
       if (res?.summary) {
+        const list = Array.isArray(res.achievements) ? res.achievements : [];
+        this.unclaimedAchievements = list.filter((a: any) => a?.unlocked && !a?.claimed && !a?.proLocked).length;
         this.achievementCount = res.summary.unlocked || 0;
-        this.totalAchievements = res.summary.total || 22;
+        this.totalAchievements = res.summary.total || list.length || 22;
       }
     } catch { /* offline */ }
   }
@@ -378,8 +376,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         this.displayStats = {
           focusTime: this.statsService.formatFocusTime(t.focusMinutes),
           sessions: t.sessionsCompleted,
-          kibble: t.kibbleEarned,
-          meals: Math.floor(t.kibbleEarned / 25),
+          kibble: this.statsService.totalKibble,
           avgPerDay: this.statsService.formatFocusTime(t.focusMinutes),
         };
         break;
@@ -389,8 +386,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         this.displayStats = {
           focusTime: this.statsService.formatFocusTime(w.totalMinutes),
           sessions: w.totalSessions,
-          kibble: w.totalKibble,
-          meals: Math.floor(w.totalKibble / 25),
+          kibble: this.statsService.totalKibble,
           avgPerDay: this.statsService.formatFocusTime(w.averageMinutesPerDay),
         };
         break;
@@ -400,8 +396,7 @@ export class ProfilePage implements OnInit, OnDestroy {
         this.displayStats = {
           focusTime: this.statsService.formatFocusTime(m.totalMinutes),
           sessions: m.totalSessions,
-          kibble: m.totalKibble,
-          meals: m.totalMeals,
+          kibble: this.statsService.totalKibble,
           avgPerDay: this.statsService.formatFocusTime(m.averageMinutesPerDay),
         };
         break;
@@ -413,7 +408,6 @@ export class ProfilePage implements OnInit, OnDestroy {
           focusTime: this.statsService.formattedTotalFocusTime,
           sessions: s.completedSessions,
           kibble: s.totalKibble,
-          meals: s.totalMealsProvided,
           avgPerDay: this.statsService.formatFocusTime(Math.round(s.totalFocusMinutes / activeDays)),
         };
         break;
@@ -527,15 +521,6 @@ export class ProfilePage implements OnInit, OnDestroy {
   goToKennel(): void { this.router.navigate(['/tabs/kennel']); }
   goToFocus(): void { this.router.navigate(['/tabs/home']); }
   goToAchievements(): void { this.router.navigate(['/achievements']); }
-
-  async showGlobalImpact(): Promise<void> {
-    const alert = await this.alertController.create({
-      header: '🌍 Global Impact',
-      message: `Together, the StayPaws community has provided ${this.globalMeals.toLocaleString()} meals to shelter dogs worldwide!\n\nYou've personally contributed ${this.totalMeals} meals. Thank you!`,
-      buttons: ['Amazing!'],
-    });
-    await alert.present();
-  }
 
   // ── Insight helpers ──
 

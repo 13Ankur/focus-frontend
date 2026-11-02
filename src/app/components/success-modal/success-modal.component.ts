@@ -8,6 +8,8 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 
 import { SoundService } from '../../services/sound.service';
+import { assetUrl } from '../../utils/assets';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 
 interface KibbleRainPiece {
   left: number;
@@ -26,7 +28,7 @@ interface Achievement {
 @Component({
   selector: 'app-success-modal',
   standalone: true,
-  imports: [CommonModule, IonIcon, IonContent],
+  imports: [CommonModule, IonIcon, IonContent, AppAssetDirective],
   templateUrl: './success-modal.component.html',
   styleUrls: ['./success-modal.component.scss'],
 })
@@ -37,7 +39,7 @@ export class SuccessModalComponent implements OnInit, OnDestroy {
   @Input() totalSessions = 0;
   @Input() mealsJustProvided = 1;
   @Input() breedName = 'Your buddy';
-  @Input() breedImage = 'assets/images/golden_retriever.png';
+  @Input() breedImage = assetUrl('images/golden_retriever.png');
   @Input() currentStreak = 0;
   @Input() streakIncreased = false;
   @Input() totalKibble = 0;
@@ -188,11 +190,10 @@ export class SuccessModalComponent implements OnInit, OnDestroy {
   }
 
   async shareResult(): Promise<void> {
-    const text = `I just focused for ${this.focusMinutes} minutes and fed a shelter dog! 🐾\n\n` +
+    const text = `I just focused for ${this.focusMinutes} minutes on StayPaws! 🐾\n\n` +
       `🦴 ${this.kibbleEarned} kibble earned\n` +
-      `🔥 ${this.currentStreak} day streak\n` +
-      `🍽 ${this.totalMeals} total meals donated\n\n` +
-      `Join me on StayPaws — focus to feed shelter dogs!`;
+      `🔥 ${this.currentStreak} day streak\n\n` +
+      `Join me on StayPaws!`;
 
     try {
       if (Capacitor.isNativePlatform()) {

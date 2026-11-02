@@ -8,6 +8,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 import { environment } from '../../../environments/environment';
+import { StatsService } from '../../services/stats.service';
+import { BreedService } from '../../services/breed.service';
 
 interface AchievementItem {
   id: string;
@@ -16,6 +18,8 @@ interface AchievementItem {
   icon: string;
   kibble: number;
   category: string;
+  tier?: 'free' | 'pro';
+  proLocked?: boolean;
   unlocked: boolean;
   claimed: boolean;
   unlockedAt: string | null;
@@ -48,6 +52,7 @@ export class AchievementsPage implements OnInit {
   unlockedCount = 0;
   totalCount = 0;
   unclaimedCount = 0;
+  isPro = false;
 
   private apiUrl = environment.apiUrl;
 
@@ -56,12 +61,31 @@ export class AchievementsPage implements OnInit {
     private router: Router,
     private alertController: AlertController,
     private toastController: ToastController,
+    private statsService: StatsService,
+    private breedService: BreedService,
   ) {
     addIcons({ arrowBack, trophy, checkmarkCircle });
   }
 
   ngOnInit(): void {
+    this.isPro = this.localIsPro();
     this.loadAchievements();
+  }
+
+  get freeAchievements(): AchievementItem[] {
+    return this.achievements.filter(a => !this.isProAchievement(a));
+  }
+
+  get proAchievements(): AchievementItem[] {
+    return this.achievements.filter(a => this.isProAchievement(a));
+  }
+
+  isProAchievement(achievement: AchievementItem): boolean {
+    return achievement.tier === 'pro' || achievement.id.startsWith('pro_');
+  }
+
+  isProLocked(achievement: AchievementItem): boolean {
+    return this.isProAchievement(achievement) && !this.isPro;
   }
 
   ionViewWillEnter(): void {
@@ -76,9 +100,10 @@ export class AchievementsPage implements OnInit {
       const headers = this.getAuthHeaders();
       const res: any = await this.http.get(`${this.apiUrl}/achievements`, { headers }).toPromise();
       this.achievements = this.sortAchievements(res.achievements || []);
-      this.unlockedCount = res.summary?.unlocked || 0;
-      this.totalCount = res.summary?.total || 0;
-      this.unclaimedCount = res.summary?.unclaimed || 0;
+      const claimable = this.achievements.filter(a => a.unlocked && !a.claimed && !this.isProLocked(a));
+      this.unlockedCount = this.achievements.filter(a => a.unlocked && !this.isProLocked(a)).length;
+      this.totalCount = this.achievements.length;
+      this.unclaimedCount = claimable.length;
     } catch {
       this.achievements = [];
     }
@@ -112,6 +137,10 @@ export class AchievementsPage implements OnInit {
   // ── Claim ──
 
   async claimAchievement(achievement: AchievementItem): Promise<void> {
+    if (this.isProLocked(achievement)) {
+      this.router.navigate(['/paywall'], { queryParams: { trigger: 'generic', returnUrl: '/achievements' } });
+      return;
+    }
     if (!achievement.unlocked || achievement.claimed || this.claiming) return;
 
     this.claiming = achievement.id;
@@ -123,6 +152,14 @@ export class AchievementsPage implements OnInit {
 
       achievement.claimed = true;
       this.unclaimedCount = Math.max(0, this.unclaimedCount - 1);
+
+      if (res?.totalKibble != null) {
+        this.statsService.setTotalKibble(res.totalKibble);
+      } else {
+        const awarded = Number(res?.kibbleAwarded ?? achievement.kibble);
+        if (awarded > 0) this.statsService.addKibble(awarded);
+      }
+      this.breedService.updateKibble(this.statsService.totalKibble);
 
       this.celebrationAchievement = achievement;
       this.showCelebration = true;
@@ -164,6 +201,23 @@ export class AchievementsPage implements OnInit {
   }
 
   // ── Helpers ──
+
+  private localIsPro(): boolean {
+    try {
+      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier;
+      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
+      if (!isPro) return false;
+      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
+      const now = new Date();
+      if (trialEnd && trialEnd > now) return true;
+      if (expiry && expiry <= now) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   private getAuthHeaders(): HttpHeaders {
     try {

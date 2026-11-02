@@ -687,3 +687,14 @@ ion-tab-button,
     }
   }
 }
+
+img.asset-pending {
+  background: linear-gradient(90deg, #f3f3ee 25%, #e4efe0 50%, #f3f3ee 75%);
+  background-size: 200% 100%;
+  animation: asset-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes asset-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}

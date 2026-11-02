@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
+import { sessionTokenExpiresSoon } from '../utils/session-token';
 
 declare let Razorpay: any;
 
@@ -10,9 +11,16 @@ export interface RazorpayCheckoutResult {
   razorpay_signature: string;
 }
 
+export interface RazorpayCheckoutOutcome {
+  success: boolean;
+  trial?: boolean;
+  expiry?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RazorpayService {
   private apiUrl = environment.apiUrl;
+  private pendingKey = 'pending_razorpay_payment';
 
   constructor(private http: HttpClient) {}
 
@@ -41,8 +49,16 @@ export class RazorpayService {
     });
   }
 
-  /** Creates a Razorpay subscription order via the backend. */
-  private async createSubscription(token: string): Promise<{ keyId: string; subscriptionId: string }> {
+  tokenExpiresSoon(token: string | null | undefined): boolean {
+    return sessionTokenExpiresSoon(token);
+  }
+
+  /** Creates a Razorpay subscription via the backend. */
+  private async createSubscription(token: string): Promise<{
+    keyId: string;
+    subscriptionId: string;
+    trial?: boolean;
+  }> {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -61,7 +77,7 @@ export class RazorpayService {
     subscriptionId: string,
     signature: string,
     token: string,
-  ): Promise<{ success: boolean; tier: string; expiry: string }> {
+  ): Promise<{ success: boolean; tier: string; expiry: string; trial?: boolean }> {
     const headers = new HttpHeaders({
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
@@ -80,14 +96,14 @@ export class RazorpayService {
 
   /**
    * Full Razorpay checkout flow for Android.
-   * Returns true if subscription was activated successfully.
+   * Returns whether Pro was activated, and whether it started as a free trial.
    */
-  async startCheckout(userInfo: { name: string; email: string; token: string }): Promise<boolean> {
+  async startCheckout(userInfo: { name: string; email: string; token: string }): Promise<RazorpayCheckoutOutcome> {
     // 1. Load the Razorpay SDK
     await this.loadScript();
 
     // 2. Create subscription on backend
-    const { keyId, subscriptionId } = await this.createSubscription(userInfo.token);
+    const { keyId, subscriptionId, trial } = await this.createSubscription(userInfo.token);
 
     // 3. Open Razorpay Checkout
     return new Promise((resolve, reject) => {
@@ -95,27 +111,48 @@ export class RazorpayService {
         key: keyId,
         subscription_id: subscriptionId,
         name: 'StayPaws Pro',
-        description: 'Unlimited focus sessions & premium features',
-        image: 'https://staypaws.zavvi.co.in/assets/icon/icon.png',
+        description: trial
+          ? '7-day free trial. Payment details are saved now and charged after the trial.'
+          : 'Unlimited focus sessions & premium features',
+        image: 'https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/icons/icon-512x512.png',
         prefill: {
           name: userInfo.name || '',
           email: userInfo.email || '',
         },
         theme: { color: '#6C63FF' },
         modal: {
-          ondismiss: () => resolve(false),
+          ondismiss: () => resolve({ success: false }),
         },
         handler: async (response: RazorpayCheckoutResult) => {
+          const pending = {
+            paymentId: response.razorpay_payment_id,
+            subscriptionId: response.razorpay_subscription_id,
+            signature: response.razorpay_signature,
+            savedAt: Date.now(),
+          };
+          this.savePending(pending);
           try {
             const result = await this.verifyPayment(
-              response.razorpay_payment_id,
-              response.razorpay_subscription_id,
-              response.razorpay_signature,
+              pending.paymentId,
+              pending.subscriptionId,
+              pending.signature,
               userInfo.token,
             );
-            resolve(result?.success === true);
+            if (result?.success) this.clearPending();
+            resolve({
+              success: result?.success === true,
+              trial: result?.trial === true,
+              expiry: result?.expiry || null,
+            });
           } catch (err) {
-            reject(err);
+            const recovered = await this.recoverPending(userInfo.token);
+            if (recovered?.success) {
+              resolve(recovered);
+              return;
+            }
+            const pendingError = new Error('payment_pending') as Error & { paymentReceived?: boolean };
+            pendingError.paymentReceived = true;
+            reject(pendingError);
           }
         },
       };
@@ -123,9 +160,79 @@ export class RazorpayService {
       const rzp = new Razorpay(options);
       rzp.on('payment.failed', (resp: any) => {
         console.error('Razorpay payment failed:', resp.error);
-        resolve(false);
+        resolve({ success: false });
       });
       rzp.open();
     });
+  }
+
+  /**
+   * Finish a payment Razorpay already accepted. Safe to call after login
+   * and whenever the paywall opens.
+   */
+  async recoverPending(token: string | null | undefined): Promise<RazorpayCheckoutOutcome | null> {
+    if (!token) return null;
+    const pending = this.readPending();
+    if (!pending) return null;
+
+    try {
+      if (pending.paymentId && pending.signature) {
+        const verified = await this.verifyPayment(
+          pending.paymentId,
+          pending.subscriptionId,
+          pending.signature,
+          token,
+        );
+        if (verified?.success) {
+          this.clearPending();
+          return { success: true, trial: verified.trial === true, expiry: verified.expiry || null };
+        }
+      }
+    } catch (err) {
+      console.warn('Saved Razorpay payment could not be verified yet');
+    }
+
+    try {
+      const headers = new HttpHeaders({
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      });
+      const result: any = await this.http
+        .post(`${this.apiUrl}/subscription/razorpay/recover`, {
+          subscriptionId: pending.subscriptionId,
+        }, { headers })
+        .toPromise();
+      if (result?.success) {
+        this.clearPending();
+        return { success: true, trial: result.trial === true, expiry: result.expiry || null };
+      }
+    } catch {
+      console.warn('Saved Razorpay subscription is not confirmed yet');
+    }
+    return null;
+  }
+
+  private savePending(pending: { paymentId: string; subscriptionId: string; signature: string; savedAt: number }): void {
+    localStorage.setItem(this.pendingKey, JSON.stringify(pending));
+  }
+
+  private readPending(): { paymentId?: string; subscriptionId: string; signature?: string; savedAt: number } | null {
+    try {
+      const raw = localStorage.getItem(this.pendingKey);
+      if (!raw) return null;
+      const pending = JSON.parse(raw);
+      if (!pending?.subscriptionId) return null;
+      if (Date.now() - Number(pending.savedAt || 0) > 7 * 24 * 60 * 60 * 1000) {
+        this.clearPending();
+        return null;
+      }
+      return pending;
+    } catch {
+      return null;
+    }
+  }
+
+  private clearPending(): void {
+    localStorage.removeItem(this.pendingKey);
   }
 }

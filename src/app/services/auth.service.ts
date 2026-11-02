@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import { ApiService } from './api.service';
 import { BreedService } from './breed.service';
 import { RevenueCatService } from './revenue-cat.service';
+import { RazorpayService } from './razorpay.service';
 
 // Import Capacitor plugins
 // import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -169,6 +170,7 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private apiService: ApiService,
+    private razorpayService: RazorpayService,
     private injector: Injector,
   ) {
     this.loadStoredUser();
@@ -284,8 +286,29 @@ export class AuthService {
         });
         this.syncBreedDataAfterLogin();
         this.revenueCatService.loginUser(response._id);
+        void this.finishPendingPayment(response.token);
       })
     );
+  }
+
+  applySubscription(result: { expiry?: string | null; trial?: boolean }): void {
+    if (!this.currentUser) return;
+    const user: any = {
+      ...this.currentUser,
+      isPremium: true,
+      subscriptionTier: 'pro',
+    };
+    if (result.expiry) user.subscriptionExpiry = result.expiry;
+    if (result.trial) {
+      user.trialUsed = true;
+      if (result.expiry) user.trialEndDate = result.expiry;
+    }
+    this.storeUser(user);
+  }
+
+  private async finishPendingPayment(token: string): Promise<void> {
+    const result = await this.razorpayService.recoverPending(token);
+    if (result?.success) this.applySubscription(result);
   }
 
   // ==================== OTP Verification ====================
@@ -312,6 +335,7 @@ export class AuthService {
           });
           this.syncBreedDataAfterLogin();
           this.revenueCatService.loginUser(response._id);
+          void this.finishPendingPayment(response.token);
         }
       })
     );
@@ -454,11 +478,21 @@ export class AuthService {
 
   updateLocalKibble(amount: number): void {
     if (this.currentUser) {
-      this.storeUser({
-        ...this.currentUser,
-        totalKibble: (this.currentUser.totalKibble || 0) + amount
-      });
+      this.setLocalKibble((this.currentUser.totalKibble || 0) + amount);
     }
+  }
+
+  setLocalKibble(total: number): void {
+    if (!this.currentUser) return;
+    const totalKibble = Math.max(0, Math.round(Number(total) || 0));
+    if ((this.currentUser.totalKibble || 0) === totalKibble && (this.currentUser.kibble || 0) === totalKibble) {
+      return;
+    }
+    this.storeUser({
+      ...this.currentUser,
+      totalKibble,
+      kibble: totalKibble,
+    });
   }
 
   private readonly USER_STORAGE_KEYS = [

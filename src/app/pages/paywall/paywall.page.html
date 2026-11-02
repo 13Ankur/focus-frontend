@@ -15,7 +15,7 @@
     <div class="hero-section">
       <div class="hero-image-wrapper">
         <img
-          src="assets/images/party-dog.svg"
+          src="https://pub-af1e1f15f9ef4d2e8fc1d981cbb64344.r2.dev/images/party-dog.svg"
           alt="Excited dog"
           class="hero-dog"
           (error)="onHeroImgError($event)"
@@ -36,9 +36,13 @@
         <div class="popular-badge">MOST POPULAR</div>
         <div class="plan-header-row">
           <h3 class="plan-name">Pro</h3>
-          <div class="plan-price">
-            <span class="price-amount">Pro</span>
-            <span class="price-period">subscription</span>
+          <div class="plan-price" *ngIf="trialAvailable">
+            <span class="price-amount">{{ trialDays }} days free</span>
+            <span class="price-period">then {{ priceLabel }}/{{ pricePeriod }}</span>
+          </div>
+          <div class="plan-price" *ngIf="!trialAvailable">
+            <span class="price-amount">{{ priceLabel }}</span>
+            <span class="price-period">/{{ pricePeriod }}</span>
           </div>
         </div>
 
@@ -55,8 +59,8 @@
           [disabled]="loading"
         >
           <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
-          <span *ngIf="!loading && !isAndroid">Subscribe to Pro</span>
-          <span *ngIf="!loading && isAndroid">Pay with Razorpay</span>
+          <span *ngIf="!loading && trialAvailable">Start {{ trialDays }}-day free trial</span>
+          <span *ngIf="!loading && !trialAvailable">Subscribe for {{ priceLabel }}/{{ pricePeriod }}</span>
         </button>
       </div>
     </div>
@@ -85,7 +89,13 @@
         <span class="dot">·</span>
         <a (click)="openPrivacy()">Privacy Policy</a>
       </div>
-      <p class="fine-print">Cancel anytime. Subscription auto-renews.</p>
+      <p class="fine-print" *ngIf="trialAvailable">
+        Free for {{ trialDays }} days, then {{ priceLabel }} per {{ pricePeriod }}.
+        Your payment details are saved now. The first charge is after the trial. Cancel anytime.
+      </p>
+      <p class="fine-print" *ngIf="!trialAvailable">
+        {{ priceLabel }} per {{ pricePeriod }}. Cancel anytime. Subscription auto-renews.
+      </p>
     </div>
 
   </div>

@@ -3,6 +3,8 @@ import { BehaviorSubject } from 'rxjs';
 import { Preferences } from '@capacitor/preferences';
 import { RevenueCatService } from './revenue-cat.service';
 import { SOUND_GENERATORS, SoundGenerator } from '../sounds/generators';
+import { assetUrl } from '../utils/assets';
+import { AssetLoaderService } from './asset-loader.service';
 
 export interface SoundTrack {
   id: string;
@@ -14,8 +16,8 @@ export interface SoundTrack {
 
 const SOUND_LIBRARY: SoundTrack[] = [
   { id: 'silence', name: 'Silence', icon: '🤫', category: 'silence', tier: 'free' },
-  { id: 'rain', name: 'Gentle Rain', icon: '🌧', category: 'nature', tier: 'pro' },
-  { id: 'forest', name: 'Forest Birds', icon: '🌲', category: 'nature', tier: 'pro' },
+  { id: 'rain', name: 'Gentle Rain', icon: '🌧', category: 'nature', tier: 'free' },
+  { id: 'forest', name: 'Forest Birds', icon: '🌲', category: 'nature', tier: 'free' },
   { id: 'ocean', name: 'Ocean Waves', icon: '🌊', category: 'nature', tier: 'pro' },
   { id: 'cafe', name: 'Coffee Shop', icon: '☕', category: 'ambient', tier: 'pro' },
   { id: 'fireplace', name: 'Fireplace', icon: '🔥', category: 'ambient', tier: 'pro' },
@@ -33,6 +35,17 @@ const PREFS_MIX_KEY = 'paws_focus_sound_mix';
 const FADE_DURATION = 0.5;
 const MAX_MIX_COUNT = 3;
 
+/** Real field recordings. White noise, brown noise, binaural, and lo-fi stay generated. */
+const RECORDED_SOUNDS: Record<string, string> = {
+  rain: assetUrl('sounds/rain.mp3'),
+  forest: assetUrl('sounds/forest.mp3'),
+  ocean: assetUrl('sounds/ocean.mp3'),
+  cafe: assetUrl('sounds/cafe.mp3'),
+  fireplace: assetUrl('sounds/fireplace.mp3'),
+  library: assetUrl('sounds/library.mp3'),
+  thunderstorm: assetUrl('sounds/thunderstorm.mp3'),
+};
+
 interface ActiveSource {
   generator: SoundGenerator;
   gainNode: GainNode;
@@ -46,6 +59,10 @@ export class FocusSoundService implements OnDestroy {
   private activeSources: ActiveSource[] = [];
   private _volume = 0.6;
   private _isPlaying = false;
+  private proUnlocked = false;
+  private bufferCache = new Map<string, AudioBuffer>();
+  private playbackGeneration = 0;
+  private previewStops: Array<() => void> = [];
 
   private currentSoundSubject = new BehaviorSubject<string>('silence');
   private mixedSoundsSubject = new BehaviorSubject<string[]>([]);
@@ -59,8 +76,19 @@ export class FocusSoundService implements OnDestroy {
   volume$ = this.volumeSubject.asObservable();
   isLoading$ = this.loadingSubject.asObservable();
 
-  constructor(private revenueCatService: RevenueCatService) {
+  constructor(
+    private revenueCatService: RevenueCatService,
+    private assetLoader: AssetLoaderService,
+  ) {
     this.loadPreferences();
+  }
+
+  /** Download the selected recorded sound ahead of playback. */
+  warmCurrent(): void {
+    const url = RECORDED_SOUNDS[this.currentSoundSubject.value];
+    if (!url) return;
+    const resolved = new URL(url, document.baseURI).toString();
+    void this.assetLoader.loadArrayBuffer(resolved).catch(() => { /* play will retry */ });
   }
 
   ngOnDestroy(): void {
@@ -97,8 +125,13 @@ export class FocusSoundService implements OnDestroy {
     return SOUND_LIBRARY.find(s => s.id === id);
   }
 
-  getSoundLibrary(userTier: 'free' | 'pro' | 'guardian' = 'free'): (SoundTrack & { locked: boolean })[] {
-    const isPro = this.revenueCatService.isProSync;
+  /** Android Pro comes from Razorpay, not RevenueCat. Home calls this when the tier is known. */
+  setProAccess(isPro: boolean): void {
+    this.proUnlocked = isPro;
+  }
+
+  getSoundLibrary(_userTier: 'free' | 'pro' | 'guardian' = 'free'): (SoundTrack & { locked: boolean })[] {
+    const isPro = this.hasProAccess();
     return SOUND_LIBRARY.map(s => ({
       ...s,
       locked: (s.tier === 'pro' || s.tier === 'guardian') && !isPro
@@ -108,13 +141,14 @@ export class FocusSoundService implements OnDestroy {
   isSoundLocked(soundId: string): boolean {
     const sound = this.getSoundById(soundId);
     if (!sound || sound.tier === 'free') return false;
-    return !this.revenueCatService.isProSync;
+    return !this.hasProAccess();
   }
 
   // ── Playback ──
 
   async playSound(soundId: string): Promise<void> {
-    await this.stopSound();
+    const generation = ++this.playbackGeneration;
+    this.haltPlayback();
 
     if (soundId === 'silence') {
       this.currentSoundSubject.next('silence');
@@ -123,22 +157,25 @@ export class FocusSoundService implements OnDestroy {
       return;
     }
 
-    if (!this.revenueCatService.isProSync) {
-      console.warn('FocusSoundService: Pro subscription required for ambient sounds');
+    const sound = this.getSoundById(soundId);
+    if (!sound || this.isSoundLocked(soundId)) {
       this.currentSoundSubject.next('silence');
       return;
     }
 
-    const sound = this.getSoundById(soundId);
-    if (!sound) return;
-
     const generatorFn = SOUND_GENERATORS[soundId];
-    if (!generatorFn) return;
+    if (!RECORDED_SOUNDS[soundId] && !generatorFn) return;
 
     this.loadingSubject.next(true);
     try {
-      this.ensureAudioContext();
-      const source = this.createGeneratedSource(soundId, generatorFn);
+      await this.ensureAudioContext();
+      if (generation !== this.playbackGeneration) return;
+      const source = await this.createSource(soundId);
+      if (!source) return;
+      if (generation !== this.playbackGeneration) {
+        this.releaseSource(source);
+        return;
+      }
       this.activeSources.push(source);
       this.fadeIn(source.gainNode);
       this.currentSoundSubject.next(soundId);
@@ -154,9 +191,12 @@ export class FocusSoundService implements OnDestroy {
   }
 
   async mixSounds(soundIds: string[]): Promise<void> {
-    await this.stopSound();
+    const generation = ++this.playbackGeneration;
+    this.haltPlayback();
 
-    const validIds = soundIds.filter(id => id !== 'silence' && SOUND_GENERATORS[id]).slice(0, MAX_MIX_COUNT);
+    const validIds = soundIds
+      .filter(id => id !== 'silence' && !this.isSoundLocked(id) && (RECORDED_SOUNDS[id] || SOUND_GENERATORS[id]))
+      .slice(0, MAX_MIX_COUNT);
     if (validIds.length === 0) {
       this.currentSoundSubject.next('silence');
       this.mixedSoundsSubject.next([]);
@@ -166,17 +206,25 @@ export class FocusSoundService implements OnDestroy {
 
     this.loadingSubject.next(true);
     try {
-      this.ensureAudioContext();
+      await this.ensureAudioContext();
+      if (generation !== this.playbackGeneration) return;
       const perTrackVolume = 1 / validIds.length;
+      const started: ActiveSource[] = [];
 
       for (const id of validIds) {
-        const generatorFn = SOUND_GENERATORS[id];
-        if (!generatorFn) continue;
-        const source = this.createGeneratedSource(id, generatorFn);
+        const source = await this.createSource(id);
+        if (generation !== this.playbackGeneration) {
+          if (source) this.releaseSource(source);
+          started.forEach(item => this.releaseSource(item));
+          return;
+        }
+        if (!source) continue;
         source.gainNode.gain.value = 0;
-        this.activeSources.push(source);
+        started.push(source);
         this.fadeIn(source.gainNode, perTrackVolume);
       }
+
+      this.activeSources.push(...started);
 
       this.currentSoundSubject.next(validIds[0]);
       this.mixedSoundsSubject.next(validIds);
@@ -191,23 +239,12 @@ export class FocusSoundService implements OnDestroy {
   }
 
   async stopSound(): Promise<void> {
-    if (this.activeSources.length === 0) {
-      this._isPlaying = false;
-      this.playingSubject.next(false);
-      return;
-    }
+    this.playbackGeneration++;
+    this.haltPlayback();
+  }
 
-    const fadePromises = this.activeSources.map(source =>
-      this.fadeOut(source.gainNode).then(() => {
-        source.generator.stop();
-        try { source.gainNode.disconnect(); } catch { }
-      })
-    );
-
-    await Promise.all(fadePromises);
-    this.activeSources = [];
-    this._isPlaying = false;
-    this.playingSubject.next(false);
+  stopPreview(): void {
+    this.stopPreviews();
   }
 
   setVolume(level: number): void {
@@ -222,36 +259,48 @@ export class FocusSoundService implements OnDestroy {
   async previewSound(soundId: string, durationMs = 3000): Promise<void> {
     if (soundId === 'silence') return;
 
-    const generatorFn = SOUND_GENERATORS[soundId];
-    if (!generatorFn) return;
+    if (!RECORDED_SOUNDS[soundId] && !SOUND_GENERATORS[soundId]) return;
+
+    const generation = ++this.playbackGeneration;
+    this.haltPlayback();
 
     try {
-      this.ensureAudioContext();
+      await this.ensureAudioContext();
+      if (generation !== this.playbackGeneration) return;
       const ctx = this.audioContext!;
       const previewGain = ctx.createGain();
       previewGain.gain.value = this._volume * 0.6;
       previewGain.connect(ctx.destination);
 
-      const generator = generatorFn(ctx);
-      generator.outputNode.connect(previewGain);
+      const source = await this.createSource(soundId);
+      if (!source) return;
+      if (generation !== this.playbackGeneration) {
+        this.releaseSource(source);
+        try { previewGain.disconnect(); } catch { /* already disconnected */ }
+        return;
+      }
+      source.gainNode.disconnect();
+      source.generator.outputNode.connect(previewGain);
 
-      setTimeout(() => {
-        generator.stop();
-        try { previewGain.disconnect(); } catch { }
-      }, durationMs);
+      let stopped = false;
+      const stop = () => {
+        if (stopped) return;
+        stopped = true;
+        this.previewStops = this.previewStops.filter(item => item !== stop);
+        this.releaseSource(source);
+        try { previewGain.disconnect(); } catch { /* already disconnected */ }
+      };
+      this.previewStops.push(stop);
+      setTimeout(stop, durationMs);
     } catch {
       // AudioContext blocked or unavailable
     }
   }
 
   dispose(): void {
-    this.activeSources.forEach(source => {
-      source.generator.stop();
-      try { source.gainNode.disconnect(); } catch { }
-    });
-    this.activeSources = [];
-    this._isPlaying = false;
-    this.playingSubject.next(false);
+    this.playbackGeneration++;
+    this.haltPlayback();
+    this.bufferCache.clear();
 
     if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close().catch(() => { });
@@ -262,16 +311,120 @@ export class FocusSoundService implements OnDestroy {
 
   // ── Private ──
 
-  private ensureAudioContext(): void {
+  /** Call from a tap so Android unlocks the speaker before any later await. */
+  prepareAudio(): void {
+    void this.ensureAudioContext();
+  }
+
+  private async ensureAudioContext(): Promise<void> {
     if (!this.audioContext || this.audioContext.state === 'closed') {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      this.audioContext = new AudioCtx();
       this.masterGain = this.audioContext.createGain();
       this.masterGain.gain.value = this._volume;
       this.masterGain.connect(this.audioContext.destination);
     }
     if (this.audioContext.state === 'suspended') {
-      this.audioContext.resume();
+      await this.audioContext.resume();
     }
+  }
+
+  private hasProAccess(): boolean {
+    if (this.proUnlocked || this.revenueCatService.isProSync) return true;
+
+    try {
+      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
+      const tier = user?.subscriptionTier;
+      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
+      if (!isPro) return false;
+
+      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
+      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
+      const now = new Date();
+      if (trialEnd && trialEnd > now) return true;
+      if (expiry && expiry <= now) return false;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private haltPlayback(): void {
+    this.stopPreviews();
+    const sources = this.activeSources.splice(0);
+    sources.forEach(source => this.releaseSource(source));
+    this._isPlaying = false;
+    this.playingSubject.next(false);
+  }
+
+  private stopPreviews(): void {
+    const stops = this.previewStops.splice(0);
+    stops.forEach(stop => stop());
+  }
+
+  private releaseSource(source: ActiveSource): void {
+    try {
+      if (this.audioContext && this.audioContext.state !== 'closed') {
+        const now = this.audioContext.currentTime;
+        source.gainNode.gain.cancelScheduledValues(now);
+        source.gainNode.gain.setValueAtTime(0, now);
+      }
+    } catch { /* context already closed */ }
+    source.generator.stop();
+    try { source.gainNode.disconnect(); } catch { /* already disconnected */ }
+    try { source.generator.outputNode.disconnect(); } catch { /* already disconnected */ }
+  }
+
+  private async createSource(soundId: string): Promise<ActiveSource | null> {
+    const recorded = RECORDED_SOUNDS[soundId];
+    if (recorded) {
+      const buffer = await this.loadBuffer(soundId, recorded);
+      return this.createRecordedSource(soundId, buffer);
+    }
+    const generatorFn = SOUND_GENERATORS[soundId];
+    if (!generatorFn) return null;
+    return this.createGeneratedSource(soundId, generatorFn);
+  }
+
+  private async loadBuffer(soundId: string, url: string): Promise<AudioBuffer> {
+    const cached = this.bufferCache.get(soundId);
+    if (cached) return cached;
+
+    const resolved = new URL(url, document.baseURI).toString();
+    try {
+      const data = await this.assetLoader.loadArrayBuffer(resolved);
+      const buffer = await this.audioContext!.decodeAudioData(data.slice(0));
+      this.bufferCache.set(soundId, buffer);
+      return buffer;
+    } catch (error) {
+      this.assetLoader.forget(resolved);
+      throw error;
+    }
+  }
+
+  private createRecordedSource(soundId: string, buffer: AudioBuffer): ActiveSource {
+    const ctx = this.audioContext!;
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.loop = true;
+    const outputNode = ctx.createGain();
+    outputNode.gain.value = 1;
+    source.connect(outputNode);
+    const gainNode = ctx.createGain();
+    gainNode.gain.value = 0;
+    outputNode.connect(gainNode);
+    gainNode.connect(this.masterGain!);
+    source.start();
+    return {
+      generator: {
+        outputNode,
+        stop: () => {
+          try { source.stop(); } catch { /* already stopped */ }
+        },
+      },
+      gainNode,
+      soundId,
+    };
   }
 
   private createGeneratedSource(
@@ -294,27 +447,13 @@ export class FocusSoundService implements OnDestroy {
     gainNode.gain.linearRampToValueAtTime(targetVolume, now + FADE_DURATION);
   }
 
-  private fadeOut(gainNode: GainNode): Promise<void> {
-    return new Promise(resolve => {
-      if (!this.audioContext || this.audioContext.state === 'closed') {
-        resolve();
-        return;
-      }
-      const ctx = this.audioContext;
-      const now = ctx.currentTime;
-      gainNode.gain.setValueAtTime(gainNode.gain.value, now);
-      gainNode.gain.linearRampToValueAtTime(0, now + FADE_DURATION);
-      setTimeout(resolve, FADE_DURATION * 1000 + 100);
-    });
-  }
-
   // ── Persistence ──
 
   private async loadPreferences(): Promise<void> {
     try {
       const { value: soundVal } = await Preferences.get({ key: PREFS_KEY });
       if (soundVal) {
-        if (soundVal !== 'silence' && !this.revenueCatService.isProSync) {
+        if (soundVal !== 'silence' && this.isSoundLocked(soundVal)) {
           this.currentSoundSubject.next('silence');
         } else {
           this.currentSoundSubject.next(soundVal);
@@ -337,6 +476,7 @@ export class FocusSoundService implements OnDestroy {
     } catch {
       // Preferences not available (web dev)
     }
+    this.warmCurrent();
   }
 
   private async savePreferences(): Promise<void> {

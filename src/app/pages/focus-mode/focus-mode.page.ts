@@ -12,6 +12,8 @@ import { Subscription } from 'rxjs';
 
 import { TimerService } from '../../services/timer.service';
 import { BreedService } from '../../services/breed.service';
+import { assetUrl } from '../../utils/assets';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 
 @Component({
   selector: 'app-focus-mode',
@@ -19,7 +21,8 @@ import { BreedService } from '../../services/breed.service';
   imports: [
     CommonModule,
     IonContent,
-    IonIcon
+    IonIcon,
+    AppAssetDirective,
   ],
   templateUrl: './focus-mode.page.html',
   styleUrls: ['./focus-mode.page.scss']
@@ -52,7 +55,7 @@ export class FocusModePage implements OnInit, OnDestroy {
   }
 
   get buddyImage(): string {
-    return this.breedService.activeBreed?.image || 'assets/images/golden_retriever.png';
+    return this.breedService.activeBreed?.image || assetUrl('images/golden_retriever.png');
   }
 
   ngOnInit(): void {

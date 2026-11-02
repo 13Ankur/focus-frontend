@@ -11,6 +11,7 @@ import { addIcons } from 'ionicons';
 import { checkmarkCircle, lockClosed } from 'ionicons/icons';
 
 import { BreedService, DogBreed } from '../../services/breed.service';
+import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { DogBarkService } from '../../services/dog-bark.service';
 
 @Component({
@@ -20,7 +21,8 @@ import { DogBarkService } from '../../services/dog-bark.service';
     CommonModule,
     IonContent,
     IonIcon,
-    IonSpinner
+    IonSpinner,
+    AppAssetDirective,
   ],
   templateUrl: './breed-selection.page.html',
   styleUrls: ['./breed-selection.page.scss']

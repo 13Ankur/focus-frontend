@@ -14,7 +14,6 @@ import { close, cartOutline } from 'ionicons/icons';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { Subscription } from 'rxjs';
 import { StatsService } from '../../services/stats.service';
-import { AuthService } from '../../services/auth.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 
 export interface KibblePack {
@@ -116,7 +115,6 @@ export class KibbleStorePage implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
     private statsService: StatsService,
-    private authService: AuthService,
     private revenueCatService: RevenueCatService,
   ) {
     addIcons({ close, cartOutline });
@@ -167,8 +165,8 @@ export class KibbleStorePage implements OnInit, OnDestroy {
 
       // Purchase succeeded — webhook will credit kibble server-side.
       // Update the local balance optimistically so the UI feels instant.
-      this.kibbleBalance += this.totalKibble(pack);
-      this.authService.updateLocalKibble(this.totalKibble(pack));
+      this.statsService.addKibble(this.totalKibble(pack));
+      this.kibbleBalance = this.statsService.totalKibble;
 
       // Show celebration
       this.celebrationKibble = this.totalKibble(pack);
@@ -196,10 +194,8 @@ export class KibbleStorePage implements OnInit, OnDestroy {
   // ── Private ──
 
   private loadBalance(): void {
-    const user = this.authService.currentUser;
-    if (user) {
-      this.kibbleBalance = user.kibble || user.totalKibble || 0;
-    }
+    this.kibbleBalance = this.statsService.totalKibble;
+    void this.statsService.syncWithServer();
   }
 
   private async showToast(message: string, color: string): Promise<void> {

@@ -58,6 +58,11 @@ export class ApiService {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (timezone) {
+      headers = headers.set('x-timezone', timezone);
+    }
+
     return headers;
   }
 
