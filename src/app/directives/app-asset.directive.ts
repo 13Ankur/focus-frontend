@@ -8,6 +8,7 @@ import { AssetLoaderService } from '../services/asset-loader.service';
 })
 export class AppAssetDirective implements OnChanges {
   @Input() appAsset = '';
+  @Input() appAssetCutout = false;
   private request = 0;
 
   constructor(
@@ -30,7 +31,8 @@ export class AppAssetDirective implements OnChanges {
     }
     img.setAttribute('data-asset-original', url);
     img.classList.add('asset-pending');
-    void this.loader.objectUrl(url).then(objectUrl => {
+    const load = this.appAssetCutout ? this.loader.cutoutObjectUrl(url) : this.loader.objectUrl(url);
+    void load.then(objectUrl => {
       if (token !== this.request) return;
       img.src = objectUrl;
       img.classList.remove('asset-pending');

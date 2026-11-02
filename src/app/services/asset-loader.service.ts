@@ -9,6 +9,7 @@ const ATTEMPTS = 4;
 export class AssetLoaderService {
   private memory = new Map<string, Promise<Blob>>();
   private objectUrls = new Map<string, string>();
+  private cutoutJobs = new Map<string, Promise<string>>();
   private observer: MutationObserver | null = null;
   private installed = false;
 
@@ -50,6 +51,25 @@ export class AssetLoaderService {
     return created;
   }
 
+  /** Studio-white dog photos become transparent so the buddy sits on the scene. */
+  cutoutObjectUrl(url: string): Promise<string> {
+    const key = `${url}#cutout`;
+    const existing = this.objectUrls.get(key);
+    if (existing) return Promise.resolve(existing);
+    const pending = this.cutoutJobs.get(key);
+    if (pending) return pending;
+    const job = this.makeCutout(url).then(blob => {
+      const objectUrl = URL.createObjectURL(blob);
+      this.objectUrls.set(key, objectUrl);
+      return objectUrl;
+    });
+    this.cutoutJobs.set(key, job);
+    job.catch(() => {
+      this.cutoutJobs.delete(key);
+    });
+    return job;
+  }
+
   forget(url: string): void {
     this.memory.delete(url);
     const objectUrl = this.objectUrls.get(url);
@@ -65,12 +85,19 @@ export class AssetLoaderService {
     if (!this.isRemote(src)) return;
     img.setAttribute('data-asset-watch', '1');
     img.setAttribute('data-asset-original', src);
+    // SVG / vector icons load fine as <img src>. Fetching them needs CORS and
+    // can fail even when the file itself is public.
+    if (this.isDirectDisplayUrl(src)) {
+      img.classList.remove('asset-pending');
+      return;
+    }
     img.classList.add('asset-pending');
     void this.objectUrl(src).then(objectUrl => {
       if (img.hasAttribute('appasset')) return;
       img.src = objectUrl;
       img.classList.remove('asset-pending');
     }).catch(() => {
+      img.src = src;
       img.classList.remove('asset-pending');
     });
   }
@@ -78,8 +105,17 @@ export class AssetLoaderService {
   private async recoverImage(img: HTMLImageElement): Promise<void> {
     const original = img.getAttribute('data-asset-original') || img.currentSrc || img.src;
     if (!this.isRemote(original) || img.getAttribute('data-asset-retrying') === '1') return;
+    if (this.isDirectDisplayUrl(original)) {
+      img.src = original;
+      img.classList.remove('asset-pending');
+      return;
+    }
     const tries = Number(img.getAttribute('data-asset-tries') || '0') + 1;
-    if (tries > ATTEMPTS) return;
+    if (tries > ATTEMPTS) {
+      img.src = original;
+      img.classList.remove('asset-pending');
+      return;
+    }
     img.setAttribute('data-asset-original', original);
     img.setAttribute('data-asset-tries', String(tries));
     img.setAttribute('data-asset-retrying', '1');
@@ -89,10 +125,16 @@ export class AssetLoaderService {
       img.src = await this.objectUrl(original);
       img.classList.remove('asset-pending');
     } catch {
+      img.src = original;
       img.classList.remove('asset-pending');
     } finally {
       img.setAttribute('data-asset-retrying', '');
     }
+  }
+
+  /** Vectors and tiny UI icons should stay on the public URL — no fetch/CORS. */
+  private isDirectDisplayUrl(url: string): boolean {
+    return /\.svg(\?|#|$)/i.test(url);
   }
 
   private async loadBlob(url: string): Promise<Blob> {
@@ -122,7 +164,13 @@ export class AssetLoaderService {
       const controller = new AbortController();
       const timer = window.setTimeout(() => controller.abort(), 12000 + attempt * 5000);
       try {
-        const response = await fetch(url, { signal: controller.signal });
+        const response = await fetch(url, {
+          signal: controller.signal,
+          mode: 'cors',
+          credentials: 'omit',
+          // Avoid reusing a non-CORS <img> cache entry (no ACAO header).
+          cache: 'no-cache',
+        });
         if (!response.ok) throw new Error(`Asset responded ${response.status}`);
         const blob = await response.blob();
         if (!blob.size) throw new Error('Asset was empty');
@@ -142,6 +190,124 @@ export class AssetLoaderService {
       }
     }
     throw lastError;
+  }
+
+  private async makeCutout(url: string): Promise<Blob> {
+    const blob = await this.loadBlob(url);
+    try {
+      return await this.removeStudioBackground(blob);
+    } catch {
+      return blob;
+    }
+  }
+
+  private async removeStudioBackground(blob: Blob): Promise<Blob> {
+    const bitmap = await createImageBitmap(blob);
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) {
+      bitmap.close();
+      return blob;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const { data, width, height } = image;
+    const corners = [0, (width - 1) * 4, (height - 1) * width * 4, ((height - 1) * width + width - 1) * 4];
+    if (corners.every(index => data[index + 3] < 16)) return blob;
+
+    const count = width * height;
+    const seen = new Uint8Array(count);
+    const stack: number[] = [];
+    const isBackdrop = (pixel: number, minChannel: number, maxChroma: number): boolean => {
+      const index = pixel * 4;
+      const alpha = data[index + 3];
+      if (alpha < 16) return true;
+      const red = data[index];
+      const green = data[index + 1];
+      const blue = data[index + 2];
+      const min = red < green ? (red < blue ? red : blue) : (green < blue ? green : blue);
+      const max = red > green ? (red > blue ? red : blue) : (green > blue ? green : blue);
+      return min >= minChannel && max - min <= maxChroma;
+    };
+    const push = (pixel: number, minChannel: number, maxChroma: number): void => {
+      if (pixel < 0 || pixel >= count || seen[pixel] || !isBackdrop(pixel, minChannel, maxChroma)) return;
+      seen[pixel] = 1;
+      stack.push(pixel);
+    };
+
+    for (let x = 0; x < width; x++) {
+      push(x, 247, 16);
+      push((height - 1) * width + x, 247, 16);
+    }
+    for (let y = 0; y < height; y++) {
+      push(y * width, 247, 16);
+      push(y * width + width - 1, 247, 16);
+    }
+
+    let removed = 0;
+    while (stack.length) {
+      const pixel = stack.pop() as number;
+      data[pixel * 4 + 3] = 0;
+      removed++;
+      const x = pixel % width;
+      const y = (pixel - x) / width;
+      if (x > 0) push(pixel - 1, 247, 16);
+      if (x + 1 < width) push(pixel + 1, 247, 16);
+      if (y > 0) push(pixel - width, 247, 16);
+      if (y + 1 < height) push(pixel + width, 247, 16);
+    }
+    if (removed < width * height * 0.02) return blob;
+
+    const floorY = Math.floor(height * 0.78);
+    for (let y = floorY; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const pixel = y * width + x;
+        if (data[pixel * 4 + 3] !== 0) continue;
+        if (x > 0) push(pixel - 1, 228, 12);
+        if (x + 1 < width) push(pixel + 1, 228, 12);
+        if (y > floorY) push(pixel - width, 228, 12);
+        if (y + 1 < height) push(pixel + width, 228, 12);
+      }
+    }
+    while (stack.length) {
+      const pixel = stack.pop() as number;
+      const y = Math.floor(pixel / width);
+      if (y < floorY) continue;
+      data[pixel * 4 + 3] = 0;
+      const x = pixel % width;
+      if (x > 0) push(pixel - 1, 228, 12);
+      if (x + 1 < width) push(pixel + 1, 228, 12);
+      if (y > floorY) push(pixel - width, 228, 12);
+      if (y + 1 < height) push(pixel + width, 228, 12);
+    }
+
+    const fringe: number[] = [];
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const index = (y * width + x) * 4;
+        if (data[index + 3] === 0) continue;
+        const red = data[index];
+        const green = data[index + 1];
+        const blue = data[index + 2];
+        const min = red < green ? (red < blue ? red : blue) : (green < blue ? green : blue);
+        const max = red > green ? (red > blue ? red : blue) : (green > blue ? green : blue);
+        if (max - min > 22 || min < 226) continue;
+        const touchesHole = data[index - 4 + 3] === 0 || data[index + 4 + 3] === 0
+          || data[index - width * 4 + 3] === 0 || data[index + width * 4 + 3] === 0;
+        if (!touchesHole) continue;
+        fringe.push(index, Math.max(0, Math.min(255, Math.round(255 * (247 - min) / 22))));
+      }
+    }
+    for (let i = 0; i < fringe.length; i += 2) {
+      data[fringe[i] + 3] = fringe[i + 1];
+    }
+
+    ctx.putImageData(image, 0, 0);
+    const cut = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+    return cut ?? blob;
   }
 
   private async openCache(): Promise<Cache | null> {

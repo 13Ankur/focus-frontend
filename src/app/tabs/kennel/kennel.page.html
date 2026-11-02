@@ -54,7 +54,7 @@
         <div class="dog-wrapper" [class.sleeping]="isSleeping"
           [class.reaction-jump]="dogReaction === 'jump'" [class.reaction-wiggle]="dogReaction === 'wiggle'"
           [class.reaction-chomp]="dogReaction === 'chomp'">
-          <img appAsset [appAsset]="activeBreedImage" [alt]="activeBreed.name" class="buddy-image"
+          <img appAsset [appAsset]="activeBreedImage" [appAssetCutout]="true" [alt]="activeBreed.name" class="buddy-image"
             [class.happy]="currentDogState === 'happy'" (error)="onImageError($event)" (click)="onBuddyTapped()"
             role="button" tabindex="0" aria-label="Tap to hear your buddy bark">
 
