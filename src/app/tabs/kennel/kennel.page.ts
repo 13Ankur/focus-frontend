@@ -196,6 +196,7 @@ export class KennelPage implements OnInit, OnDestroy {
     const statsSub = this.statsService.stats$.subscribe(stats => {
       this.kibbleBalance = stats.totalKibble;
       this.completedSessions = stats.completedSessions;
+      this.breedService.updateKibble(stats.totalKibble);
       const newlyUnlocked = this.breedService.checkKibbleUnlocks(stats.totalKibble);
       if (newlyUnlocked) {
         this.newBreedJustUnlocked = true;
@@ -203,6 +204,7 @@ export class KennelPage implements OnInit, OnDestroy {
         this.pendingTimeouts.push(setTimeout(() => { this.newBreedJustUnlocked = false; }, 10000));
         this.showUnlockCelebration(newlyUnlocked);
       }
+      this.cdr.detectChanges();
     });
     this.subscriptions.push(statsSub);
 
@@ -415,8 +417,7 @@ export class KennelPage implements OnInit, OnDestroy {
         item.owned = true;
         item.canBuy = false;
         const balance = res.kibbleBalance ?? (this.kibbleBalance - item.cost);
-        this.statsService.setTotalKibble(balance);
-        this.kibbleBalance = this.statsService.totalKibble;
+        this.applyKibbleBalance(balance);
         this.soundService.play('unlock');
         await this.triggerHaptic('success');
 
@@ -589,6 +590,14 @@ export class KennelPage implements OnInit, OnDestroy {
     } finally {
       this.adTreatLoading = false;
     }
+  }
+
+  /** Keep the footer balance, breed progress, and auth cache in sync immediately. */
+  private applyKibbleBalance(total: number): void {
+    this.statsService.setTotalKibble(total);
+    this.kibbleBalance = this.statsService.totalKibble;
+    this.breedService.updateKibble(this.kibbleBalance);
+    this.cdr.detectChanges();
   }
 
   // ── Data Loading ──
@@ -1037,8 +1046,7 @@ export class KennelPage implements OnInit, OnDestroy {
     this.addFloatingFeedback(['🦴', '😋', '💕', '✨']);
 
     const balanceBeforeTreat = this.statsService.totalKibble;
-    this.statsService.setTotalKibble(balanceBeforeTreat - 10);
-    this.kibbleBalance = this.statsService.totalKibble;
+    this.applyKibbleBalance(balanceBeforeTreat - 10);
     this.incrementDailyTreatCount();
 
     const fullnessGain = Math.min(20, 100 - this.fullness);
@@ -1053,13 +1061,11 @@ export class KennelPage implements OnInit, OnDestroy {
         if (res.fullness != null) this.fullness = res.fullness;
         if (res.happiness != null) this.happiness = res.happiness;
         if (res.totalKibble != null) {
-          this.statsService.setTotalKibble(res.totalKibble);
-          this.kibbleBalance = this.statsService.totalKibble;
+          this.applyKibbleBalance(res.totalKibble);
         }
       },
       error: (err) => {
-        this.statsService.setTotalKibble(balanceBeforeTreat);
-        this.kibbleBalance = this.statsService.totalKibble;
+        this.applyKibbleBalance(balanceBeforeTreat);
         console.error('Error syncing feed interaction:', err);
         const msg = err?.error?.message || 'Could not sync treat.';
         this.showToast(msg, 'warning');

@@ -44,6 +44,8 @@ export class StatsService {
   
   private isLoadingSubject = new BehaviorSubject<boolean>(false);
   public isLoading$ = this.isLoadingSubject.asObservable();
+  /** Bumps on local spends so a slower GET /stats cannot restore the old balance. */
+  private kibbleWriteEpoch = 0;
 
   constructor(
     private apiService: ApiService,
@@ -116,12 +118,18 @@ export class StatsService {
       return;
     }
 
+    const writeEpochAtStart = this.kibbleWriteEpoch;
     this.isLoadingSubject.next(true);
     
     try {
       const response = await firstValueFrom(this.apiService.getStats());
       
       if (response) {
+        // A treat/buy may have landed while this GET was in flight — keep the newer local spend.
+        if (this.kibbleWriteEpoch !== writeEpochAtStart) {
+          return;
+        }
+
         // Map server response to our stats format
         const stats: UserStats = {
           totalMealsProvided: response.allTime?.totalMealsProvided || 0,
@@ -353,6 +361,7 @@ export class StatsService {
   setTotalKibble(total: number): void {
     const totalKibble = Math.max(0, Math.round(Number(total) || 0));
     const totalMealsProvided = Math.floor(totalKibble / KIBBLE_PER_MEAL);
+    this.kibbleWriteEpoch++;
     if (totalKibble !== this.stats.totalKibble || totalMealsProvided !== this.stats.totalMealsProvided) {
       this.statsSubject.next({
         ...this.stats,
