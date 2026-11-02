@@ -235,4 +235,9 @@ export class RazorpayService {
   private clearPending(): void {
     localStorage.removeItem(this.pendingKey);
   }
+
+  /** Call on logout so the next account cannot inherit a previous checkout. */
+  clearPendingPayment(): void {
+    this.clearPending();
+  }
 }

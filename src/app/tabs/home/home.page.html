@@ -1,5 +1,12 @@
 <ion-content class="home-content" [fullscreen]="true">
-  <div class="home-container">
+  <div class="home-loading-overlay" *ngIf="isHomeLoading && !isTimerRunning" role="status" aria-live="polite" aria-busy="true">
+    <div class="home-loading-card">
+      <ion-spinner name="crescent"></ion-spinner>
+      <span>Loading your buddy…</span>
+    </div>
+  </div>
+
+  <div class="home-container" [class.home-container-loading]="isHomeLoading && !isTimerRunning">
 
     <!-- Header -->
     <div class="header">

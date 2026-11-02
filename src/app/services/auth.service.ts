@@ -1,12 +1,14 @@
 import { Injectable, Injector } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { safeGetItem, safeSetItem, safeRemoveItem } from '../utils/storage';
+import { accountIsPro, normalizeTier } from '../utils/subscription-access';
 import { BehaviorSubject, Observable, tap, catchError, from } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { ApiService } from './api.service';
 import { BreedService } from './breed.service';
 import { RevenueCatService } from './revenue-cat.service';
 import { RazorpayService } from './razorpay.service';
+import { FocusSoundService } from './focus-sound.service';
 
 // Import Capacitor plugins
 // import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
@@ -166,6 +168,7 @@ export class AuthService {
 
   private _breedService: BreedService | null = null;
   private _revenueCatService: RevenueCatService | null = null;
+  private _focusSoundService: FocusSoundService | null = null;
 
   constructor(
     private http: HttpClient,
@@ -189,6 +192,13 @@ export class AuthService {
       this._revenueCatService = this.injector.get(RevenueCatService);
     }
     return this._revenueCatService;
+  }
+
+  private get focusSoundService(): FocusSoundService {
+    if (!this._focusSoundService) {
+      this._focusSoundService = this.injector.get(FocusSoundService);
+    }
+    return this._focusSoundService;
   }
 
   /*
@@ -271,24 +281,85 @@ export class AuthService {
       password
     }).pipe(
       tap(response => {
-        this.storeUser({
-          _id: response._id,
-          username: response.username,
-          email: response.email,
-          totalKibble: response.totalKibble,
-          totalFocusMinutes: response.totalFocusMinutes,
-          token: response.token,
-          provider: 'email',
-          emailVerified: response.emailVerified || false,
-          onboardingCompleted: response.onboardingCompleted,
-          settings: response.settings,
-          notificationPrefs: response.notificationPrefs
-        });
-        this.syncBreedDataAfterLogin();
-        this.revenueCatService.loginUser(response._id);
-        void this.finishPendingPayment(response.token);
+        this.storeUser(this.userFromAuthResponse(response, 'email'));
+        void this.afterLogin(response._id, response.token);
       })
     );
+  }
+
+  /** Build a clean per-account user so the previous Pro session cannot leak in. */
+  private userFromAuthResponse(
+    response: AuthResponse & {
+      isPremium?: boolean;
+      subscriptionTier?: string;
+      subscriptionExpiry?: string;
+      trialEndDate?: string;
+      trialUsed?: boolean;
+    },
+    provider: User['provider'],
+  ): User {
+    const snapshot = {
+      token: response.token,
+      isPremium: !!response.isPremium,
+      subscriptionTier: response.subscriptionTier,
+      subscriptionExpiry: response.subscriptionExpiry,
+      trialEndDate: response.trialEndDate,
+    };
+    const isPro = accountIsPro(snapshot);
+    return {
+      _id: response._id,
+      username: response.username,
+      email: response.email,
+      totalKibble: response.totalKibble,
+      totalFocusMinutes: response.totalFocusMinutes,
+      token: response.token,
+      provider,
+      emailVerified: response.emailVerified || false,
+      onboardingCompleted: response.onboardingCompleted,
+      settings: response.settings,
+      notificationPrefs: response.notificationPrefs,
+      isPremium: isPro,
+      subscriptionTier: normalizeTier(snapshot),
+      ...(response.subscriptionExpiry ? { subscriptionExpiry: response.subscriptionExpiry } as any : {}),
+      ...(response.trialEndDate ? { trialEndDate: response.trialEndDate } as any : {}),
+      ...(response.trialUsed != null ? { trialUsed: response.trialUsed } as any : {}),
+    };
+  }
+
+  private async afterLogin(userId: string, token: string): Promise<void> {
+    await this.syncBreedDataAfterLogin();
+    await this.refreshSubscriptionAfterLogin(token);
+    await this.revenueCatService.loginUser(userId);
+    // Only recover a payment started for THIS login session — never a prior account's pending checkout.
+    void this.finishPendingPayment(token);
+  }
+
+  private async refreshSubscriptionAfterLogin(token: string): Promise<void> {
+    try {
+      const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
+      const res: any = await this.http.get(`${this.apiUrl}/subscription/status`, { headers }).toPromise();
+      const snapshot = {
+        token,
+        isPremium: !!res?.isPremium,
+        subscriptionTier: res?.tier,
+        subscriptionExpiry: res?.expiry,
+        trialEndDate: res?.trial?.end || res?.trial?.endDate,
+      };
+      const isPro = accountIsPro(snapshot);
+      const user: any = {
+        ...this.currentUser,
+        isPremium: isPro,
+        subscriptionTier: normalizeTier(snapshot),
+      };
+      if (res?.expiry) user.subscriptionExpiry = res.expiry;
+      else delete user.subscriptionExpiry;
+      if (res?.trial?.used != null) user.trialUsed = !!res.trial.used;
+      if (snapshot.trialEndDate) user.trialEndDate = snapshot.trialEndDate;
+      this.storeUser(user);
+      this.focusSoundService.setProAccess(isPro);
+    } catch {
+      // Keep the tier from the login payload.
+    }
   }
 
   applySubscription(result: { expiry?: string | null; trial?: boolean }): void {
@@ -320,22 +391,8 @@ export class AuthService {
     }).pipe(
       tap(response => {
         if (response.token) {
-          this.storeUser({
-            _id: response._id,
-            username: response.username,
-            email: response.email,
-            totalKibble: response.totalKibble,
-            totalFocusMinutes: response.totalFocusMinutes,
-            token: response.token,
-            provider: 'email',
-            emailVerified: true,
-            onboardingCompleted: response.onboardingCompleted,
-            settings: response.settings,
-            notificationPrefs: response.notificationPrefs
-          });
-          this.syncBreedDataAfterLogin();
-          this.revenueCatService.loginUser(response._id);
-          void this.finishPendingPayment(response.token);
+          this.storeUser(this.userFromAuthResponse({ ...response, emailVerified: true }, 'email'));
+          void this.afterLogin(response._id, response.token);
         }
       })
     );
@@ -515,6 +572,9 @@ export class AuthService {
     'notifications',
     'default_duration',
     'paws_daily_goal',
+    'pending_razorpay_payment',
+    'pomodoro_enabled',
+    'pomodoro_config',
   ];
 
   logout(): void {
@@ -525,10 +585,17 @@ export class AuthService {
     */
 
     this.revenueCatService.logoutUser();
+    this.razorpayService.clearPendingPayment();
     this.apiService.clearToken();
     this.USER_STORAGE_KEYS.forEach(key => safeRemoveItem(key));
     this.breedService.resetCollection();
+    this.focusSoundService.setProAccess(false);
     this.currentUserSubject.next(null);
+    // StatsService ↔ AuthService circular import — resolve lazily after logout.
+    void import('./stats.service').then(({ StatsService }) => {
+      if (this.currentUserSubject.value) return; // a new login already won the race
+      try { this.injector.get(StatsService).resetStats(); } catch { /* ignore */ }
+    });
   }
 
   /**

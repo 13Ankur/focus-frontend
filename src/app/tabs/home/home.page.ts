@@ -46,8 +46,10 @@ import { NotificationService } from '../../services/notification.service';
 import { SocialService, FocusRoom } from '../../services/social.service';
 import { ApiService } from '../../services/api.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
+import { AssetLoaderService } from '../../services/asset-loader.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
+import { accountIsPro, normalizeTier } from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { SuccessModalComponent } from '../../components/success-modal/success-modal.component';
@@ -116,7 +118,9 @@ export class HomePage implements OnInit, OnDestroy {
   remainingSeconds = 0;
   totalSeconds = 900;
   isProcessing = false;
+  isHomeLoading = true;
   currentPhase: TimerPhase = 'work';
+  private homeLoadToken = 0;
 
   // ── Duration ──
   durationOptions: DurationOption[] = [];
@@ -214,6 +218,7 @@ export class HomePage implements OnInit, OnDestroy {
     private socialService: SocialService,
     private apiService: ApiService,
     private revenueCatService: RevenueCatService,
+    private assetLoader: AssetLoaderService,
     private http: HttpClient,
     public router: Router,
     private modalController: ModalController,
@@ -228,15 +233,11 @@ export class HomePage implements OnInit, OnDestroy {
   userName = 'User';
 
   ngOnInit(): void {
-    // Native platforms: keep RevenueCat entitlement in sync.
-    // Web: subscription status comes from the API (Razorpay).
+    // Re-check server/local tier when RevenueCat updates — never force Pro from RC alone
+    // after another account's Store receipt is still on this device.
     if (Capacitor.isNativePlatform()) {
-      const proSub = this.revenueCatService.isPro$.subscribe(isPro => {
-        if (isPro) {
-          this.applyTier('pro', true);
-        } else {
-          this.loadUserTier();
-        }
+      const proSub = this.revenueCatService.isPro$.subscribe(() => {
+        void this.loadUserTier();
       });
       this.subscriptions.push(proSub);
     }
@@ -248,7 +249,6 @@ export class HomePage implements OnInit, OnDestroy {
     });
 
     this.checkSessionStatus();
-    this.loadUserTier();
     this.buildDurationOptions();
     this.timerService.setDuration(this.selectedDuration);
     this.loadDailyGoal();
@@ -342,9 +342,6 @@ export class HomePage implements OnInit, OnDestroy {
     this.activeBreed = this.breedService.activeBreed;
     this.focusSoundService.warmCurrent();
     this.dogBarkService.preload(this.activeBreed?.id);
-    void this.statsService.syncWithServer();
-    void this.refreshAchievementBadge();
-    this.loadUserTier();
     this.buildDurationOptions();
 
     const today = this.statsService.getTodayStats();
@@ -357,7 +354,50 @@ export class HomePage implements OnInit, OnDestroy {
     this.blockListCount = this.appBlocker.blockListCount;
     this.blockingActive = this.appBlocker.isBlocking;
 
-    this.loadActiveRooms();
+    void this.refreshHomeContent();
+  }
+
+  /** Show a loader while stats, tier, rooms, and buddy image catch up. */
+  private async refreshHomeContent(): Promise<void> {
+    if (this.isTimerRunning) {
+      this.isHomeLoading = false;
+      return;
+    }
+
+    const token = ++this.homeLoadToken;
+    // Avoid a spinner flash when the tab is already warm and responses are cached.
+    let showStarted = this.isHomeLoading;
+    const showTimer = window.setTimeout(() => {
+      if (token === this.homeLoadToken) {
+        this.isHomeLoading = true;
+        showStarted = true;
+      }
+    }, showStarted ? 0 : 180);
+
+    try {
+      await Promise.all([
+        this.statsService.syncWithServer(),
+        this.loadUserTier().then(() => this.applySavedDuration()),
+        this.refreshAchievementBadge(),
+        this.loadActiveRooms(),
+        this.preloadBuddyImage(),
+      ]);
+    } finally {
+      window.clearTimeout(showTimer);
+      if (token === this.homeLoadToken) {
+        this.isHomeLoading = false;
+      }
+    }
+  }
+
+  private async preloadBuddyImage(): Promise<void> {
+    const url = this.currentDogImage;
+    if (!url || !this.assetLoader.isRemote(url)) return;
+    try {
+      await this.assetLoader.objectUrl(url);
+    } catch {
+      // Image directive will still retry; don't block the screen forever.
+    }
   }
 
   private async loadActiveRooms(): Promise<void> {
@@ -592,6 +632,15 @@ export class HomePage implements OnInit, OnDestroy {
   async startSession(): Promise<void> {
     if (this.isProcessing) return;
 
+    // Free plan can only feed for 15 min — never send a locked length to the API.
+    if (!this.isPro && !this.isDurationAllowed(this.selectedDuration)) {
+      this.selectedDuration = FREE_DURATIONS[0];
+      this.usingCustomDuration = false;
+      this.showCustomPicker = false;
+      this.timerService.setDuration(this.selectedDuration);
+      this.persistDuration(this.selectedDuration);
+    }
+
     this.isProcessing = true;
     this.focusSoundService.prepareAudio();
     this.soundService.unlock();
@@ -599,6 +648,16 @@ export class HomePage implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(this.apiService.startFocusSession(this.selectedDuration));
 
       if (!res?.allowed) {
+        if (res?.reason === 'duration_locked') {
+          this.selectedDuration = FREE_DURATIONS[0];
+          this.timerService.setDuration(this.selectedDuration);
+          const toast = await this.toastController.create({
+            message: 'Free plan uses a 15 minute feed. Upgrade for longer sessions.',
+            duration: 3500, position: 'top', color: 'warning',
+          });
+          await toast.present();
+          return;
+        }
         const toast = await this.toastController.create({
           message: res?.message || 'Could not start session.',
           duration: 3500, position: 'top', color: 'warning',
@@ -633,12 +692,27 @@ export class HomePage implements OnInit, OnDestroy {
     } catch (err: any) {
       console.error('Start session error:', err);
       const msg = err.message || 'Could not start session. Check your connection.';
-      if (msg.toLowerCase().includes('daily limit') || msg.toLowerCase().includes('upgrade to pro')) {
+      const lower = msg.toLowerCase();
+
+      if (lower.includes('duration') && lower.includes('15')) {
+        this.selectedDuration = FREE_DURATIONS[0];
+        this.timerService.setDuration(this.selectedDuration);
+        const toast = await this.toastController.create({
+          message: 'Switched to a 15 minute feed for the free plan.',
+          duration: 3000, position: 'top', color: 'warning',
+        });
+        await toast.present();
+        return;
+      }
+
+      // Only the daily free-session cap should open Pro — not every API 429.
+      if (lower.includes('daily limit') || lower.includes('unlimited sessions')) {
         this.router.navigate(['/paywall'], {
           queryParams: { trigger: 'session_limit', breedName: this.activeBreedName, returnUrl: '/tabs/home' },
         });
         return;
       }
+
       const toast = await this.toastController.create({
         message: msg,
         duration: 4000, position: 'top', color: 'danger',
@@ -1061,8 +1135,15 @@ export class HomePage implements OnInit, OnDestroy {
       );
 
       if (res?.tier) {
-        const tier = (res.tier as UserTier) || 'free';
-        const isPro = tier === 'pro' || tier === 'guardian' || !!res.isPremium;
+        const snapshot = {
+          token: this.authService.token || 'session',
+          subscriptionTier: res.tier,
+          isPremium: !!res.isPremium,
+          subscriptionExpiry: res.expiry,
+          trialEndDate: res.trial?.end,
+        };
+        const isPro = accountIsPro(snapshot);
+        const tier = normalizeTier(snapshot);
         this.applyTier(tier, isPro);
 
         try {
@@ -1070,6 +1151,8 @@ export class HomePage implements OnInit, OnDestroy {
           user.subscriptionTier = tier;
           user.isPremium = isPro;
           if (res.expiry) user.subscriptionExpiry = res.expiry;
+          else delete user.subscriptionExpiry;
+          if (res.trial?.end) user.trialEndDate = res.trial.end;
           safeSetItem('focus_user', JSON.stringify(user));
         } catch { /* ignore local cache write errors */ }
 
@@ -1081,14 +1164,10 @@ export class HomePage implements OnInit, OnDestroy {
 
     try {
       const user = JSON.parse(safeGetItem('focus_user') || '{}');
-      const localTier = (user?.subscriptionTier as UserTier) || 'free';
-      const localPro = localTier === 'pro' || localTier === 'guardian' || !!user?.isPremium;
-      const rcPro = Capacitor.isNativePlatform() && this.revenueCatService.isProSync;
-      const isPro = localPro || rcPro;
-      this.applyTier(isPro ? (localTier !== 'free' ? localTier : 'pro') : 'free', isPro);
+      const isPro = accountIsPro(user);
+      this.applyTier(normalizeTier(user), isPro);
     } catch {
-      const isPro = Capacitor.isNativePlatform() && this.revenueCatService.isProSync;
-      this.applyTier(isPro ? 'pro' : 'free', isPro);
+      this.applyTier('free', false);
     }
   }
 

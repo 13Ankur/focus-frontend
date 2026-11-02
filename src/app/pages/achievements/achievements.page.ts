@@ -10,6 +10,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { environment } from '../../../environments/environment';
 import { StatsService } from '../../services/stats.service';
 import { BreedService } from '../../services/breed.service';
+import { readAccountIsPro } from '../../utils/subscription-access';
 
 interface AchievementItem {
   id: string;
@@ -203,20 +204,7 @@ export class AchievementsPage implements OnInit {
   // ── Helpers ──
 
   private localIsPro(): boolean {
-    try {
-      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      const tier = user?.subscriptionTier;
-      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
-      if (!isPro) return false;
-      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
-      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
-      const now = new Date();
-      if (trialEnd && trialEnd > now) return true;
-      if (expiry && expiry <= now) return false;
-      return true;
-    } catch {
-      return false;
-    }
+    return readAccountIsPro();
   }
 
   private getAuthHeaders(): HttpHeaders {

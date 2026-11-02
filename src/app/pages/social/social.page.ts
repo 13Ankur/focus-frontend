@@ -14,6 +14,7 @@ import { Share } from '@capacitor/share';
 import { Clipboard } from '@capacitor/clipboard';
 import { Capacitor } from '@capacitor/core';
 import { SocialService, FocusRoom, LeaderboardEntry, UserRank } from '../../services/social.service';
+import { accountIsPro } from '../../utils/subscription-access';
 
 type TabId = 'rooms' | 'leaderboard';
 type LeaderboardPeriod = 'weekly' | 'monthly' | 'alltime';
@@ -75,8 +76,7 @@ export class SocialPage implements OnInit {
   private loadUserTier(): void {
     try {
       const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      const tier = user?.subscriptionTier || 'free';
-      this.isPro = tier === 'pro' || tier === 'guardian' || !!user?.isPremium;
+      this.isPro = accountIsPro(user);
     } catch {
       this.isPro = false;
     }

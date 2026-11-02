@@ -7,6 +7,7 @@ import { arrowBack, chevronForward, shieldCheckmark, lockClosed } from 'ionicons
 import { Subscription } from 'rxjs';
 
 import { AppBlockerService, AppInfo } from '../../services/app-blocker.service';
+import { accountIsPro, normalizeTier } from '../../utils/subscription-access';
 
 type UserTier = 'free' | 'pro' | 'guardian';
 
@@ -99,8 +100,8 @@ export class AppBlockingPage implements OnInit, OnDestroy {
   private loadUserTier(): void {
     try {
       const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      this.userTier = user?.subscriptionTier || 'free';
-      this.isPro = this.userTier === 'pro' || this.userTier === 'guardian' || !!user?.isPremium;
+      this.userTier = normalizeTier(user);
+      this.isPro = accountIsPro(user);
     } catch {
       this.userTier = 'free';
       this.isPro = false;

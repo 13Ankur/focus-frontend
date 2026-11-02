@@ -25,6 +25,7 @@ import { BreedService } from '../../services/breed.service';
 import { AdService } from '../../services/ad.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem } from '../../utils/storage';
+import { accountIsPro, normalizeTier } from '../../utils/subscription-access';
 
 type TimePeriod = 'today' | 'week' | 'month' | 'all';
 type UserTier = 'free' | 'pro' | 'guardian';
@@ -215,9 +216,9 @@ export class ProfilePage implements OnInit, OnDestroy {
   private applyLocalTier(): void {
     try {
       const stored = JSON.parse(safeGetItem('focus_user') || '{}');
-      const tier = (stored?.subscriptionTier as UserTier) || 'free';
+      const tier = normalizeTier(stored);
       this.userTier = tier;
-      this.isPro = tier === 'pro' || tier === 'guardian' || !!stored?.isPremium;
+      this.isPro = accountIsPro(stored);
     } catch {
       this.userTier = 'free';
       this.isPro = false;

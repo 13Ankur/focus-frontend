@@ -23,6 +23,7 @@ import { SoundService } from '../../services/sound.service';
 import { AppBlockerService } from '../../services/app-blocker.service';
 import { NotificationService, NotificationPreferences } from '../../services/notification.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
+import { readAccountIsPro } from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 
 @Component({
@@ -133,24 +134,11 @@ export class SettingsPage implements OnInit, OnDestroy {
   }
 
   private refreshPro(): void {
-    this.isPro = this.revenueCatService.isProSync || this.localIsPro();
+    this.isPro = this.localIsPro();
   }
 
   private localIsPro(): boolean {
-    try {
-      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      const tier = user?.subscriptionTier;
-      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
-      if (!isPro) return false;
-      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
-      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
-      const now = new Date();
-      if (trialEnd && trialEnd > now) return true;
-      if (expiry && expiry <= now) return false;
-      return true;
-    } catch {
-      return false;
-    }
+    return readAccountIsPro();
   }
 
   private isDurationAllowed(minutes: number): boolean {

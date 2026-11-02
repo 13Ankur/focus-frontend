@@ -138,9 +138,12 @@ export class PaywallPage implements OnInit, OnDestroy {
       await this.revenueCatService.presentPaywall();
 
       if (this.revenueCatService.isProSync) {
+        const expiry = await this.revenueCatService.activeExpiry();
+        if (!expiry) return;
         const user = this.getLocalUser();
         user.isPremium = true;
         user.subscriptionTier = 'pro';
+        user.subscriptionExpiry = expiry;
         safeSetItem('focus_user', JSON.stringify(user));
 
         await this.showToast('Welcome to Pro! 🎉', 'success');

@@ -24,6 +24,7 @@ import { AdService } from '../../services/ad.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
+import { accountIsPro, normalizeTier, readAccountIsPro } from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 
@@ -191,8 +192,9 @@ export class KennelPage implements OnInit, OnDestroy {
     });
     this.subscriptions.push(timerSub);
 
-    const proSub = this.revenueCatService.isPro$.subscribe(rcPro => {
-      this.applyAccountTier(rcPro || this.localIsPro());
+    const proSub = this.revenueCatService.isPro$.subscribe(() => {
+      // Server / focus_user is the source of truth after account switch.
+      void this.refreshTier();
     });
     this.subscriptions.push(proSub);
     void this.refreshTier();
@@ -488,21 +490,7 @@ export class KennelPage implements OnInit, OnDestroy {
   }
 
   private localIsPro(): boolean {
-    if (this.revenueCatService.isProSync) return true;
-    try {
-      const user = JSON.parse(safeGetItem('focus_user') || '{}');
-      const tier = user?.subscriptionTier;
-      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
-      if (!isPro) return false;
-      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
-      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
-      const now = new Date();
-      if (trialEnd && trialEnd > now) return true;
-      if (expiry && expiry <= now) return false;
-      return true;
-    } catch {
-      return false;
-    }
+    return readAccountIsPro();
   }
 
   private async refreshTier(): Promise<void> {
@@ -515,12 +503,20 @@ export class KennelPage implements OnInit, OnDestroy {
       const res: any = await firstValueFrom(
         this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
       );
-      const tier = res?.tier as UserTier | undefined;
-      const isPro = tier === 'pro' || tier === 'guardian' || !!res?.isPremium;
+      const snapshot = {
+        token: stored?.token || 'session',
+        subscriptionTier: res?.tier,
+        isPremium: !!res?.isPremium,
+        subscriptionExpiry: res?.expiry,
+        trialEndDate: res?.trial?.end,
+      };
+      const isPro = accountIsPro(snapshot);
       this.applyAccountTier(isPro);
-      stored.subscriptionTier = tier || (isPro ? 'pro' : 'free');
+      stored.subscriptionTier = normalizeTier(snapshot);
       stored.isPremium = isPro;
       if (res?.expiry) stored.subscriptionExpiry = res.expiry;
+      else delete stored.subscriptionExpiry;
+      if (res?.trial?.end) stored.trialEndDate = res.trial.end;
       safeSetItem('focus_user', JSON.stringify(stored));
     } catch {
       // Keep the tier already read from this device.
@@ -736,7 +732,7 @@ export class KennelPage implements OnInit, OnDestroy {
   }
 
   get unlockedCount(): number {
-    return this.breedService.unlockedBreeds.length || 1;
+    return this.allBreeds.filter(b => this.isBreedUnlocked(b)).length || 1;
   }
 
   get totalBreeds(): number {

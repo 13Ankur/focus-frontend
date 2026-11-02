@@ -81,14 +81,20 @@ export class RevenueCatService {
    * user on this device starts fresh.
    */
   async logoutUser(): Promise<void> {
+    // Always clear local Pro immediately so the next free account cannot inherit it.
+    this.isProSubject.next(false);
+
     if (!Capacitor.isNativePlatform() || !this.isConfigured) return;
 
     try {
-      const { customerInfo } = await Purchases.logOut();
-      this.updateProStatus(customerInfo);
+      await Purchases.logOut();
+      // Do not read the device receipt after logout. It still belongs to the
+      // previous Apple ID and would mark the next free account as Pro.
+      this.isProSubject.next(false);
       console.log('RevenueCat: Logged out');
     } catch (error) {
       console.error('RevenueCat logOut error:', error);
+      this.isProSubject.next(false);
     }
   }
 
@@ -262,6 +268,18 @@ export class RevenueCatService {
    */
   get isProSync(): boolean {
     return this.isProSubject.value;
+  }
+
+  /** Dated entitlement only. A receipt with no end date must not unlock the account. */
+  async activeExpiry(): Promise<string | null> {
+    if (!Capacitor.isNativePlatform() || !this.isConfigured) return null;
+    try {
+      const { customerInfo } = await Purchases.getCustomerInfo();
+      const entitlement = customerInfo?.entitlements?.active?.[this.ENTITLEMENT_ID];
+      return entitlement?.expirationDate || null;
+    } catch {
+      return null;
+    }
   }
 
   /**

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { ApiService } from './api.service';
-import { RevenueCatService } from './revenue-cat.service';
 import { safeGetItem, safeSetItem } from '../utils/storage';
 import { assetUrl } from '../utils/assets';
+import { readAccountIsPro } from '../utils/subscription-access';
 
 export type DogState = 'idle' | 'eating' | 'sleeping' | 'happy';
 
@@ -179,7 +179,6 @@ export class BreedService {
 
   constructor(
     private apiService: ApiService,
-    private revenueCatService: RevenueCatService
   ) {
     this.loadCollection();
   }
@@ -192,21 +191,16 @@ export class BreedService {
 
   get activeBreed(): DogBreed {
     const breed = this.allBreeds.find(b => b.id === this.collection.activeBreed);
-    return breed || this.allBreeds[0];
+    if (breed && this.isBreedUnlocked(breed.id)) return breed;
+    return this.allBreeds.find(b => this.isBreedUnlocked(b.id)) || this.allBreeds[0];
   }
 
   get unlockedBreeds(): DogBreed[] {
-    if (this.hasProAccess()) {
-      return this.allBreeds;
-    }
-    return this.allBreeds.filter(b => this.collection.unlockedBreeds.includes(b.id));
+    return this.allBreeds.filter(b => this.isBreedUnlocked(b.id));
   }
 
   get lockedBreeds(): DogBreed[] {
-    if (this.hasProAccess()) {
-      return [];
-    }
-    return this.allBreeds.filter(b => !this.collection.unlockedBreeds.includes(b.id));
+    return this.allBreeds.filter(b => !this.isBreedUnlocked(b.id));
   }
 
   // ============ IMAGE METHODS ============
@@ -322,28 +316,30 @@ export class BreedService {
   // ============ UNLOCK METHODS ============
 
   isBreedUnlocked(breedId: string): boolean {
-    if (this.hasProAccess()) {
-      return true;
-    }
-    return this.collection.unlockedBreeds.includes(breedId);
+    if (this.hasProAccess()) return true;
+    const breed = this.allBreeds.find(b => b.id === breedId);
+    if (!breed) return false;
+    // Kibble is the gate. A stored id list can still contain every dog from a Pro session.
+    return (this.collection.totalKibble || 0) >= (breed.unlockRequirement || 0);
   }
 
   private hasProAccess(): boolean {
-    if (this.revenueCatService.isProSync) return true;
-    try {
-      const user = JSON.parse(localStorage.getItem('focus_user') || '{}');
-      const tier = user?.subscriptionTier;
-      const isPro = user?.isPremium === true || tier === 'pro' || tier === 'guardian';
-      if (!isPro) return false;
-      const expiry = user?.subscriptionExpiry ? new Date(user.subscriptionExpiry) : null;
-      const trialEnd = user?.trialEndDate ? new Date(user.trialEndDate) : null;
-      const now = new Date();
-      if (trialEnd && trialEnd > now) return true;
-      if (expiry && expiry <= now) return false;
-      return true;
-    } catch {
-      return false;
-    }
+    return readAccountIsPro();
+  }
+
+  private chooseActive(requested: string, unlocked: string[]): string {
+    if (unlocked.includes(requested)) return requested;
+    const ranked = this.allBreeds.filter(breed => unlocked.includes(breed.id));
+    return ranked[ranked.length - 1]?.id || 'golden_retriever';
+  }
+
+  /** Free accounts keep only dogs their kibble has earned, even if the saved list says otherwise. */
+  private breedsEarned(ids: string[] | undefined, kibble: number): string[] {
+    if (this.hasProAccess()) return withStarterBreeds(ids);
+    const earned = this.allBreeds
+      .filter(breed => kibble >= (breed.unlockRequirement || 0))
+      .map(breed => breed.id);
+    return withStarterBreeds((ids || []).filter(id => earned.includes(id)));
   }
 
   getUnlockProgress(breedId: string): number {
@@ -491,10 +487,13 @@ export class BreedService {
       const saved = safeGetItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        const kibble = parsed.totalKibble || 0;
+        const unlocked = this.breedsEarned(parsed.unlockedBreeds, kibble);
+        const requested = parsed.activeBreed || 'golden_retriever';
         this.collectionSubject.next({
-          unlockedBreeds: withStarterBreeds(parsed.unlockedBreeds),
-          activeBreed: parsed.activeBreed || 'golden_retriever',
-          totalKibble: parsed.totalKibble || 0,
+          unlockedBreeds: unlocked,
+          activeBreed: this.chooseActive(requested, unlocked),
+          totalKibble: kibble,
           completedSessions: parsed.completedSessions || 0,
         });
       }
@@ -512,13 +511,19 @@ export class BreedService {
       const response = await firstValueFrom(this.apiService.getBreedCollection());
 
       if (response) {
+        const kibble = response.totalKibble || 0;
+        const unlocked = this.breedsEarned(response.unlockedBreeds, kibble);
+        const active = this.chooseActive(response.activeBreed || 'golden_retriever', unlocked);
         this.collectionSubject.next({
-          unlockedBreeds: withStarterBreeds(response.unlockedBreeds),
-          activeBreed: response.activeBreed || 'golden_retriever',
-          totalKibble: response.totalKibble || 0,
+          unlockedBreeds: unlocked,
+          activeBreed: active,
+          totalKibble: kibble,
           completedSessions: response.completedSessions || this.collection.completedSessions || 0,
         });
         this.saveToLocalStorage();
+        if (active !== response.activeBreed) {
+          void firstValueFrom(this.apiService.setActiveBreed(active)).catch(() => { /* keep the local buddy */ });
+        }
       }
     } catch (error) {
       console.error('Error syncing breed collection with server:', error);

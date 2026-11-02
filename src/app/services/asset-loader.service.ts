@@ -88,17 +88,17 @@ export class AssetLoaderService {
     // SVG / vector icons load fine as <img src>. Fetching them needs CORS and
     // can fail even when the file itself is public.
     if (this.isDirectDisplayUrl(src)) {
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
       return;
     }
-    img.classList.add('asset-pending');
+    this.setPending(img, true);
     void this.objectUrl(src).then(objectUrl => {
       if (img.hasAttribute('appasset')) return;
       img.src = objectUrl;
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
     }).catch(() => {
       img.src = src;
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
     });
   }
 
@@ -107,26 +107,26 @@ export class AssetLoaderService {
     if (!this.isRemote(original) || img.getAttribute('data-asset-retrying') === '1') return;
     if (this.isDirectDisplayUrl(original)) {
       img.src = original;
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
       return;
     }
     const tries = Number(img.getAttribute('data-asset-tries') || '0') + 1;
     if (tries > ATTEMPTS) {
       img.src = original;
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
       return;
     }
     img.setAttribute('data-asset-original', original);
     img.setAttribute('data-asset-tries', String(tries));
     img.setAttribute('data-asset-retrying', '1');
-    img.classList.add('asset-pending');
+    this.setPending(img, true);
     try {
       this.forget(original);
       img.src = await this.objectUrl(original);
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
     } catch {
       img.src = original;
-      img.classList.remove('asset-pending');
+      this.setPending(img, false);
     } finally {
       img.setAttribute('data-asset-retrying', '');
     }
@@ -135,6 +135,15 @@ export class AssetLoaderService {
   /** Vectors and tiny UI icons should stay on the public URL — no fetch/CORS. */
   private isDirectDisplayUrl(url: string): boolean {
     return /\.svg(\?|#|$)/i.test(url);
+  }
+
+  private setPending(img: HTMLImageElement, pending: boolean): void {
+    img.classList.toggle('asset-pending', pending);
+    img.setAttribute('aria-busy', pending ? 'true' : 'false');
+    const parent = img.parentElement;
+    if (parent) {
+      parent.classList.toggle('asset-frame-pending', pending);
+    }
   }
 
   private async loadBlob(url: string): Promise<Blob> {
