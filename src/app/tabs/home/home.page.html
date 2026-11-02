@@ -339,7 +339,7 @@
         </div>
       </button>
 
-      <p class="action-hint" *ngIf="!isTimerRunning && !isOnBreak && completedSessions > 0 && !sessionLimitReached">
+      <p class="action-hint" *ngIf="!isTimerRunning && !isOnBreak && completedSessions > 0">
         Stay focused and help {{ activeBreedName }} earn {{ kibbleToEarn }} kibble!
       </p>
       <p class="action-hint first-session" *ngIf="!isTimerRunning && completedSessions === 0">

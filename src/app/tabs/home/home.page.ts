@@ -164,7 +164,6 @@ export class HomePage implements OnInit, OnDestroy {
   userKibble = 0;
   completedSessions = 0;
 
-  sessionLimitReached = false;
 
   // ── Sound picker ──
   showSoundPicker = false;
@@ -750,14 +749,6 @@ export class HomePage implements OnInit, OnDestroy {
           duration: 3000, position: 'top', color: 'warning',
         });
         await toast.present();
-        return;
-      }
-
-      // Only the daily free-session cap should open Pro — not every API 429.
-      if (lower.includes('daily limit') || lower.includes('unlimited sessions')) {
-        this.router.navigate(['/paywall'], {
-          queryParams: { trigger: 'session_limit', breedName: this.activeBreedName, returnUrl: '/tabs/home' },
-        });
         return;
       }
 
