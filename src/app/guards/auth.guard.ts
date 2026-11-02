@@ -14,7 +14,8 @@ export class AuthGuard implements CanActivate {
 
   canActivate(): boolean | UrlTree {
     // Check if onboarding is complete
-    const onboardingComplete = safeGetItem('onboarding_complete') === 'true';
+    const onboardingComplete = this.authService.currentUser?.onboardingCompleted === true
+      || safeGetItem('onboarding_complete') === 'true';
     
     if (!onboardingComplete) {
       return this.router.createUrlTree(['/onboarding']);

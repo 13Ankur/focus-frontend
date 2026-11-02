@@ -1,8 +1,8 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
-import { Subject } from 'rxjs';
+import { Subject, firstValueFrom } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import {
   IonContent,
@@ -63,7 +63,9 @@ export class AuthPage implements OnInit, OnDestroy {
     private router: Router,
     private route: ActivatedRoute,
     private toastController: ToastController,
-    private alertController: AlertController
+    private alertController: AlertController,
+    private zone: NgZone,
+    private cdr: ChangeDetectorRef,
   ) {
     addIcons({
       mailOutline,
@@ -143,7 +145,7 @@ export class AuthPage implements OnInit, OnDestroy {
 
     try {
       if (this.isLoginMode) {
-        await this.authService.login(this.email.trim(), this.password).toPromise();
+        await firstValueFrom(this.authService.login(this.email.trim(), this.password));
         await this.showSuccessToast('Welcome back!');
         this.navigateAfterAuth();
       } else {
@@ -151,7 +153,7 @@ export class AuthPage implements OnInit, OnDestroy {
         const emailPrefix = this.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 10);
         const uniqueSuffix = Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(-2);
         const username = `${emailPrefix}${uniqueSuffix}`;
-        const response = await this.authService.signup(username, this.email.trim(), this.password).toPromise();
+        const response = await firstValueFrom(this.authService.signup(username, this.email.trim(), this.password));
 
         if (response) {
           // Store new user flag for onboarding
@@ -169,9 +171,10 @@ export class AuthPage implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      this.handleAuthError(error);
+      const message = this.handleAuthError(error);
+      if (message) void this.showErrorToast(message);
     } finally {
-      this.isLoading = false;
+      this.finishLoading();
     }
   }
 
@@ -186,18 +189,25 @@ export class AuthPage implements OnInit, OnDestroy {
     }
   }
 
-  private handleAuthError(error: any): void {
-    const errorMsg = error.error?.message?.toLowerCase() || '';
+  private finishLoading(): void {
+    this.isLoading = false;
+    this.zone.run(() => this.cdr.detectChanges());
+  }
 
-    if (error.status === 0) {
+  private handleAuthError(error: any): string {
+    const status = Number(error?.status) || 0;
+    const rawMessage = error?.error?.message;
+    const errorMsg = typeof rawMessage === 'string' ? rawMessage.toLowerCase() : '';
+
+    if (status === 0) {
       this.errorMessage = 'Unable to connect to server. Check your internet or CORS settings.';
-    } else if (error.status === 401) {
+    } else if (status === 401) {
       if (this.isLoginMode) {
         this.errorMessage = 'Incorrect email or password. Please try again.';
       } else {
         this.errorMessage = 'Authentication failed. Please try again.';
       }
-    } else if (error.status === 403) {
+    } else if (status === 403) {
       // Email not verified - redirect to OTP page
       if (error.error?.requiresVerification || error.error?.emailVerified === false) {
         const userId = error.error?.userId;
@@ -212,16 +222,16 @@ export class AuthPage implements OnInit, OnDestroy {
               mode: 'email'
             }
           });
-          return;
+          return '';
         }
 
         this.errorMessage = 'Please verify your email. Check your inbox for the verification code.';
       } else {
         this.errorMessage = error.error?.message || 'Access denied.';
       }
-    } else if (error.status === 409) {
+    } else if (status === 409) {
       this.errorMessage = 'An account with this email already exists. Please log in instead.';
-    } else if (error.status === 400) {
+    } else if (status === 400) {
       // Handle specific error messages from backend
       if (errorMsg.includes('email already') || errorMsg.includes('email registered')) {
         this.errorMessage = 'This email is already registered. Please log in instead.';
@@ -235,15 +245,16 @@ export class AuthPage implements OnInit, OnDestroy {
       } else {
         this.errorMessage = error.error?.message || 'Invalid input. Please check your details.';
       }
-    } else if (error.status === 429) {
+    } else if (status === 429) {
       this.errorMessage = 'Too many attempts. Please wait a moment before trying again.';
-    } else if (error.status === 503) {
+    } else if (status === 503) {
       this.errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
-    } else if (error.status === 500) {
+    } else if (status === 500) {
       this.errorMessage = 'Something went wrong on our end. Please try again later.';
     } else {
-      this.errorMessage = error.error?.message || 'Something went wrong. Please try again.';
+      this.errorMessage = (typeof rawMessage === 'string' && rawMessage) || 'Something went wrong. Please try again.';
     }
+    return this.errorMessage || 'Something went wrong. Please try again.';
   }
 
   isFormValid(): boolean {
@@ -331,7 +342,7 @@ export class AuthPage implements OnInit, OnDestroy {
     this.clearMessages();
 
     try {
-      const response = await this.authService.forgotPassword(this.email.trim()).toPromise();
+      const response = await firstValueFrom(this.authService.forgotPassword(this.email.trim()));
 
       if (response && response.userId) {
         // Navigate to OTP verification for password reset
@@ -348,16 +359,20 @@ export class AuthPage implements OnInit, OnDestroy {
       }
     } catch (error: any) {
       console.error('Forgot password error:', error);
-      if (error.status === 429) {
+      const status = Number(error?.status) || 0;
+      const rawMessage = error?.error?.message;
+      if (status === 429) {
         this.errorMessage = 'Too many requests. Please wait before trying again.';
-      } else if (error.error?.message?.includes('social login')) {
-        this.errorMessage = error.error.message;
+        void this.showErrorToast(this.errorMessage);
+      } else if (typeof rawMessage === 'string' && rawMessage.toLowerCase().includes('social login')) {
+        this.errorMessage = rawMessage;
+        void this.showErrorToast(this.errorMessage);
       } else {
         // Don't reveal if user exists
         await this.showSuccessToast('If an account exists, a verification code has been sent.');
       }
     } finally {
-      this.isLoading = false;
+      this.finishLoading();
     }
   }
 

@@ -89,9 +89,7 @@
       <ion-button expand="block" class="submit-btn" [disabled]="isLoading" (click)="onSubmit()"
         [attr.aria-label]="isLoginMode ? 'Log in' : 'Sign up'">
         <ion-spinner name="crescent" *ngIf="isLoading"></ion-spinner>
-        <span *ngIf="!isLoading">
-          {{ isLoginMode ? 'Log In' : 'Create Free Account' }}
-        </span>
+        <span>{{ isLoading ? 'Please wait…' : (isLoginMode ? 'Log In' : 'Create Free Account') }}</span>
       </ion-button>
 
       <!-- Toggle Mode Link -->

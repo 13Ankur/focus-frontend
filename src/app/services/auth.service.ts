@@ -214,6 +214,7 @@ export class AuthService {
         const user = JSON.parse(stored);
         user.kibble = user.totalKibble || user.kibble || 0;
         this.currentUserSubject.next(user);
+        this.rememberOnboarding(user);
         if (user.token) {
           this.apiService.setToken(user.token);
         }
@@ -226,10 +227,22 @@ export class AuthService {
   private storeUser(user: User): void {
     user.kibble = user.totalKibble;
     safeSetItem('focus_user', JSON.stringify(user));
+    this.rememberOnboarding(user);
     this.currentUserSubject.next(user);
 
     if (user.token) {
       this.apiService.setToken(user.token);
+    }
+  }
+
+  /** Onboarding belongs to the account, not this phone. Restore it after logout clears local flags. */
+  private rememberOnboarding(user: User): void {
+    if (user.onboardingCompleted) {
+      safeSetItem('onboarding_complete', 'true');
+      if (user.dailyGoalMinutes) safeSetItem('paws_daily_goal', String(user.dailyGoalMinutes));
+      if (Array.isArray(user.focusTags)) safeSetItem('paws_focus_tags', JSON.stringify(user.focusTags));
+    } else if (user.token) {
+      safeRemoveItem('onboarding_complete');
     }
   }
 
@@ -306,6 +319,10 @@ export class AuthService {
       trialEndDate: response.trialEndDate,
     };
     const isPro = accountIsPro(snapshot);
+    const alreadyOnboarded = response.onboardingCompleted === true || (response.totalFocusMinutes || 0) > 0;
+    if (alreadyOnboarded && response.onboardingCompleted !== true) {
+      this.pendingOnboardingSync = true;
+    }
     return {
       _id: response._id,
       username: response.username,
@@ -315,7 +332,9 @@ export class AuthService {
       token: response.token,
       provider,
       emailVerified: response.emailVerified || false,
-      onboardingCompleted: response.onboardingCompleted,
+      onboardingCompleted: alreadyOnboarded,
+      dailyGoalMinutes: response.dailyGoalMinutes,
+      focusTags: response.focusTags,
       settings: response.settings,
       notificationPrefs: response.notificationPrefs,
       isPremium: isPro,
@@ -326,7 +345,13 @@ export class AuthService {
     };
   }
 
+  private pendingOnboardingSync = false;
+
   private async afterLogin(userId: string, token: string): Promise<void> {
+    if (this.pendingOnboardingSync) {
+      this.pendingOnboardingSync = false;
+      this.updateOnboarding(true).subscribe({ error: () => { /* next login still skips from focus history */ } });
+    }
     await this.syncBreedDataAfterLogin();
     await this.refreshSubscriptionAfterLogin(token);
     await this.revenueCatService.loginUser(userId);
@@ -505,14 +530,20 @@ export class AuthService {
     );
   }
 
-  updateOnboarding(completed: boolean): Observable<any> {
+  updateOnboarding(completed: boolean, extras?: { focusTags?: string[]; dailyGoalMinutes?: number }): Observable<any> {
     const headers = this.getAuthHeaders();
-    return this.http.patch(`${this.apiUrl}/user/onboarding`, { completed }, { headers }).pipe(
+    return this.http.patch(`${this.apiUrl}/user/onboarding`, {
+      completed,
+      focusTags: extras?.focusTags,
+      dailyGoalMinutes: extras?.dailyGoalMinutes,
+    }, { headers }).pipe(
       tap((response: any) => {
         if (response.success && this.currentUser) {
           this.storeUser({
             ...this.currentUser,
-            onboardingCompleted: response.onboardingCompleted
+            onboardingCompleted: response.onboardingCompleted !== false,
+            focusTags: response.focusTags || extras?.focusTags || this.currentUser.focusTags,
+            dailyGoalMinutes: response.dailyGoalMinutes || extras?.dailyGoalMinutes || this.currentUser.dailyGoalMinutes,
           });
         }
       })

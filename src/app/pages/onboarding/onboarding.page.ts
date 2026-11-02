@@ -11,6 +11,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 
 import { BreedService, DogBreed } from '../../services/breed.service';
+import { AuthService } from '../../services/auth.service';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 import { environment } from '../../../environments/environment';
 
@@ -95,15 +96,18 @@ export class OnboardingPage implements OnInit, OnDestroy {
     private router: Router,
     private http: HttpClient,
     private breedService: BreedService,
+    private authService: AuthService,
     private toastController: ToastController,
   ) {
     addIcons({ arrowForward, arrowBack, checkmarkCircle, lockClosed, notificationsOutline });
   }
 
   async ngOnInit(): Promise<void> {
-    const onboardingComplete = localStorage.getItem('onboarding_complete');
-    if (onboardingComplete === 'true') {
-      this.router.navigate(['/auth'], { queryParams: { mode: 'login' }, replaceUrl: true });
+    const user = this.authService.currentUser;
+    const onboardingComplete = localStorage.getItem('onboarding_complete') === 'true' || user?.onboardingCompleted === true;
+    if (onboardingComplete) {
+      const next = user?.token ? '/tabs/home' : '/auth';
+      this.router.navigate([next], user?.token ? { replaceUrl: true } : { queryParams: { mode: 'login' }, replaceUrl: true });
       return;
     }
 
@@ -328,6 +332,17 @@ export class OnboardingPage implements OnInit, OnDestroy {
     localStorage.setItem('onboarding_complete', 'true');
     localStorage.removeItem('is_new_user');
     Preferences.remove({ key: PREFS_STEP_KEY }).catch(() => {});
+
+    let focusTags: string[] = [];
+    try {
+      focusTags = JSON.parse(localStorage.getItem('paws_focus_tags') || '[]');
+    } catch { /* keep empty */ }
+    const dailyGoalMinutes = parseInt(localStorage.getItem('paws_daily_goal') || '60', 10);
+    if (this.authService.isLoggedIn) {
+      this.authService.updateOnboarding(true, { focusTags, dailyGoalMinutes }).subscribe({
+        error: () => { /* local flag still skips this screen until the next save */ },
+      });
+    }
 
     const isLoggedIn = !!JSON.parse(localStorage.getItem('focus_user') || '{}')?.token;
 
