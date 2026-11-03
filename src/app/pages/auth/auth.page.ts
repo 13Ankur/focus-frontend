@@ -57,6 +57,7 @@ export class AuthPage implements OnInit, OnDestroy {
   // Form validation states
   emailTouched: boolean = false;
   passwordTouched: boolean = false;
+  private submitAttempt = 0;
 
   constructor(
     private authService: AuthService,
@@ -109,6 +110,8 @@ export class AuthPage implements OnInit, OnDestroy {
   }
 
   toggleMode(): void {
+    this.submitAttempt++;
+    this.isLoading = false;
     this.isLoginMode = !this.isLoginMode;
     this.clearMessages();
     this.resetValidation();
@@ -140,12 +143,14 @@ export class AuthPage implements OnInit, OnDestroy {
       return;
     }
 
+    const attempt = ++this.submitAttempt;
     this.isLoading = true;
     this.clearMessages();
 
     try {
       if (this.isLoginMode) {
         await firstValueFrom(this.authService.login(this.email.trim(), this.password));
+        if (attempt !== this.submitAttempt) return;
         await this.showSuccessToast('Welcome back!');
         this.navigateAfterAuth();
       } else {
@@ -154,8 +159,9 @@ export class AuthPage implements OnInit, OnDestroy {
         const uniqueSuffix = Date.now().toString(36).slice(-4) + Math.random().toString(36).slice(-2);
         const username = `${emailPrefix}${uniqueSuffix}`;
         const response = await firstValueFrom(this.authService.signup(username, this.email.trim(), this.password));
+        if (attempt !== this.submitAttempt) return;
 
-        if (response) {
+        if (response?.userId && this.isValidEmail(response.email || '')) {
           // Store new user flag for onboarding
           localStorage.setItem('is_new_user', 'true');
 
@@ -167,14 +173,18 @@ export class AuthPage implements OnInit, OnDestroy {
               mode: 'email'
             }
           });
+        } else {
+          this.errorMessage = 'Something went wrong. Please try again.';
+          void this.showErrorToast(this.errorMessage);
         }
       }
     } catch (error: any) {
+      if (attempt !== this.submitAttempt) return;
       console.error('Auth error:', error);
       const message = this.handleAuthError(error);
       if (message) void this.showErrorToast(message);
     } finally {
-      this.finishLoading();
+      if (attempt === this.submitAttempt) this.finishLoading();
     }
   }
 
@@ -213,7 +223,7 @@ export class AuthPage implements OnInit, OnDestroy {
         const userId = error.error?.userId;
         const email = error.error?.email || this.email.trim();
 
-        if (userId) {
+        if (userId && this.isValidEmail(email)) {
           // Navigate to OTP verification page
           this.router.navigate(['/otp-verification'], {
             queryParams: {
@@ -223,6 +233,11 @@ export class AuthPage implements OnInit, OnDestroy {
             }
           });
           return '';
+        }
+
+        if (!this.isValidEmail(email)) {
+          this.errorMessage = 'Please enter a valid email address.';
+          return this.errorMessage;
         }
 
         this.errorMessage = 'Please verify your email. Check your inbox for the verification code.';
@@ -250,9 +265,9 @@ export class AuthPage implements OnInit, OnDestroy {
     } else if (status === 503) {
       this.errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
     } else if (status === 500) {
-      this.errorMessage = 'Something went wrong on our end. Please try again later.';
+      this.errorMessage = 'Something went wrong. Please try again.';
     } else {
-      this.errorMessage = (typeof rawMessage === 'string' && rawMessage) || 'Something went wrong. Please try again.';
+      this.errorMessage = 'Something went wrong. Please try again.';
     }
     return this.errorMessage || 'Something went wrong. Please try again.';
   }
@@ -344,15 +359,19 @@ export class AuthPage implements OnInit, OnDestroy {
     try {
       const response = await firstValueFrom(this.authService.forgotPassword(this.email.trim()));
 
-      if (response && response.userId) {
+      const resetEmail = response?.email || this.email.trim();
+      if (response?.userId && this.isValidEmail(resetEmail)) {
         // Navigate to OTP verification for password reset
         this.router.navigate(['/otp-verification'], {
           queryParams: {
             userId: response.userId,
-            email: response.email,
+            email: resetEmail,
             mode: 'password'
           }
         });
+      } else if (response?.userId) {
+        this.errorMessage = 'Please enter a valid email address.';
+        void this.showErrorToast(this.errorMessage);
       } else {
         // User doesn't exist or email not configured - show generic message
         await this.showSuccessToast('If an account exists, a verification code has been sent.');
@@ -361,16 +380,17 @@ export class AuthPage implements OnInit, OnDestroy {
       console.error('Forgot password error:', error);
       const status = Number(error?.status) || 0;
       const rawMessage = error?.error?.message;
-      if (status === 429) {
+      const errorMsg = typeof rawMessage === 'string' ? rawMessage.toLowerCase() : '';
+      if (status === 400 && errorMsg.includes('email') && errorMsg.includes('valid')) {
+        this.errorMessage = 'Please enter a valid email address.';
+      } else if (status === 429) {
         this.errorMessage = 'Too many requests. Please wait before trying again.';
-        void this.showErrorToast(this.errorMessage);
-      } else if (typeof rawMessage === 'string' && rawMessage.toLowerCase().includes('social login')) {
+      } else if (errorMsg.includes('social login')) {
         this.errorMessage = rawMessage;
-        void this.showErrorToast(this.errorMessage);
       } else {
-        // Don't reveal if user exists
-        await this.showSuccessToast('If an account exists, a verification code has been sent.');
+        this.errorMessage = 'Something went wrong. Please try again.';
       }
+      void this.showErrorToast(this.errorMessage);
     } finally {
       this.finishLoading();
     }

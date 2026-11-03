@@ -360,10 +360,7 @@ ion-button:focus-visible {
     font-size: 15px;
     line-height: 1.5;
     color: var(--app-text-muted);
-
-    strong {
-      color: var(--app-text);
-    }
+    white-space: pre-line;
   }
 
   .alert-button-group {

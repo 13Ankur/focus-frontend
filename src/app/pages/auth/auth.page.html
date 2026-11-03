@@ -97,7 +97,7 @@
         <span class="toggle-text">
           {{ isLoginMode ? "New here?" : 'Already have an account?' }}
         </span>
-        <button class="toggle-link" (click)="toggleMode()" type="button" [disabled]="isLoading"
+        <button class="toggle-link" (click)="toggleMode()" type="button"
           [attr.aria-label]="isLoginMode ? 'Switch to sign up' : 'Switch to log in'">
           {{ isLoginMode ? 'Create Account' : 'Log In Instead' }}
         </button>

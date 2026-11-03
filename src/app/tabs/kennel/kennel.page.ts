@@ -664,6 +664,10 @@ export class KennelPage implements OnInit, OnDestroy {
 
   // ── Breed methods ──
 
+  trackBreedId(_index: number, breed: DogBreed): string {
+    return breed.id;
+  }
+
   isBreedUnlocked(breed: DogBreed): boolean {
     return this.breedService.isBreedUnlocked(breed.id);
   }

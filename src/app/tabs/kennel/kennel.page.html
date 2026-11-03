@@ -242,7 +242,7 @@
       <p class="collection-subtitle">Earn kibble to unlock new breeds!</p>
 
       <div class="breed-grid">
-        <div *ngFor="let breed of allBreeds" class="breed-card" [class.unlocked]="isBreedUnlocked(breed)"
+        <div *ngFor="let breed of allBreeds; trackBy: trackBreedId" class="breed-card" [class.unlocked]="isBreedUnlocked(breed)"
           [class.active]="isBreedActive(breed)" [class.locked]="!isBreedUnlocked(breed)" (click)="selectBreed(breed)"
           role="button" [attr.aria-label]="'Select breed ' + breed.name">
           <!-- Breed Image -->
@@ -314,10 +314,10 @@
     </div>
   </div>
 
-  <!-- Accessory Bottom Sheet -->
+  <!-- Accessory Bottom Sheet — keep out of DOM when closed (Android WebView ghosts fixed+transformed layers). -->
   <div class="accessory-sheet-backdrop" *ngIf="showAccessorySheet" (click)="closeAccessorySheet()" role="button"
     aria-label="Close accessory sheet"></div>
-  <div class="accessory-sheet" [class.open]="showAccessorySheet">
+  <div class="accessory-sheet open" *ngIf="showAccessorySheet">
     <div class="sheet-handle" (click)="closeAccessorySheet()" role="button" aria-label="Close accessory sheet">
       <div class="handle-bar"></div>
     </div>

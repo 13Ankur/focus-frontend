@@ -4,6 +4,9 @@
   --padding-bottom: 0;
   --padding-start: 0;
   --padding-end: 0;
+  // Avoid Android WebView leaving ghost layers while scrolling filtered cards.
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
 }
 
 .kennel-container {
@@ -15,6 +18,8 @@
   margin: 0 auto;
   min-height: 100%;
   box-sizing: border-box;
+  isolation: isolate;
+  overflow: hidden;
 
   @media screen and (max-width: 380px) {
     padding-left: 12px;
@@ -200,6 +205,21 @@
     background: transparent;
 
     &.sleeping { transform: scale(0.95); }
+
+    // Soft ground shadow without CSS filter (filters ghost on Android WebView).
+    &::after {
+      content: '';
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 2%;
+      height: 10%;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.14);
+      filter: none;
+      z-index: 1;
+      pointer-events: none;
+    }
   }
 
   .buddy-image {
@@ -209,7 +229,6 @@
     height: 100%;
     object-fit: contain;
     background: transparent;
-    filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.16));
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
   }
@@ -298,7 +317,7 @@
   font-size: 28px;
   z-index: 1;
   opacity: 0.8;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .equipped-special {
@@ -787,6 +806,9 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: clamp(6px, 1.5vw, 10px);
+  // New stacking context — stops Android scroll from smearing card layers.
+  isolation: isolate;
+  transform: translateZ(0);
 
   @media screen and (max-width: 340px) { grid-template-columns: repeat(2, 1fr); }
   @media screen and (min-width: 600px) { grid-template-columns: repeat(4, 1fr); }
@@ -798,16 +820,19 @@
   padding: clamp(6px, 1.5vw, 10px);
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   border: 2px solid transparent;
   position: relative;
   overflow: hidden;
+  // Promote each card without CSS filters (filters cause Android WebView ghosting).
+  transform: translateZ(0);
+  backface-visibility: hidden;
 
   &:focus-visible { outline: 3px solid #7ED321; outline-offset: 2px; }
 
   &.unlocked {
     border-color: #e0e0e0;
-    &:hover { border-color: #7ED321; transform: translateY(-4px); box-shadow: 0 8px 25px rgba(126, 211, 33, 0.2); }
+    &:hover { border-color: #7ED321; box-shadow: 0 8px 25px rgba(126, 211, 33, 0.2); }
   }
 
   &.active {
@@ -817,10 +842,9 @@
   }
 
   &.locked {
-    background: #f5f5f5;
-    border-color: #e8e8e8;
-    opacity: 0.45;
-    filter: grayscale(1);
+    background: #ececec;
+    border-color: #e0e0e0;
+    color: #888;
     &:hover { border-color: #ccc; }
   }
 
@@ -848,8 +872,9 @@
     height: 100%;
     object-fit: contain;
     border-radius: clamp(8px, 2vw, 14px);
-    transition: all 0.3s;
-    &.grayscale { filter: grayscale(1) opacity(0.5); }
+    transition: opacity 0.2s;
+    // Prefer opacity over CSS filter — Android WebView smears filtered layers while scrolling.
+    &.grayscale { opacity: 0.35; }
   }
 
   .lock-overlay {
@@ -998,6 +1023,11 @@
   to { opacity: 1; }
 }
 
+@keyframes accessory-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 .accessory-sheet {
   position: fixed;
   bottom: 0;
@@ -1008,14 +1038,10 @@
   z-index: 101;
   max-height: 75vh;
   overflow-y: auto;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding-bottom: env(safe-area-inset-bottom, 20px);
   box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.15);
-
-  &.open {
-    transform: translateY(0);
-  }
+  animation: accessory-sheet-up 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
 
   .sheet-handle {
     display: flex;

@@ -20,7 +20,7 @@ export interface VersionCheckResponse {
   providedIn: 'root'
 })
 export class VersionService {
-  private readonly APP_VERSION = '1.0.5'; // Update this with each release
+  private readonly APP_VERSION = '1.0.15'; // Update this with each release
   private hasShownUpdatePopup = false;
   private readonly SKIP_UPDATE_KEY = 'skip_update_version';
 
@@ -205,22 +205,42 @@ export class VersionService {
   }
 
   /**
-   * Build the update message
+   * Build the update message (plain text — Ionic 8 shows HTML tags literally unless
+   * innerHTMLTemplatesEnabled is on).
    */
   private buildUpdateMessage(response: VersionCheckResponse): string {
     let message = '';
 
     if (response.forceUpdate) {
-      message = `A critical update is required to continue using Paws Focus. Please update to version ${response.currentVersion || 'latest'}.`;
+      message = `A critical update is required to continue using StayPaws. Please update to version ${response.currentVersion || 'latest'}.`;
     } else {
       message = `A new version (${response.currentVersion || 'latest'}) is available with improvements and bug fixes.`;
     }
 
     if (response.releaseNotes) {
-      message += `<br><br><strong>What's New:</strong><br>${response.releaseNotes}`;
+      const notes = this.toPlainText(response.releaseNotes);
+      if (notes) {
+        message += `\n\nWhat's New:\n${notes}`;
+      }
     }
 
     return message;
+  }
+
+  /** Convert HTML release notes to readable plain text for ion-alert. */
+  private toPlainText(html: string): string {
+    return html
+      .replace(/<\s*br\s*\/?>/gi, '\n')
+      .replace(/<\/\s*p\s*>/gi, '\n')
+      .replace(/<\/\s*li\s*>/gi, '\n')
+      .replace(/<\s*li[^>]*>/gi, '• ')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
   }
 
   /**

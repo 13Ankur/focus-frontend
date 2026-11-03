@@ -288,7 +288,7 @@ export class OtpVerificationPage implements OnInit, OnDestroy {
     try {
       const response = await this.authService.resendOTP(this.userId).toPromise();
 
-      if (response) {
+      if (response?.message) {
         this.resendCount = response.resendCount || this.resendCount + 1;
         this.successMessage = 'New verification code sent!';
         await this.showSuccessToast('New code sent to your email');
@@ -299,16 +299,23 @@ export class OtpVerificationPage implements OnInit, OnDestroy {
         this.startResendCooldown(60); // 60 second cooldown after resend
         this.clearOtp();
         this.isExpired = false;
+      } else {
+        this.errorMessage = 'Something went wrong. Please try again.';
       }
     } catch (error: any) {
       console.error('Resend OTP error:', error);
+      const status = Number(error?.status) || 0;
+      const rawMessage = error?.error?.message;
+      const errorMsg = typeof rawMessage === 'string' ? rawMessage.toLowerCase() : '';
 
-      if (error.status === 429) {
+      if (status === 429) {
         const waitSeconds = error.error?.waitSeconds || 60;
         this.errorMessage = `Too many requests. Please wait ${Math.ceil(waitSeconds / 60)} minute(s).`;
         this.startResendCooldown(waitSeconds);
+      } else if (status === 400 && errorMsg.includes('email')) {
+        this.errorMessage = 'Please enter a valid email address.';
       } else {
-        this.errorMessage = error.error?.message || 'Failed to resend code. Please try again.';
+        this.errorMessage = 'Something went wrong. Please try again.';
       }
     } finally {
       this.isResending = false;
