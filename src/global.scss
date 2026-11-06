@@ -413,16 +413,9 @@ ion-button:focus-visible {
 /*
  * Razorpay checkout is a full-screen frame inside the app. Keep its header
  * below the status bar and its footer above the gesture bar while it is open.
- * The class is removed on success and on cancel, so nothing stays on screen.
+ * Do not add a full-screen layer here. That layer sat on top of the sheet
+ * and made the next checkout look like it never opened.
  */
-body.razorpay-open::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: #f8f8f5;
-  z-index: 2147483646;
-}
-
 body.razorpay-open .razorpay-container {
   position: fixed !important;
   top: var(--safe-area-top) !important;

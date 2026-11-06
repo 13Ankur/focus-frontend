@@ -25,18 +25,27 @@ export class RazorpayService {
 
   constructor(private http: HttpClient) {}
 
-  /** Loads the Razorpay JS SDK script dynamically (only once). */
-  private loadScript(): Promise<void> {
+  /** Loads the Razorpay JS SDK. A new payment reloads it so a closed sheet cannot block the next one. */
+  private loadScript(reload = false): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (typeof Razorpay !== 'undefined') {
+      if (!reload && typeof Razorpay !== 'undefined') {
         resolve();
         return;
+      }
+
+      if (reload) {
+        document.getElementById('razorpay-sdk')?.remove();
+        try {
+          delete (window as any).Razorpay;
+        } catch {
+          (window as any).Razorpay = undefined;
+        }
       }
 
       const existing = document.getElementById('razorpay-sdk');
       if (existing) {
         existing.addEventListener('load', () => resolve());
-        existing.addEventListener('error', reject);
+        existing.addEventListener('error', () => reject(new Error('Razorpay could not be loaded')));
         return;
       }
 
@@ -45,9 +54,16 @@ export class RazorpayService {
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.async = true;
       script.onload = () => resolve();
-      script.onerror = reject;
+      script.onerror = () => reject(new Error('Razorpay could not be loaded'));
       document.head.appendChild(script);
     });
+  }
+
+  /** Drop a sheet left on screen by a failed or cancelled attempt. */
+  private clearCheckoutFrame(): void {
+    document.body.classList.remove('razorpay-open');
+    document.querySelectorAll('.razorpay-container, .razorpay-backdrop, iframe.razorpay-checkout-frame')
+      .forEach(node => node.remove());
   }
 
   tokenExpiresSoon(token: string | null | undefined): boolean {
@@ -100,8 +116,10 @@ export class RazorpayService {
    * Returns whether Pro was activated, and whether it started as a free trial.
    */
   async startCheckout(userInfo: { name: string; email: string; token: string; currency?: RazorpayCurrency }): Promise<RazorpayCheckoutOutcome> {
-    // 1. Load the Razorpay SDK
-    await this.loadScript();
+    // A failed attempt can leave Razorpay's frame in the page. Remove it
+    // before creating the next subscription, or the new sheet never appears.
+    this.clearCheckoutFrame();
+    await this.loadScript(true);
 
     // 2. Create subscription on backend
     const currency = userInfo.currency === 'USD' ? 'USD' : 'INR';
@@ -122,6 +140,8 @@ export class RazorpayService {
         resolve(outcome);
       };
 
+      let openedAt = 0;
+      let retried = false;
       const options = {
         key: keyId,
         subscription_id: subscriptionId,
@@ -139,6 +159,14 @@ export class RazorpayService {
         theme: { color: '#6C63FF' },
         modal: {
           ondismiss: async () => {
+            // A previous failed sheet makes Razorpay close the new one immediately.
+            // Clear that frame once and open the same subscription again.
+            if (!retried && Date.now() - openedAt < 500) {
+              retried = true;
+              this.clearCheckoutFrame();
+              openNow();
+              return;
+            }
             releaseCheckout();
             await new Promise((done) => setTimeout(done, 1200));
             if (settled) return;
@@ -204,11 +232,15 @@ export class RazorpayService {
         },
       };
 
-      const rzp = new Razorpay(options);
-      rzp.on('payment.failed', (resp: any) => {
-        console.error('Razorpay payment failed:', resp.error);
-      });
-      rzp.open();
+      const openNow = () => {
+        openedAt = Date.now();
+        const rzp = new Razorpay(options);
+        rzp.on('payment.failed', (resp: any) => {
+          console.error('Razorpay payment failed:', resp?.error);
+        });
+        rzp.open();
+      };
+      openNow();
     });
   }
 
@@ -252,7 +284,17 @@ export class RazorpayService {
         this.clearPending();
         return { success: true, trial: result.trial === true, expiry: result.expiry || null };
       }
-    } catch {
+    } catch (err: any) {
+      // 409 means Razorpay never confirmed that attempt. Forget it so the
+      // next tap can start a new payment. Do not clear a newer attempt.
+      const current = this.readPending();
+      if (
+        err?.status === 409
+        && err?.error?.error === 'not_confirmed'
+        && current?.subscriptionId === pending.subscriptionId
+      ) {
+        this.clearPending();
+      }
       console.warn('Saved Razorpay subscription is not confirmed yet');
     }
     return null;
@@ -291,14 +333,17 @@ export class RazorpayService {
    * Razorpay draws its own header and footer edge to edge. Pull that frame
    * inside the status bar and gesture bar after it is inserted.
    */
+  private checkoutGeneration = 0;
+
   private pinCheckoutToSafeArea(): () => void {
+    const generation = ++this.checkoutGeneration;
     let closed = false;
     document.body.classList.add('razorpay-open');
     const inset = (edge: 'top' | 'right' | 'bottom' | 'left') =>
       `var(--safe-area-inset-${edge}, env(safe-area-inset-${edge}, 0px))`;
 
     const apply = () => {
-      if (closed) return;
+      if (closed || generation !== this.checkoutGeneration) return;
       document.querySelectorAll<HTMLElement>('.razorpay-container').forEach(container => {
         container.style.setProperty('position', 'fixed', 'important');
         container.style.setProperty('top', inset('top'), 'important');
@@ -307,6 +352,7 @@ export class RazorpayService {
         container.style.setProperty('left', inset('left'), 'important');
         container.style.setProperty('width', 'auto', 'important');
         container.style.setProperty('height', 'auto', 'important');
+        container.style.setProperty('z-index', '2147483647', 'important');
         container.querySelectorAll<HTMLElement>('iframe').forEach(frame => {
           frame.style.setProperty('position', 'absolute', 'important');
           frame.style.setProperty('top', '0', 'important');
@@ -327,14 +373,8 @@ export class RazorpayService {
       if (closed) return;
       closed = true;
       observer.disconnect();
+      if (generation !== this.checkoutGeneration) return;
       document.body.classList.remove('razorpay-open');
-      const sweep = () => {
-        document.querySelectorAll('.razorpay-container, .razorpay-backdrop, iframe.razorpay-checkout-frame')
-          .forEach(node => node.remove());
-      };
-      sweep();
-      window.setTimeout(sweep, 50);
-      window.setTimeout(sweep, 400);
     };
   }
 }
