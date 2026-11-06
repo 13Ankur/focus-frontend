@@ -10,7 +10,6 @@ import { AdService } from './services/ad.service';
 import { WidgetService } from './services/widget.service';
 import { NotificationService } from './services/notification.service';
 import { RevenueCatService } from './services/revenue-cat.service';
-import { RazorpayService } from './services/razorpay.service';
 import { AssetLoaderService } from './services/asset-loader.service';
 import { App } from '@capacitor/app';
 
@@ -29,7 +28,6 @@ export class AppComponent implements OnInit {
     private widgetService: WidgetService,
     private notificationService: NotificationService,
     private revenueCatService: RevenueCatService,
-    private razorpayService: RazorpayService,
     private assetLoader: AssetLoaderService,
   ) { }
 
@@ -67,6 +65,11 @@ export class AppComponent implements OnInit {
       return;
     }
 
+    this.setupAppStateListener();
+    if (this.authService.isLoggedIn) {
+      void this.restorePendingPayment();
+    }
+
     // Get current path to avoid unnecessary redirects
     const currentPath = window.location.pathname;
 
@@ -99,22 +102,18 @@ export class AppComponent implements OnInit {
     }
 
     if (isLoggedIn) {
-      void this.restorePendingPayment();
       this.adService.initialize();
       this.widgetService.updateWidgetData();
       this.notificationService.createNotificationChannels();
       this.notificationService.initialize();
     }
 
-    this.setupAppStateListener();
-
     // Hide splash screen after navigation
     this.hideSplashScreen();
   }
 
   private async restorePendingPayment(): Promise<void> {
-    const result = await this.razorpayService.recoverPending(this.authService.token);
-    if (result?.success) this.authService.applySubscription(result);
+    await this.authService.restorePurchasedAccess();
   }
 
   private setupAppStateListener(): void {
@@ -124,6 +123,7 @@ export class AppComponent implements OnInit {
           this.notificationService.onAppBackgrounded();
         } else {
           this.notificationService.scheduleAllNotifications();
+          void this.restorePendingPayment();
         }
       });
     }

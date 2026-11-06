@@ -1,5 +1,5 @@
 .otp-content {
-  --background: linear-gradient(165deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  --background: linear-gradient(165deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%) !important;
 }
 
 .otp-container {
@@ -80,21 +80,21 @@ ion-input-otp {
   h1 {
     font-size: clamp(22px, 6vw, 30px);
     font-weight: 700;
-    color: #fff;
+    color: #fff !important;
     margin: 0 0 clamp(8px, 2vw, 14px);
     letter-spacing: -0.5px;
   }
 
   .subtitle {
     font-size: clamp(14px, 3.5vw, 17px);
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.7) !important;
     margin: 0;
     line-height: 1.5;
   }
 
   .email {
     font-size: clamp(14px, 3.5vw, 17px);
-    color: #667eea;
+    color: #8ea2ff !important;
     font-weight: 600;
     margin: clamp(6px, 1.5vw, 10px) 0 0;
     word-break: break-all;
@@ -114,22 +114,25 @@ ion-input-otp {
 }
 
 ion-input-otp {
-  --background: rgba(255, 255, 255, 0.9);
-  --background-focus: #ffffff;
-  --border-color: rgba(255, 255, 255, 0.3);
-  --border-color-focus: #667eea;
+  /* !important beats Ionic's outline fill, which leaves the boxes transparent
+     so Android draws dark digits on the dark screen. */
+  --background: #ffffff !important;
+  --background-focus: #ffffff !important;
+  --border-color: rgba(255, 255, 255, 0.45) !important;
+  --border-color-focus: #667eea !important;
   --border-radius: 14px;
   --border-width: 2px;
-  --color: #1a1a2e;
+  --color: #1a1a2e !important;
+  --highlight-color-focused: #667eea;
   --highlight-color-focus: rgba(102, 126, 234, 0.3);
   --min-width: 48px;
   --height: 58px;
+  color: #1a1a2e !important;
+  color-scheme: light;
+  caret-color: #667eea;
 
   font-size: 26px;
   font-weight: 700;
-
-  -webkit-text-fill-color: #1a1a2e;
-  caret-color: #667eea;
 }
 
 /* Ensure OTP boxes are visible and styled consistently across platforms */
@@ -149,9 +152,10 @@ ion-input-otp.error {
 }
 
 ion-input-otp.success {
-  --border-color: #4caf50;
-  --border-color-focus: #4caf50;
-  --background: rgba(76, 175, 80, 0.15);
+  --border-color: #4caf50 !important;
+  --border-color-focus: #4caf50 !important;
+  --background: #e8f5e9 !important;
+  --color: #1a1a2e !important;
 }
 
 @keyframes shake {

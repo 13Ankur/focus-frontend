@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../environments/environment';
 import { sessionTokenExpiresSoon } from '../utils/session-token';
+import { RazorpayCurrency } from '../utils/razorpay-currency';
 
 declare let Razorpay: any;
 
@@ -54,7 +55,7 @@ export class RazorpayService {
   }
 
   /** Creates a Razorpay subscription via the backend. */
-  private async createSubscription(token: string): Promise<{
+  private async createSubscription(token: string, currency: RazorpayCurrency): Promise<{
     keyId: string;
     subscriptionId: string;
     trial?: boolean;
@@ -65,7 +66,7 @@ export class RazorpayService {
     });
 
     const result: any = await this.http
-      .post(`${this.apiUrl}/subscription/razorpay/create`, { tier: 'pro' }, { headers })
+      .post(`${this.apiUrl}/subscription/razorpay/create`, { tier: 'pro', currency }, { headers })
       .toPromise();
 
     return result;
@@ -98,15 +99,27 @@ export class RazorpayService {
    * Full Razorpay checkout flow for Android.
    * Returns whether Pro was activated, and whether it started as a free trial.
    */
-  async startCheckout(userInfo: { name: string; email: string; token: string }): Promise<RazorpayCheckoutOutcome> {
+  async startCheckout(userInfo: { name: string; email: string; token: string; currency?: RazorpayCurrency }): Promise<RazorpayCheckoutOutcome> {
     // 1. Load the Razorpay SDK
     await this.loadScript();
 
     // 2. Create subscription on backend
-    const { keyId, subscriptionId, trial } = await this.createSubscription(userInfo.token);
+    const currency = userInfo.currency === 'USD' ? 'USD' : 'INR';
+    const { keyId, subscriptionId, trial } = await this.createSubscription(userInfo.token, currency);
+
+    // Keep the subscription id before checkout opens. The Android success
+    // callback is often lost when the payer leaves for a UPI app.
+    this.savePending({ subscriptionId, savedAt: Date.now() });
 
     // 3. Open Razorpay Checkout
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const finish = (outcome: RazorpayCheckoutOutcome) => {
+        if (settled) return;
+        settled = true;
+        resolve(outcome);
+      };
+
       const options = {
         key: keyId,
         subscription_id: subscriptionId,
@@ -121,38 +134,64 @@ export class RazorpayService {
         },
         theme: { color: '#6C63FF' },
         modal: {
-          ondismiss: () => resolve({ success: false }),
+          ondismiss: async () => {
+            await new Promise((done) => setTimeout(done, 1200));
+            if (settled) return;
+            const recovered = await this.recoverPending(userInfo.token);
+            finish(recovered?.success ? recovered : { success: false });
+          },
         },
         handler: async (response: RazorpayCheckoutResult) => {
-          const pending = {
-            paymentId: response.razorpay_payment_id,
-            subscriptionId: response.razorpay_subscription_id,
-            signature: response.razorpay_signature,
+          const paymentId = response?.razorpay_payment_id;
+          const signature = response?.razorpay_signature;
+          const confirmedSubscriptionId = response?.razorpay_subscription_id || subscriptionId;
+          this.savePending({
+            paymentId,
+            subscriptionId: confirmedSubscriptionId,
+            signature,
             savedAt: Date.now(),
-          };
-          this.savePending(pending);
+          });
           try {
-            const result = await this.verifyPayment(
-              pending.paymentId,
-              pending.subscriptionId,
-              pending.signature,
-              userInfo.token,
-            );
-            if (result?.success) this.clearPending();
-            resolve({
-              success: result?.success === true,
-              trial: result?.trial === true,
-              expiry: result?.expiry || null,
-            });
-          } catch (err) {
+            if (paymentId && signature) {
+              const result = await this.verifyPayment(
+                paymentId,
+                confirmedSubscriptionId,
+                signature,
+                userInfo.token,
+              );
+              if (result?.success) {
+                this.clearPending();
+                finish({
+                  success: true,
+                  trial: result.trial === true,
+                  expiry: result.expiry || null,
+                });
+                return;
+              }
+            }
             const recovered = await this.recoverPending(userInfo.token);
             if (recovered?.success) {
-              resolve(recovered);
+              finish(recovered);
               return;
             }
             const pendingError = new Error('payment_pending') as Error & { paymentReceived?: boolean };
             pendingError.paymentReceived = true;
-            reject(pendingError);
+            if (!settled) {
+              settled = true;
+              reject(pendingError);
+            }
+          } catch (err) {
+            const recovered = await this.recoverPending(userInfo.token);
+            if (recovered?.success) {
+              finish(recovered);
+              return;
+            }
+            const pendingError = new Error('payment_pending') as Error & { paymentReceived?: boolean };
+            pendingError.paymentReceived = true;
+            if (!settled) {
+              settled = true;
+              reject(pendingError);
+            }
           }
         },
       };
@@ -160,7 +199,6 @@ export class RazorpayService {
       const rzp = new Razorpay(options);
       rzp.on('payment.failed', (resp: any) => {
         console.error('Razorpay payment failed:', resp.error);
-        resolve({ success: false });
       });
       rzp.open();
     });
@@ -212,7 +250,7 @@ export class RazorpayService {
     return null;
   }
 
-  private savePending(pending: { paymentId: string; subscriptionId: string; signature: string; savedAt: number }): void {
+  private savePending(pending: { paymentId?: string; subscriptionId: string; signature?: string; savedAt: number }): void {
     localStorage.setItem(this.pendingKey, JSON.stringify(pending));
   }
 

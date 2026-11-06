@@ -360,8 +360,7 @@ export class AuthPage implements OnInit, OnDestroy {
       const response = await firstValueFrom(this.authService.forgotPassword(this.email.trim()));
 
       const resetEmail = response?.email || this.email.trim();
-      if (response?.userId && this.isValidEmail(resetEmail)) {
-        // Navigate to OTP verification for password reset
+      if (response?.userId) {
         this.router.navigate(['/otp-verification'], {
           queryParams: {
             userId: response.userId,
@@ -369,26 +368,25 @@ export class AuthPage implements OnInit, OnDestroy {
             mode: 'password'
           }
         });
-      } else if (response?.userId) {
-        this.errorMessage = 'Please enter a valid email address.';
-        void this.showErrorToast(this.errorMessage);
       } else {
-        // User doesn't exist or email not configured - show generic message
-        await this.showSuccessToast('If an account exists, a verification code has been sent.');
+        this.errorMessage = 'No account found with this email.';
+        void this.showErrorToast(this.errorMessage);
       }
     } catch (error: any) {
       console.error('Forgot password error:', error);
       const status = Number(error?.status) || 0;
       const rawMessage = error?.error?.message;
       const errorMsg = typeof rawMessage === 'string' ? rawMessage.toLowerCase() : '';
-      if (status === 400 && errorMsg.includes('email') && errorMsg.includes('valid')) {
+      if (status === 404) {
+        this.errorMessage = 'No account found with this email.';
+      } else if (status === 400 && (errorMsg.includes('apple') || errorMsg.includes('google') || errorMsg.includes('sign-in') || errorMsg.includes('social login'))) {
+        this.errorMessage = typeof rawMessage === 'string' ? rawMessage : 'This account does not use a password.';
+      } else if (status === 400 && errorMsg.includes('email') && errorMsg.includes('valid')) {
         this.errorMessage = 'Please enter a valid email address.';
       } else if (status === 429) {
         this.errorMessage = 'Too many requests. Please wait before trying again.';
-      } else if (errorMsg.includes('social login')) {
-        this.errorMessage = rawMessage;
       } else {
-        this.errorMessage = 'Something went wrong. Please try again.';
+        this.errorMessage = 'Could not send the reset code. Please try again.';
       }
       void this.showErrorToast(this.errorMessage);
     } finally {

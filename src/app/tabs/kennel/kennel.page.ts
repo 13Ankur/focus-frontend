@@ -12,6 +12,7 @@ import { addIcons } from 'ionicons';
 import { arrowForward, lockClosed, checkmarkCircle, swapHorizontal, shirtOutline, closeCircle } from 'ionicons/icons';
 import { Subscription, firstValueFrom } from 'rxjs';
 import { ApiService } from '../../services/api.service';
+import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
 import { AuthService } from '../../services/auth.service';
@@ -24,14 +25,9 @@ import { AdService } from '../../services/ad.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
 import { environment } from '../../../environments/environment';
 import { safeGetItem, safeSetItem } from '../../utils/storage';
-import {
-  accountIsPro,
-  normalizeTier,
-  readAccountIsPro,
-  subscriptionFromStatus,
-  writeSubscriptionFields,
-} from '../../utils/subscription-access';
+import { readAccountIsPro } from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
+import { razorpayPriceLabel } from '../../utils/razorpay-currency';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
 
 type InteractionType = 'pet' | 'play' | 'treat' | null;
@@ -518,18 +514,10 @@ export class KennelPage implements OnInit, OnDestroy {
   private async refreshTier(): Promise<void> {
     this.applyAccountTier(this.localIsPro());
     try {
-      const stored = JSON.parse(safeGetItem('focus_user') || '{}');
-      const headers = new HttpHeaders({
-        Authorization: `Bearer ${stored?.token || ''}`,
-      });
-      const res: any = await firstValueFrom(
-        this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
-      );
-      const snapshot = subscriptionFromStatus(res, stored?.token);
-      const isPro = accountIsPro(snapshot);
+      if (!this.authService.token) return;
+      await this.authService.restorePurchasedAccess();
+      const isPro = await this.authService.syncSubscriptionFromServer();
       this.applyAccountTier(isPro);
-      const next = writeSubscriptionFields(stored, snapshot);
-      safeSetItem('focus_user', JSON.stringify(next));
     } catch {
       // Keep the tier already read from this device.
     }
@@ -704,7 +692,7 @@ export class KennelPage implements OnInit, OnDestroy {
     if (!this.isBreedUnlocked(breed)) {
       const alert = await this.alertController.create({
         header: `🔒 ${breed.name} is Locked`,
-        message: `Subscribe to Pro ($5/month) to unlock all dog breeds instantly!`,
+        message: `Subscribe to Pro (${Capacitor.getPlatform() === 'ios' ? '$5' : razorpayPriceLabel()}/month) to unlock all dog breeds instantly!`,
         buttons: [
           { text: 'Later', role: 'cancel' },
           {

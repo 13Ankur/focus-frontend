@@ -119,6 +119,7 @@ export interface ForgotPasswordResponse {
   message: string;
   userId?: string;
   email?: string;
+  resendCount?: number;
 }
 
 export interface VerifyResetOTPResponse {
@@ -371,6 +372,7 @@ export class AuthService {
   }
 
   private async refreshSubscriptionAfterLogin(token: string): Promise<void> {
+    if (!this.currentUser) return;
     try {
       const headers = new HttpHeaders({ Authorization: `Bearer ${token}` });
       const res: any = await this.http.get(`${this.apiUrl}/subscription/status`, { headers }).toPromise();
@@ -383,6 +385,28 @@ export class AuthService {
     } catch {
       // Keep the tier from the login payload.
     }
+  }
+
+  /** Reload Pro from the server and store it on this account. */
+  async syncSubscriptionFromServer(): Promise<boolean> {
+    const token = this.token;
+    if (!token) return false;
+    await this.refreshSubscriptionAfterLogin(token);
+    return accountIsPro(this.currentUser);
+  }
+
+  /**
+   * If Razorpay already accepted a checkout the app missed, grant Pro and
+   * store it on this account. No network call when nothing is pending.
+   */
+  async restorePurchasedAccess(): Promise<boolean> {
+    const token = this.token;
+    if (!token) return false;
+    const result = await this.razorpayService.recoverPending(token);
+    if (!result?.success) return false;
+    if (result.expiry) this.applySubscription(result);
+    const synced = await this.syncSubscriptionFromServer();
+    return synced || accountIsPro(this.currentUser);
   }
 
   applySubscription(result: { expiry?: string | null; trial?: boolean }): void {

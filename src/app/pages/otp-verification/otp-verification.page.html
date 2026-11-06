@@ -21,6 +21,7 @@
     <div class="otp-inputs-container" role="group" aria-label="Enter 6-digit verification code">
       <ion-input-otp
         #otpInput
+        fill="solid"
         [length]="6"
         [disabled]="isVerifying || isExpired"
         [class.error]="errorMessage && !isVerifying"

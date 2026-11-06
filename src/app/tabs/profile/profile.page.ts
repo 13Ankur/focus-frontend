@@ -189,6 +189,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   ionViewWillEnter(): void {
+    void this.refreshMembership();
     this.loadUserData();
     this.loadLocalStats();
     this.unlockedBreeds = this.breedService.collection.unlockedBreeds.length;
@@ -203,6 +204,13 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   // ── User data ──
+
+  private async refreshMembership(): Promise<void> {
+    if (!this.authService.token) return;
+    await this.authService.restorePurchasedAccess();
+    await this.authService.syncSubscriptionFromServer();
+    this.loadUserData();
+  }
 
   private loadUserData(): void {
     const user = this.authService.currentUser;

@@ -286,7 +286,9 @@ export class OtpVerificationPage implements OnInit, OnDestroy {
     this.clearMessages();
 
     try {
-      const response = await this.authService.resendOTP(this.userId).toPromise();
+      const response = this.mode === 'password'
+        ? await this.authService.forgotPassword(this.email).toPromise()
+        : await this.authService.resendOTP(this.userId).toPromise();
 
       if (response?.message) {
         this.resendCount = response.resendCount || this.resendCount + 1;
@@ -312,6 +314,10 @@ export class OtpVerificationPage implements OnInit, OnDestroy {
         const waitSeconds = error.error?.waitSeconds || 60;
         this.errorMessage = `Too many requests. Please wait ${Math.ceil(waitSeconds / 60)} minute(s).`;
         this.startResendCooldown(waitSeconds);
+      } else if (status === 404) {
+        this.errorMessage = 'No account found with this email.';
+      } else if (status === 400 && (errorMsg.includes('apple') || errorMsg.includes('google') || errorMsg.includes('sign-in'))) {
+        this.errorMessage = typeof rawMessage === 'string' ? rawMessage : 'This account does not use a password.';
       } else if (status === 400 && errorMsg.includes('email')) {
         this.errorMessage = 'Please enter a valid email address.';
       } else {

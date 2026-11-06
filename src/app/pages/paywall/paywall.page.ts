@@ -18,7 +18,9 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { safeSetItem } from '../../utils/storage';
+import { AuthService } from '../../services/auth.service';
 import { RevenueCatService } from '../../services/revenue-cat.service';
+import { razorpayCheckoutCurrency, razorpayPriceLabel } from '../../utils/razorpay-currency';
 import { RazorpayService } from '../../services/razorpay.service';
 
 type Trigger = 'session_limit' | 'timer_lock' | 'breed_lock' | 'sound_lock' | 'pomodoro_lock' | 'app_block' | 'generic';
@@ -61,9 +63,12 @@ export class PaywallPage implements OnInit, OnDestroy {
   trialAvailable = false;
   loading = false;
   readonly trialDays = 7;
-  /** Live Razorpay Pro plan is monthly USD 500 ($5.00). */
-  readonly priceLabel = '$5';
+  /** Android/web: ₹499 in India, $5 elsewhere. iOS App Store stays $5. */
   readonly pricePeriod = 'month';
+
+  get priceLabel(): string {
+    return this.usesRazorpay ? razorpayPriceLabel() : '$5';
+  }
 
   /** Android and web use Razorpay. iOS stays on the App Store. */
   usesRazorpay = false;
@@ -89,6 +94,7 @@ export class PaywallPage implements OnInit, OnDestroy {
     private toastCtrl: ToastController,
     private alertCtrl: AlertController,
     private http: HttpClient,
+    private authService: AuthService,
     private revenueCatService: RevenueCatService,
     private razorpayService: RazorpayService,
     private platform: Platform,
@@ -172,10 +178,12 @@ export class PaywallPage implements OnInit, OnDestroy {
         name: localUser.username || localUser.name || '',
         email: localUser.email || '',
         token,
+        currency: razorpayCheckoutCurrency(),
       });
 
       if (result.success) {
-        this.storePro(localUser, result);
+        if (result.expiry) this.authService.applySubscription(result);
+        await this.authService.syncSubscriptionFromServer();
 
         await this.showToast(
           result.trial
@@ -295,23 +303,10 @@ export class PaywallPage implements OnInit, OnDestroy {
   }
 
   private async finishPendingPayment(): Promise<void> {
-    const user = this.getLocalUser();
-    const result = await this.razorpayService.recoverPending(user?.token);
-    if (!result?.success) return;
-    this.storePro(user, result);
+    const restored = await this.authService.restorePurchasedAccess();
+    if (!restored) return;
     await this.showToast('Your Pro payment is now active.', 'success');
     this.router.navigateByUrl(this.returnUrl);
-  }
-
-  private storePro(user: any, result: { trial?: boolean; expiry?: string | null }): void {
-    user.isPremium = true;
-    user.subscriptionTier = 'pro';
-    if (result.expiry) user.subscriptionExpiry = result.expiry;
-    if (result.trial) {
-      user.trialUsed = true;
-      if (result.expiry) user.trialEndDate = result.expiry;
-    }
-    safeSetItem('focus_user', JSON.stringify(user));
   }
 
   private getAuthHeaders(): HttpHeaders {

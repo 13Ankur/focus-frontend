@@ -53,8 +53,6 @@ import {
   accountIsPro,
   normalizeTier,
   readAccountIsPro,
-  subscriptionFromStatus,
-  writeSubscriptionFields,
 } from '../../utils/subscription-access';
 import { assetUrl } from '../../utils/assets';
 import { AppAssetDirective } from '../../directives/app-asset.directive';
@@ -256,6 +254,8 @@ export class HomePage implements OnInit, OnDestroy {
       // Ionic keeps this tab alive across logout/login — reset Pro UI when the account changes.
       if (accountId !== this.boundAccountId) {
         this.boundAccountId = accountId;
+        this.resetAccountUi(user);
+      } else if (readAccountIsPro() !== this.isPro) {
         this.resetAccountUi(user);
       }
     });
@@ -1166,28 +1166,13 @@ export class HomePage implements OnInit, OnDestroy {
   // ── Helpers ──
 
   private async loadUserTier(): Promise<void> {
-    // Prefer server subscription status (covers Razorpay web purchases)
+    // Prefer the account on the server, including a Razorpay payment whose
+    // checkout callback never returned to the app.
     try {
-      const headers = this.getAuthHeaders();
-      const res: any = await firstValueFrom(
-        this.http.get(`${this.apiUrl}/subscription/status`, { headers }),
-      );
-
-      if (res && res.tier != null) {
-        const snapshot = subscriptionFromStatus(res, this.authService.token);
-        const isPro = accountIsPro(snapshot);
-        const tier = normalizeTier(snapshot);
-
-        try {
-          const user = writeSubscriptionFields(
-            JSON.parse(safeGetItem('focus_user') || '{}'),
-            snapshot,
-          );
-          if (res.trial?.used != null) user.trialUsed = !!res.trial.used;
-          safeSetItem('focus_user', JSON.stringify(user));
-        } catch { /* ignore local cache write errors */ }
-
-        this.applyTier(tier, isPro);
+      if (this.authService.token) {
+        await this.authService.restorePurchasedAccess();
+        const isPro = await this.authService.syncSubscriptionFromServer();
+        this.applyTier(normalizeTier(this.authService.currentUser), isPro);
         return;
       }
     } catch {
