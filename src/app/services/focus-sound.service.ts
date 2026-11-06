@@ -33,7 +33,7 @@ const SOUND_LIBRARY: SoundTrack[] = [
 const PREFS_KEY = 'paws_focus_sound';
 const PREFS_VOLUME_KEY = 'paws_focus_sound_volume';
 const PREFS_MIX_KEY = 'paws_focus_sound_mix';
-const FADE_DURATION = 0.5;
+const FADE_DURATION = 0.03;
 const MAX_MIX_COUNT = 3;
 
 /** Real field recordings. White noise, brown noise, binaural, and lo-fi stay generated. */
@@ -62,6 +62,7 @@ export class FocusSoundService implements OnDestroy {
   private _isPlaying = false;
   private proUnlocked = false;
   private bufferCache = new Map<string, AudioBuffer>();
+  private bufferLoads = new Map<string, Promise<AudioBuffer>>();
   private playbackGeneration = 0;
   private previewStops: Array<() => void> = [];
 
@@ -84,12 +85,15 @@ export class FocusSoundService implements OnDestroy {
     this.loadPreferences();
   }
 
-  /** Download the selected recorded sound ahead of playback. */
+  /** Decode the selected recordings so playback does not wait on the network. */
   warmCurrent(): void {
-    const url = RECORDED_SOUNDS[this.currentSoundSubject.value];
-    if (!url) return;
-    const resolved = new URL(url, document.baseURI).toString();
-    void this.assetLoader.loadArrayBuffer(resolved).catch(() => { /* play will retry */ });
+    const ids = new Set<string>([
+      this.currentSoundSubject.value,
+      ...this.mixedSoundsSubject.value,
+    ]);
+    ids.forEach(id => {
+      if (RECORDED_SOUNDS[id]) void this.preloadBuffer(id);
+    });
   }
 
   ngOnDestroy(): void {
@@ -314,10 +318,13 @@ export class FocusSoundService implements OnDestroy {
 
   /** Call from a tap so Android unlocks the speaker before any later await. */
   prepareAudio(): void {
-    void this.ensureAudioContext();
+    const ctx = this.openAudioContext();
+    if (ctx.state === 'suspended') {
+      void ctx.resume();
+    }
   }
 
-  private async ensureAudioContext(): Promise<void> {
+  private openAudioContext(): AudioContext {
     if (!this.audioContext || this.audioContext.state === 'closed') {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       this.audioContext = new AudioCtx();
@@ -325,8 +332,24 @@ export class FocusSoundService implements OnDestroy {
       this.masterGain.gain.value = this._volume;
       this.masterGain.connect(this.audioContext.destination);
     }
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
+    return this.audioContext;
+  }
+
+  private async ensureAudioContext(): Promise<void> {
+    const ctx = this.openAudioContext();
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+    }
+  }
+
+  private async preloadBuffer(soundId: string): Promise<void> {
+    const url = RECORDED_SOUNDS[soundId];
+    if (!url || this.bufferCache.has(soundId)) return;
+    try {
+      this.openAudioContext();
+      await this.loadBuffer(soundId, url);
+    } catch {
+      // Playback retries when the session starts.
     }
   }
 
@@ -371,16 +394,29 @@ export class FocusSoundService implements OnDestroy {
     return this.createGeneratedSource(soundId, generatorFn);
   }
 
-  private async loadBuffer(soundId: string, url: string): Promise<AudioBuffer> {
+  private loadBuffer(soundId: string, url: string): Promise<AudioBuffer> {
     const cached = this.bufferCache.get(soundId);
-    if (cached) return cached;
+    if (cached) return Promise.resolve(cached);
+    const pending = this.bufferLoads.get(soundId);
+    if (pending) return pending;
 
+    let tracked: Promise<AudioBuffer>;
+    tracked = this.fetchBuffer(url).then(buffer => {
+      this.bufferCache.set(soundId, buffer);
+      return buffer;
+    }).finally(() => {
+      if (this.bufferLoads.get(soundId) === tracked) this.bufferLoads.delete(soundId);
+    });
+    this.bufferLoads.set(soundId, tracked);
+    return tracked;
+  }
+
+  private async fetchBuffer(url: string): Promise<AudioBuffer> {
     const resolved = new URL(url, document.baseURI).toString();
     try {
       const data = await this.assetLoader.loadArrayBuffer(resolved);
-      const buffer = await this.audioContext!.decodeAudioData(data.slice(0));
-      this.bufferCache.set(soundId, buffer);
-      return buffer;
+      const ctx = this.openAudioContext();
+      return await ctx.decodeAudioData(data.slice(0));
     } catch (error) {
       this.assetLoader.forget(resolved);
       throw error;

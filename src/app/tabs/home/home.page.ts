@@ -676,6 +676,19 @@ export class HomePage implements OnInit, OnDestroy {
 
   // ── Session lifecycle ──
 
+  /** Start the chosen sound on the tap, before the session request returns. */
+  private beginFocusSound(): boolean {
+    const selectedId = this.focusSoundService.currentSoundId;
+    if (selectedId === 'silence') return false;
+    const mixIds = this.focusSoundService.mixedSoundIds;
+    if (mixIds.length > 1) {
+      void this.focusSoundService.mixSounds(mixIds);
+    } else {
+      void this.focusSoundService.playSound(selectedId);
+    }
+    return true;
+  }
+
   async startSession(): Promise<void> {
     if (this.isProcessing) return;
 
@@ -691,10 +704,13 @@ export class HomePage implements OnInit, OnDestroy {
     this.isProcessing = true;
     this.focusSoundService.prepareAudio();
     this.soundService.unlock();
+    const soundStarted = this.beginFocusSound();
+    let sessionStarted = false;
     try {
       const res: any = await firstValueFrom(this.apiService.startFocusSession(this.selectedDuration));
 
       if (!res?.allowed) {
+        if (soundStarted) await this.focusSoundService.stopSound();
         if (res?.reason === 'duration_locked') {
           this.selectedDuration = FREE_DURATIONS[0];
           this.timerService.setDuration(this.selectedDuration);
@@ -718,16 +734,7 @@ export class HomePage implements OnInit, OnDestroy {
 
       await new Promise(r => setTimeout(r, 100));
       this.timerService.start();
-
-      const selectedId = this.focusSoundService.currentSoundId;
-      if (selectedId !== 'silence') {
-        const mixIds = this.focusSoundService.mixedSoundIds;
-        if (mixIds.length > 1) {
-          this.focusSoundService.mixSounds(mixIds);
-        } else {
-          this.focusSoundService.playSound(selectedId);
-        }
-      }
+      sessionStarted = true;
 
       if (this.blockingEnabled && this.blockListCount > 0) {
         this.appBlocker.startBlocking(this.activeBreedName, this.selectedDuration);
@@ -737,6 +744,7 @@ export class HomePage implements OnInit, OnDestroy {
       const endTimeMs = Date.now() + this.selectedDuration * 60 * 1000;
       this.widgetService.setSessionActive(true, endTimeMs);
     } catch (err: any) {
+      if (soundStarted && !sessionStarted) await this.focusSoundService.stopSound();
       console.error('Start session error:', err);
       const msg = err.message || 'Could not start session. Check your connection.';
       const lower = msg.toLowerCase();

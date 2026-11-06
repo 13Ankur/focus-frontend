@@ -34,11 +34,11 @@
   --app-error: #ff6b6b;
   --app-warning: #ffc107;
 
-  /* Safe area insets - Enhanced for notch/Dynamic Island */
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
+  /* Safe area insets. Android injects the --safe-area-inset-* values; iOS uses env(). */
+  --safe-area-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-area-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-area-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+  --safe-area-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
 
   /* Responsive spacing - Default (small phones like iPhone SE) */
   --app-padding-x: 16px;
@@ -408,6 +408,43 @@ ion-button:focus-visible {
   @media screen and (min-width: 1024px) {
     max-width: 800px;
   }
+}
+
+/*
+ * Razorpay checkout is a full-screen frame inside the app. Keep its header
+ * below the status bar and its footer above the gesture bar while it is open.
+ * The class is removed on success and on cancel, so nothing stays on screen.
+ */
+body.razorpay-open::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: #f8f8f5;
+  z-index: 2147483646;
+}
+
+body.razorpay-open .razorpay-container {
+  position: fixed !important;
+  top: var(--safe-area-top) !important;
+  right: var(--safe-area-right) !important;
+  bottom: var(--safe-area-bottom) !important;
+  left: var(--safe-area-left) !important;
+  width: auto !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+  z-index: 2147483647 !important;
+}
+
+body.razorpay-open .razorpay-container > iframe,
+body.razorpay-open iframe.razorpay-checkout-frame {
+  position: absolute !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: 0 !important;
 }
 
 /* Safe area padding utility classes */

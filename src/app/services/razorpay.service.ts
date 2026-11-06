@@ -114,15 +114,19 @@ export class RazorpayService {
     // 3. Open Razorpay Checkout
     return new Promise((resolve, reject) => {
       let settled = false;
+      const releaseCheckout = this.pinCheckoutToSafeArea();
       const finish = (outcome: RazorpayCheckoutOutcome) => {
         if (settled) return;
         settled = true;
+        releaseCheckout();
         resolve(outcome);
       };
 
       const options = {
         key: keyId,
         subscription_id: subscriptionId,
+        // Checkout runs inside the app WebView. Without this, Razorpay hides UPI.
+        webview_intent: true,
         name: 'StayPaws Pro',
         description: trial
           ? '7-day free trial. Payment details are saved now and charged after the trial.'
@@ -135,6 +139,7 @@ export class RazorpayService {
         theme: { color: '#6C63FF' },
         modal: {
           ondismiss: async () => {
+            releaseCheckout();
             await new Promise((done) => setTimeout(done, 1200));
             if (settled) return;
             const recovered = await this.recoverPending(userInfo.token);
@@ -142,6 +147,7 @@ export class RazorpayService {
           },
         },
         handler: async (response: RazorpayCheckoutResult) => {
+          releaseCheckout();
           const paymentId = response?.razorpay_payment_id;
           const signature = response?.razorpay_signature;
           const confirmedSubscriptionId = response?.razorpay_subscription_id || subscriptionId;
@@ -178,6 +184,7 @@ export class RazorpayService {
             pendingError.paymentReceived = true;
             if (!settled) {
               settled = true;
+              releaseCheckout();
               reject(pendingError);
             }
           } catch (err) {
@@ -190,6 +197,7 @@ export class RazorpayService {
             pendingError.paymentReceived = true;
             if (!settled) {
               settled = true;
+              releaseCheckout();
               reject(pendingError);
             }
           }
@@ -277,5 +285,56 @@ export class RazorpayService {
   /** Call on logout so the next account cannot inherit a previous checkout. */
   clearPendingPayment(): void {
     this.clearPending();
+  }
+
+  /**
+   * Razorpay draws its own header and footer edge to edge. Pull that frame
+   * inside the status bar and gesture bar after it is inserted.
+   */
+  private pinCheckoutToSafeArea(): () => void {
+    let closed = false;
+    document.body.classList.add('razorpay-open');
+    const inset = (edge: 'top' | 'right' | 'bottom' | 'left') =>
+      `var(--safe-area-inset-${edge}, env(safe-area-inset-${edge}, 0px))`;
+
+    const apply = () => {
+      if (closed) return;
+      document.querySelectorAll<HTMLElement>('.razorpay-container').forEach(container => {
+        container.style.setProperty('position', 'fixed', 'important');
+        container.style.setProperty('top', inset('top'), 'important');
+        container.style.setProperty('right', inset('right'), 'important');
+        container.style.setProperty('bottom', inset('bottom'), 'important');
+        container.style.setProperty('left', inset('left'), 'important');
+        container.style.setProperty('width', 'auto', 'important');
+        container.style.setProperty('height', 'auto', 'important');
+        container.querySelectorAll<HTMLElement>('iframe').forEach(frame => {
+          frame.style.setProperty('position', 'absolute', 'important');
+          frame.style.setProperty('top', '0', 'important');
+          frame.style.setProperty('right', '0', 'important');
+          frame.style.setProperty('bottom', '0', 'important');
+          frame.style.setProperty('left', '0', 'important');
+          frame.style.setProperty('width', '100%', 'important');
+          frame.style.setProperty('height', '100%', 'important');
+        });
+      });
+    };
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      if (closed) return;
+      closed = true;
+      observer.disconnect();
+      document.body.classList.remove('razorpay-open');
+      const sweep = () => {
+        document.querySelectorAll('.razorpay-container, .razorpay-backdrop, iframe.razorpay-checkout-frame')
+          .forEach(node => node.remove());
+      };
+      sweep();
+      window.setTimeout(sweep, 50);
+      window.setTimeout(sweep, 400);
+    };
   }
 }
